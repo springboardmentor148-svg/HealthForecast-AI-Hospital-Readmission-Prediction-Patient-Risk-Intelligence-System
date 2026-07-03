@@ -1,8 +1,3 @@
-"""
-src/preprocess.py
-Complete data preprocessing pipeline for Diabetes 130-US Hospitals dataset
-"""
-
 import pandas as pd
 import numpy as np
 import joblib
