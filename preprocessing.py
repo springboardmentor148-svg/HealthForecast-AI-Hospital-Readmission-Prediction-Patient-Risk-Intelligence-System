@@ -1,76 +1,31 @@
 import pandas as pd
 
-# ==========================
-# Load Dataset
-# ==========================
-df = pd.read_csv("data/archive (2)/diabetic_data.csv")
 
-# ==========================
-# Display Basic Information
-# ==========================
-print("First 5 Rows:")
-print(df.head())
+df = pd.read_csv("dataset/diabetic_data.csv")
 
-print("\nDataset Shape:")
-print(df.shape)
+print("Original Shape:", df.shape)
 
-print("\nColumn Names:")
-print(df.columns)
 
-print("\nDataset Information:")
-print(df.info())
-
-# ==========================
-# Replace '?' with NaN
-# ==========================
-df.replace("?", pd.NA, inplace=True)
-
-# ==========================
-# Check Missing Values
-# ==========================
-print("\nMissing Values:")
-print(df.isnull().sum())
-
-# ==========================
-# Remove Duplicate Records
-# ==========================
 df.drop_duplicates(inplace=True)
 
-# ==========================
-# Fill Missing Numerical Values
-# ==========================
-numeric_columns = df.select_dtypes(include=['int64', 'float64']).columns
 
-for col in numeric_columns:
-    df[col] = df[col].fillna(df[col].median())
+df.replace('?', pd.NA, inplace=True)
 
-# ==========================
-# Fill Missing Categorical Values
-# ==========================
-categorical_columns = df.select_dtypes(include=['object']).columns
 
-for col in categorical_columns:
-    df[col] = df[col].fillna(df[col].mode()[0])
+print("\nMissing Values Before:")
+print(df.isnull().sum())
+for column in df.columns:
+    if df[column].dtype == 'object':
+        mode = df[column].mode()
+        if not mode.empty:
+            df[column] = df[column].fillna(mode[0])
+    else:
+        df[column] = df[column].fillna(df[column].median())
 
-# ==========================
-# Verify Missing Values
-# ==========================
-print("\nMissing Values After Preprocessing:")
+print("\nMissing Values After:")
 print(df.isnull().sum())
 
-# ==========================
-# Save Cleaned Dataset
-# ==========================
-df.to_csv("cleaned_diabetic_data.csv", index=False)
+df.to_csv("dataset/cleaned_diabetic_data.csv", index=False)
 
-print("\nPreprocessing completed successfully!")
-print("Cleaned dataset saved as: cleaned_diabetic_data.csv")
-
-# ==========================
-# Final Dataset Information
-# ==========================
-print("\nFinal Dataset Shape:")
-print(df.shape)
-
-print("\nFinal Dataset Information:")
-print(df.info())
+print("\nPreprocessing Completed Successfully!")
+print("Cleaned dataset saved as dataset/cleaned_diabetic_data.csv")
