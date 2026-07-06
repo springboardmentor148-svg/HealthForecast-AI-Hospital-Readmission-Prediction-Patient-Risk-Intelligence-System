@@ -5,12 +5,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score
 
-def main():
-    data_path = 'diabetic_data.csv'
-    
-    if not os.path.exists(data_path):
-        print(f"Error: {data_path} not found. Please download it from UCI and place it in the same directory.")
-        return
 
     print("Loading data...")
     df = pd.read_csv(data_path)
@@ -90,49 +84,34 @@ def main():
     # 4. Random Forest Model
 
     features = [
-        'age_grouped', 'race', 'med_specialty_grouped', 
-        'primary_diagnosis', 'time_in_hospital', 'hba1c_grouped',
-        'discharge_grouped', 'admission_grouped'
-    ]
+    'age_grouped',
+    'race',
+    'med_specialty_grouped',
+    'primary_diagnosis',
+    'time_in_hospital',
+    'hba1c_grouped',
+    'discharge_grouped',
+    'admission_grouped'
+]
 
-    X = df[features]
-    y = df['readmitted_binary']
+X = df[features]
+y = df['readmitted_binary']
 
-    print("Encoding categories...")
-    X_encoded = pd.get_dummies(X, drop_first=True)
-    X_train, X_test, y_train, y_test = train_test_split(X_encoded, y, test_size=0.2, random_state=42)
+# One-Hot Encoding (Convert text to 0s and 1s)
+X_encoded = pd.get_dummies(X, drop_first=True)
 
-   
-    print("Training Random Forest Model... (This may take 5-15 seconds)")
-    model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
-    model.fit(X_train, y_train)
+# Train/Test Split
+X_train, X_test, y_train, y_test = train_test_split(X_encoded, y, test_size=0.2, random_state=42)
 
-    # ==========================================
-    # 6. EVALUATE & TUNE
-    # ==========================================
-    print("\n==========================================")
-    print(" DEFAULT EVALUATION (Threshold = 0.50)")
-    print("==========================================")
-    y_pred_default = model.predict(X_test)
-    print("Accuracy Score:", accuracy_score(y_test, y_pred_default))
-    print("\nClassification Report:")
-    print(classification_report(y_test, y_pred_default))
 
-    print("\n==========================================")
-    print(" TUNED EVALUATION (Threshold = 0.25)")
-    print(" (Optimized to catch more high-risk patients)")
-    print("==========================================")
-    
-    # Get raw probabilities for Class 1 (Readmitted)
-    probabilities = model.predict_proba(X_test)[:, 1]
-    
-    # Apply custom lower threshold
-    custom_threshold = 0.25
-    y_pred_tuned = (probabilities >= custom_threshold).astype(int)
-    
-    print("Accuracy Score:", accuracy_score(y_test, y_pred_tuned))
-    print("\nClassification Report:")
-    print(classification_report(y_test, y_pred_tuned))
+print("Training Random Forest Model... (This may take 5-15 seconds)")
+model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
+model.fit(X_train, y_train)
 
-if __name__ == "__main__":
-    main()
+print("Evaluating Model...")
+y_pred = model.predict(X_test)
+
+print("\n--- FINAL RESULTS ---")
+print("Accuracy Score:", accuracy_score(y_test, y_pred))
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
