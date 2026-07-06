@@ -1,10 +1,5 @@
-Ignore dataset files (users should download this themselves)
-
 *.csv
 data/
-
-Ignore Python cache and virtual environments
-
 pycache/
 *.py[cod]
 *$py.class
@@ -13,5 +8,4 @@ env/
 .env
 
 Jupyter Notebook checkpoints
-
 .ipynb_checkpoints/
