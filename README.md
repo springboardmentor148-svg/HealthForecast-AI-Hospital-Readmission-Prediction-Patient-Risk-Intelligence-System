@@ -22,6 +22,10 @@ In healthcare, hospital readmissions serve as a primary indicator of patient car
 HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System/
 ├── dataset/
 │   └── diabetic_data.csv             # Raw UCI Diabetes 130-US Hospitals dataset
+├── notebooks/
+│   ├── Diabetes_Preprocessing.ipynb  # Exploratory Data Analysis & Preprocessing pipeline
+│   ├── Model_Training.ipynb          # Multiclass Classification, Hyperparameter Tuning & AutoML
+│   └── Binary_Classification.ipynb   # Binary Classification & Decision Threshold Optimization
 ├── pre-processed dataset/
 │   ├── age_distribution.png          # Visualization of age cohorts
 │   ├── correlation_heatmap.png       # Pearson correlation matrix heatmap
@@ -31,8 +35,7 @@ HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-Syst
 │   ├── target_class_balance.csv      # Statistics of readmission vs non-readmission
 │   ├── test_processed.csv            # Processed test split (20%)
 │   └── train_processed.csv           # Processed train split (80%)
-├── pre-processing notebook/
-│   └── Diabetes_Preprocessing.ipynb  # Jupyter Notebook for EDA and preprocessing pipeline
+├── LICENSE                           # Proprietary License terms
 ├── README.md                         # Project documentation (this file)
 └── requirements.txt                  # Python dependencies
 ```
@@ -48,22 +51,24 @@ This project utilizes the **UCI Diabetes 130-US Hospitals dataset** (representin
 ---
 
 ## Technologies and Libraries Used
-- **Language**: Python (v3.8+)
+- **Language**: Python (v3.10+)
 - **Environment**: Jupyter Notebook / Google Colab
-- **Data Wrangling**: `pandas`, `numpy`
+- **Data Wrangling & Processing**: `pandas`, `numpy`, `scipy`, `imbalanced-learn`
 - **Visualization**: `matplotlib`, `seaborn`
-- **Machine Learning**: `scikit-learn`, `xgboost`
+- **Machine Learning Frameworks**: `scikit-learn`, `xgboost`, `lightgbm`, `catboost`
+- **AutoML & Optimization**: `flaml`, `optuna`
 
 ---
 
-## Machine Learning Models
-The project implements and evaluates the following machine learning models to identify the optimal classifier for readmission prediction:
-1. **Logistic Regression** (Baseline linear classifier)
-2. **Decision Tree** (Non-linear interpretable baseline)
-3. **Random Forest** (Ensemble bagging model)
-4. **K-Nearest Neighbors (KNN)** (Instance-based classifier)
-5. **Support Vector Machine (SVM)** (Maximum-margin classification)
-6. **XGBoost** (Optimized gradient boosting framework)
+## Machine Learning Models & Modeling Approaches
+The project implements both **Multiclass Classification** (predicting three categories: `<30` days, `>30` days, or `NO` readmission) and **Binary Classification** (predicting readmitted `<30` days vs. not readmitted `<30` days). 
+
+The following models and approaches are implemented and evaluated:
+1. **Baselines**: Logistic Regression, Decision Tree, K-Nearest Neighbors (KNN), Linear SVM, Random Forest, Extra Trees, XGBoost, LightGBM, and CatBoost.
+2. **Class-Balanced Models**: Balanced Random Forest, Balanced XGBoost (using sample weights), and Balanced LightGBM to handle label skewness.
+3. **Hyperparameter Optimization**: Tuned XGBoost (using RandomizedSearchCV) and Tuned LightGBM (using Optuna optimization).
+4. **AutoML Pipelines**: FLAML AutoML search and FLAML Tuned XGBoost.
+5. **Hybrid Classifiers**: A hybrid clustering-classification pipeline using K-Means clustering + XGBoost/LightGBM.
 
 ---
 
@@ -75,6 +80,48 @@ To assess and compare the performance of each model, the following metrics are u
 - **F1-Score**: Harmonic mean of Precision and Recall.
 - **Confusion Matrix**: Tabular representation of true/false positives and negatives.
 - **Classification Report**: Summary table displaying precision, recall, and F1-score per class.
+
+---
+
+## Model Evaluation & Performance Benchmarks
+
+### 1. Multiclass Classification Benchmarks (Target: `readmitted` - 3 classes)
+The models below are sorted by overall evaluation Accuracy:
+
+| Model | Category | Accuracy | Precision | Recall | F1-Score |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Optuna Tuned LightGBM** | Hyperparameter-Tuned | **58.99%** | 56.24% | 58.99% | 54.57% |
+| Tuned XGBoost (RandomizedSearchCV) | Hyperparameter-Tuned | 58.96% | 55.88% | 58.96% | 54.44% |
+| LightGBM | Baseline | 58.92% | 55.66% | 58.92% | 54.44% |
+| XGBoost | Baseline | 58.88% | 56.11% | 58.88% | 54.63% |
+| XGBoost (Rare Feature Removal) | Feature-Engineered | 58.86% | 55.96% | 58.86% | 54.63% |
+| K-Means + XGBoost (Hybrid) | Hybrid | 58.79% | 55.70% | 58.79% | 54.56% |
+| Auto-Tuned LightGBM (RandomizedSearchCV) | Hyperparameter-Tuned | 58.72% | 55.44% | 58.72% | 54.42% |
+| CatBoost | Baseline | 58.72% | 56.30% | 58.72% | 53.49% |
+| FLAML Tuned XGBoost | AutoML | 58.70% | 55.86% | 58.70% | 53.88% |
+| FLAML AutoML | AutoML | 58.70% | 55.85% | 58.70% | 53.87% |
+| Balanced Random Forest | Class-Balanced | 57.95% | 55.23% | 57.95% | 52.74% |
+| Random Forest | Baseline | 57.83% | 54.45% | 57.83% | 52.90% |
+| Extra Trees | Baseline | 57.33% | 53.27% | 57.33% | 53.00% |
+| Logistic Regression | Baseline | 56.70% | 52.58% | 56.70% | 49.63% |
+| Linear SVM | Baseline | 56.59% | 48.58% | 56.59% | 48.50% |
+| Balanced XGBoost (sample weights) | Class-Balanced | 51.92% | **56.15%** | 51.92% | 53.50% |
+| Balanced LightGBM | Class-Balanced | 51.60% | 55.51% | 51.60% | 53.07% |
+| K-Nearest Neighbors | Baseline | 48.76% | 47.30% | 48.76% | 47.94% |
+| Decision Tree | Baseline | 46.69% | 47.32% | 46.69% | 46.99% |
+
+### 2. Binary Classification Benchmarks (Target: readmitted `<30` days vs other)
+The models below are sorted by evaluation F1-Score:
+
+| Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Optuna Tuned Binary LightGBM (Threshold = 0.25)** | 72.30% | 20.16% | 49.60% | **28.67%** | 68.43% |
+| K-Means + Optuna Binary LightGBM | 72.12% | 19.89% | 49.02% | 28.30% | 68.38% |
+| Binary LightGBM | 67.16% | 18.36% | **55.91%** | 27.65% | 67.41% |
+| Binary LightGBM (Threshold = 0.50) | 67.10% | 18.18% | 55.20% | 27.36% | 67.41% |
+| Optuna Tuned Binary LightGBM (Threshold = 0.50) | **88.40%** | **38.82%** | 5.87% | 10.19% | **68.43%** |
+
+*Note: For the binary prediction task, standardizing the decision threshold to 0.50 resulted in extremely low sensitivity (Recall = 5.87%) due to severe class imbalance. Lowering the decision threshold to 0.25 optimized the trade-off, boosting the F1-score to 28.67% and recall to 49.60% to effectively screen patients.*
 
 ---
 
@@ -109,22 +156,25 @@ Make sure you have Python 3.8+ installed on your machine.
 
 ## Usage
 
-### 1. Data Preprocessing & EDA
-To review and run the data cleaning, exploratory analysis, and train-test splitting steps:
+All Jupyter notebooks are located in the [notebooks/](file:///Users/soumisaha/HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System/notebooks) directory. To execute or view them, follow these steps:
+
 1. Launch Jupyter Notebook or JupyterLab:
    ```bash
    jupyter notebook
    ```
-2. Open the notebook [Diabetes_Preprocessing.ipynb](file:///Users/soumisaha/HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System/pre-processing%20notebook/Diabetes_Preprocessing.ipynb) in the `pre-processing notebook/` directory.
-3. Execute the cells to process the raw dataset and generate visualizations. The cleaned datasets and metrics will be saved in `pre-processed dataset/`.
 
-### 2. Model Training & Evaluation (Active Development)
-The modeling pipeline is currently being developed. Once completed, scripts or notebooks for model training and evaluation will be added to the project.
+2. Open and run the notebooks in order:
+   - **Step 1: Data Preprocessing & EDA**  
+     Open [Diabetes_Preprocessing.ipynb](file:///Users/soumisaha/HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System/notebooks/Diabetes_Preprocessing.ipynb) to clean the raw dataset, handle missing values (`?`), explore distributions, and save train/test splits.
+   - **Step 2: Multiclass Modeling & Tuning**  
+     Open [Model_Training.ipynb](file:///Users/soumisaha/HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System/notebooks/Model_Training.ipynb) to train the multiclass classifiers, perform Optuna search, run FLAML AutoML, and evaluate benchmarking tables.
+   - **Step 3: Binary Classification & Threshold Analysis**  
+     Open [Binary_Classification.ipynb](file:///Users/soumisaha/HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System/notebooks/Binary_Classification.ipynb) to study binary readmission metrics and run decision-threshold optimization plots.
 
 ---
 
 ## Project Status
-This project is currently **under active development** as part of an internship. The preprocessing, feature engineering, and exploratory data analysis phases are complete, and model implementation is underway.
+This project is currently **under active development** as part of an internship. Data preprocessing, exploratory data analysis, and model training/evaluation for both multiclass and binary classification tasks are fully completed. Next phases involve deploying the best-performing models and implementing Explainable AI (XAI) features.
 
 ---
 
@@ -136,4 +186,4 @@ This project is currently **under active development** as part of an internship.
 ---
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project and its accompanying documentation are proprietary and the exclusive property of **Soumi Saha**. All Rights Reserved. Refer to the [LICENSE](file:///Users/soumisaha/HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System/LICENSE) file for the full terms and conditions.
