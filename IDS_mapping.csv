@@ -1,0 +1,731 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # Prognexa AI
+# MAGIC
+# MAGIC ## Hospital Readmission Prediction and Patient Risk Intelligence System
+# MAGIC
+# MAGIC ### Notebook 01 : Data Preprocessing & Exploratory Data Analysis
+# MAGIC
+# MAGIC ---
+# MAGIC
+# MAGIC ## 📌 Project Objective
+# MAGIC
+# MAGIC The objective of this notebook is to load the Diabetes 130-US Hospitals Dataset, understand its structure, assess data quality, clean the data, perform exploratory data analysis (EDA), engineer meaningful features, and prepare a clean dataset for machine learning model development.
+# MAGIC
+# MAGIC ---
+# MAGIC
+# MAGIC ## 📂 Dataset Used
+# MAGIC
+# MAGIC ### 1. diabetic_data.csv
+# MAGIC Contains demographic, clinical, medication and hospital admission details of diabetic patients.
+# MAGIC
+# MAGIC ### 2. IDS_mapping.csv
+# MAGIC Contains descriptions of coded variables such as admission type, discharge disposition and admission source.
+# MAGIC
+# MAGIC ---
+# MAGIC
+# MAGIC ## 🎯 Expected Outcome
+# MAGIC
+# MAGIC By the end of this notebook we will have:
+# MAGIC
+# MAGIC - Loaded the datasets into Databricks
+# MAGIC - Understood the dataset structure
+# MAGIC - Performed data profiling
+# MAGIC - Assessed data quality
+# MAGIC - Cleaned the dataset
+# MAGIC - Generated visual insights
+# MAGIC - Created meaningful features
+# MAGIC - Prepared a clean dataset for model training
+
+# COMMAND ----------
+
+# ==========================================================
+# IMPORT REQUIRED LIBRARIES
+# ----------------------------------------------------------
+# Import all libraries required for data loading,
+# preprocessing, analysis and visualization.
+# ==========================================================
+
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+
+import pandas as pd
+import numpy as np
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+print("✅ Libraries Imported Successfully")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 1 : Load Datasets
+# MAGIC
+# MAGIC In this step we load both datasets from the Unity Catalog Volume into Spark DataFrames.
+# MAGIC
+# MAGIC Using Spark DataFrames allows efficient processing of large datasets.
+
+# COMMAND ----------
+
+# ==========================================================
+# LOAD DIABETES DATASET
+# ----------------------------------------------------------
+# Read the Diabetes Hospital dataset stored in the
+# Unity Catalog Volume.
+#
+# header=True
+# Uses first row as column names.
+#
+# inferSchema=True
+# Automatically detects datatype of each column.
+# ==========================================================
+
+df = spark.read.csv(
+    "/Volumes/workspace/default/prognexa_ai/diabetic_data.csv",
+    header=True,
+    inferSchema=True
+)
+
+print("✅ Diabetes Dataset Loaded Successfully")
+
+# COMMAND ----------
+
+# ==========================================================
+# LOAD IDS MAPPING DATASET
+# ----------------------------------------------------------
+# This dataset explains coded values used in the diabetes
+# dataset such as admission types and discharge IDs.
+# ==========================================================
+
+mapping_df = spark.read.csv(
+    "/Volumes/workspace/default/prognexa_ai/IDS_mapping.csv",
+    header=True,
+    inferSchema=True
+)
+
+print("✅ IDS Mapping Dataset Loaded Successfully")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 2 : Verify Dataset Loading
+# MAGIC
+# MAGIC Display the datasets to ensure they have been loaded correctly.
+
+# COMMAND ----------
+
+# ==========================================================
+# DISPLAY DIABETES DATASET
+# ----------------------------------------------------------
+# Display first few rows of the diabetes dataset.
+# ==========================================================
+
+display(df)
+
+# COMMAND ----------
+
+# ==========================================================
+# DISPLAY IDS MAPPING DATASET
+# ----------------------------------------------------------
+# Display first few rows of the mapping dataset.
+# ==========================================================
+
+display(mapping_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 3 : Dataset Overview
+# MAGIC
+# MAGIC Before cleaning the data, it is important to understand:
+# MAGIC
+# MAGIC - Number of records
+# MAGIC - Number of columns
+# MAGIC - Feature names
+# MAGIC - Data types
+# MAGIC
+# MAGIC This helps us understand the overall structure of the dataset.
+
+# COMMAND ----------
+
+# ==========================================================
+# CHECK DATASET DIMENSIONS
+# ----------------------------------------------------------
+# Count the total number of rows and columns present
+# in the diabetes dataset.
+# ==========================================================
+
+print("="*50)
+print("DIABETES DATASET OVERVIEW")
+print("="*50)
+
+print(f"Number of Rows    : {df.count():,}")
+print(f"Number of Columns : {len(df.columns)}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 4 : Explore Dataset Structure
+# MAGIC
+# MAGIC Before preprocessing, we need to understand:
+# MAGIC
+# MAGIC - Feature names
+# MAGIC - Data types
+# MAGIC - Numerical columns
+# MAGIC - Categorical columns
+# MAGIC
+# MAGIC Understanding the dataset helps us decide the appropriate preprocessing techniques.
+
+# COMMAND ----------
+
+# ==========================================================
+# DISPLAY ALL COLUMN NAMES
+# ----------------------------------------------------------
+# Print all column names present in the dataset.
+# This helps us understand what information is available.
+# ==========================================================
+
+print("="*60)
+print("COLUMN NAMES")
+print("="*60)
+
+for i, column in enumerate(df.columns, start=1):
+    print(f"{i}. {column}")
+
+# COMMAND ----------
+
+# ==========================================================
+# DISPLAY DATA TYPES
+# ----------------------------------------------------------
+# Print the schema of the dataset to identify
+# numerical and categorical features.
+# ==========================================================
+
+print("="*60)
+print("DATA TYPES")
+print("="*60)
+
+df.printSchema()
+
+# COMMAND ----------
+
+# ==========================================================
+# COUNT NUMERICAL AND CATEGORICAL COLUMNS
+# ----------------------------------------------------------
+# Categorize columns based on their data type.
+# ==========================================================
+
+numerical_columns = []
+
+categorical_columns = []
+
+for field in df.schema.fields:
+
+    if field.dataType.simpleString() in ['int','bigint','double','float']:
+
+        numerical_columns.append(field.name)
+
+    else:
+
+        categorical_columns.append(field.name)
+
+print(f"Number of Numerical Columns   : {len(numerical_columns)}")
+
+print(f"Number of Categorical Columns : {len(categorical_columns)}")
+
+# COMMAND ----------
+
+# ==========================================================
+# DISPLAY NUMERICAL COLUMNS
+# ==========================================================
+
+print("="*60)
+print("NUMERICAL FEATURES")
+print("="*60)
+
+for col_name in numerical_columns:
+    print(col_name)
+
+# COMMAND ----------
+
+# ==========================================================
+# DISPLAY CATEGORICAL COLUMNS
+# ==========================================================
+
+print("="*60)
+print("CATEGORICAL FEATURES")
+print("="*60)
+
+for col_name in categorical_columns:
+    print(col_name)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 5 : Data Quality Assessment
+# MAGIC
+# MAGIC A good Machine Learning model requires high-quality data.
+# MAGIC
+# MAGIC In this step we identify:
+# MAGIC
+# MAGIC - Missing values
+# MAGIC - NULL values
+# MAGIC - Duplicate records
+# MAGIC - Class distribution of the target variable
+# MAGIC
+# MAGIC These checks help us decide the necessary cleaning steps.
+
+# COMMAND ----------
+
+# ==========================================================
+# CHECK MISSING VALUES REPRESENTED BY '?'
+# ----------------------------------------------------------
+# Only string (categorical) columns can contain '?'.
+# Numerical columns are skipped to avoid type casting errors.
+# ==========================================================
+
+from pyspark.sql.types import StringType
+
+print("=" * 60)
+print("MISSING VALUES REPRESENTED BY '?'")
+print("=" * 60)
+
+for field in df.schema.fields:
+
+    # Check only string columns
+    if isinstance(field.dataType, StringType):
+
+        missing = df.filter(col(field.name) == "?").count()
+
+        if missing > 0:
+            print(f"{field.name:<30} : {missing}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 6 : Data Cleaning
+# MAGIC
+# MAGIC Before training a machine learning model, the dataset must be cleaned.
+# MAGIC
+# MAGIC In this step we will:
+# MAGIC
+# MAGIC - Replace '?' with NULL values
+# MAGIC - Remove unnecessary columns
+# MAGIC - Verify missing values
+# MAGIC - Check duplicate records
+
+# COMMAND ----------
+
+# ==========================================================
+# REPLACE '?' WITH NULL VALUES
+# ----------------------------------------------------------
+# Many categorical columns contain '?' instead of NULL.
+# Replacing them with NULL makes missing value analysis easier.
+# ==========================================================
+
+df = df.replace("?", None)
+
+print("✅ '?' values replaced with NULL")
+
+# COMMAND ----------
+
+# ==========================================================
+# REMOVE UNNECESSARY COLUMNS
+# ----------------------------------------------------------
+# encounter_id and patient_nbr are unique identifiers.
+# They do not contribute to predicting hospital readmission.
+# ==========================================================
+
+df = df.drop("encounter_id", "patient_nbr")
+
+print("✅ Unnecessary columns removed")
+
+# COMMAND ----------
+
+# ==========================================================
+# CHECK NULL VALUES AFTER CLEANING
+# ----------------------------------------------------------
+# Count NULL values in every column after replacing '?'
+# ==========================================================
+
+from pyspark.sql.functions import count, when, col
+
+null_counts = df.select([
+    count(
+        when(col(c).isNull(), c)
+    ).alias(c)
+    for c in df.columns
+])
+
+display(null_counts)
+
+# COMMAND ----------
+
+# ==========================================================
+# CHECK DUPLICATE RECORDS
+# ----------------------------------------------------------
+# Compare total records with distinct records.
+# ==========================================================
+
+total_records = df.count()
+
+distinct_records = df.distinct().count()
+
+duplicate_records = total_records - distinct_records
+
+print("="*50)
+print("DATASET DUPLICATE ANALYSIS")
+print("="*50)
+
+print(f"Total Records      : {total_records:,}")
+print(f"Distinct Records   : {distinct_records:,}")
+print(f"Duplicate Records  : {duplicate_records:,}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Observation
+# MAGIC
+# MAGIC - Missing values have been standardized by replacing '?' with NULL.
+# MAGIC - Identifier columns have been removed.
+# MAGIC - Duplicate records have been analyzed.
+# MAGIC - The dataset is now ready for exploratory data analysis (EDA).
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 7 : Exploratory Data Analysis (EDA)
+# MAGIC
+# MAGIC Exploratory Data Analysis helps us understand patterns, trends,
+# MAGIC and relationships within the dataset before building a machine
+# MAGIC learning model.
+# MAGIC
+# MAGIC We will analyze:
+# MAGIC
+# MAGIC - Age distribution
+# MAGIC - Gender distribution
+# MAGIC - Race distribution
+# MAGIC - Readmission distribution
+# MAGIC - Time spent in hospital
+# MAGIC - Number of medications
+
+# COMMAND ----------
+
+# ==========================================================
+# CONVERT SPARK DATAFRAME TO PANDAS
+# ----------------------------------------------------------
+# Matplotlib and Seaborn require a Pandas DataFrame.
+# ==========================================================
+
+pdf = df.toPandas()
+
+print("✅ Converted Spark DataFrame to Pandas DataFrame")
+
+# COMMAND ----------
+
+# ==========================================================
+# AGE DISTRIBUTION
+# ----------------------------------------------------------
+# Understand which age groups have the highest number
+# of diabetic patients.
+# ==========================================================
+
+plt.figure(figsize=(12,6))
+
+sns.countplot(data=pdf, x="age", order=sorted(pdf["age"].dropna().unique()))
+
+plt.title("Age Distribution")
+
+plt.xlabel("Age Group")
+
+plt.ylabel("Number of Patients")
+
+plt.xticks(rotation=45)
+
+plt.show()
+
+# COMMAND ----------
+
+# ==========================================================
+# GENDER DISTRIBUTION
+# ----------------------------------------------------------
+# Analyze the number of male and female patients.
+# ==========================================================
+
+plt.figure(figsize=(6,5))
+
+sns.countplot(data=pdf, x="gender")
+
+plt.title("Gender Distribution")
+
+plt.xlabel("Gender")
+
+plt.ylabel("Count")
+
+plt.show()
+
+# COMMAND ----------
+
+# ==========================================================
+# RACE DISTRIBUTION
+# ----------------------------------------------------------
+# Analyze patient distribution based on race.
+# ==========================================================
+
+plt.figure(figsize=(10,5))
+
+sns.countplot(data=pdf, x="race")
+
+plt.title("Race Distribution")
+
+plt.xlabel("Race")
+
+plt.ylabel("Count")
+
+plt.xticks(rotation=30)
+
+plt.show()
+
+# COMMAND ----------
+
+# ==========================================================
+# READMISSION DISTRIBUTION
+# ----------------------------------------------------------
+# Analyze the target variable to understand class balance.
+# ==========================================================
+
+plt.figure(figsize=(6,5))
+
+sns.countplot(data=pdf, x="readmitted")
+
+plt.title("Hospital Readmission Distribution")
+
+plt.xlabel("Readmission Status")
+
+plt.ylabel("Number of Patients")
+
+plt.show()
+
+# COMMAND ----------
+
+# ==========================================================
+# TIME IN HOSPITAL DISTRIBUTION
+# ----------------------------------------------------------
+# Analyze how many days patients stayed in the hospital.
+# This helps identify common hospitalization durations.
+# ==========================================================
+
+plt.figure(figsize=(10,5))
+
+sns.histplot(pdf["time_in_hospital"], bins=14, kde=True)
+
+plt.title("Distribution of Time in Hospital")
+
+plt.xlabel("Days in Hospital")
+
+plt.ylabel("Number of Patients")
+
+plt.show()
+
+# COMMAND ----------
+
+# ==========================================================
+# NUMBER OF MEDICATIONS
+# ----------------------------------------------------------
+# Analyze how many medications patients received during
+# their hospital stay.
+# ==========================================================
+
+plt.figure(figsize=(10,5))
+
+sns.histplot(pdf["num_medications"], bins=20, kde=True)
+
+plt.title("Distribution of Number of Medications")
+
+plt.xlabel("Number of Medications")
+
+plt.ylabel("Number of Patients")
+
+plt.show()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 8 : Feature Engineering
+# MAGIC
+# MAGIC Feature Engineering involves creating new meaningful features
+# MAGIC from existing data.
+# MAGIC
+# MAGIC These engineered features may improve the predictive
+# MAGIC performance of machine learning models.
+# MAGIC
+# MAGIC We will create:
+# MAGIC
+# MAGIC - SeniorCitizen
+# MAGIC - LongStay
+# MAGIC - FrequentVisitor
+
+# COMMAND ----------
+
+# ==========================================================
+# CREATE SENIOR CITIZEN FEATURE
+# ----------------------------------------------------------
+# Patients aged 70 years or above are marked as
+# Senior Citizens.
+# ==========================================================
+
+df = df.withColumn(
+
+    "SeniorCitizen",
+
+    when(
+        col("age").isin(
+            "[70-80)",
+            "[80-90)",
+            "[90-100)"
+        ),
+        1
+    ).otherwise(0)
+
+)
+
+display(df.select("age","SeniorCitizen"))
+
+# COMMAND ----------
+
+# ==========================================================
+# CREATE LONG STAY FEATURE
+# ----------------------------------------------------------
+# Patients staying in the hospital for seven or more days
+# are marked as LongStay.
+# ==========================================================
+
+df = df.withColumn(
+
+    "LongStay",
+
+    when(
+        col("time_in_hospital") >= 7,
+        1
+    ).otherwise(0)
+
+)
+
+display(df.select("time_in_hospital","LongStay"))
+
+# COMMAND ----------
+
+# ==========================================================
+# CREATE FREQUENT VISITOR FEATURE
+# ----------------------------------------------------------
+# Patients admitted two or more times previously
+# are marked as Frequent Visitors.
+# ==========================================================
+
+df = df.withColumn(
+
+    "FrequentVisitor",
+
+    when(
+        col("number_inpatient") >= 2,
+        1
+    ).otherwise(0)
+
+)
+
+display(df.select("number_inpatient","FrequentVisitor"))
+
+# COMMAND ----------
+
+# ==========================================================
+# DISPLAY UPDATED DATASET
+# ----------------------------------------------------------
+# Verify that the engineered features have been added
+# successfully.
+# ==========================================================
+
+display(df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Step 9 : Save the Clean Dataset
+# MAGIC
+# MAGIC Save the cleaned and feature-engineered dataset.
+# MAGIC
+# MAGIC This dataset will be used in the next notebook for:
+# MAGIC
+# MAGIC - Data Encoding
+# MAGIC - Feature Scaling
+# MAGIC - Model Training
+# MAGIC - Model Evaluation
+
+# COMMAND ----------
+
+# ==========================================================
+# SAVE CLEAN DATASET AS PARQUET
+# ----------------------------------------------------------
+# Parquet is a compressed, columnar storage format that is
+# efficient for analytics and machine learning workflows.
+# ==========================================================
+
+output_path = "/Volumes/workspace/default/prognexa_ai/processed_diabetic_data"
+
+df.write.mode("overwrite").parquet(output_path)
+
+print("✅ Clean dataset saved successfully.")
+print(f"Location: {output_path}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Project Summary
+# MAGIC
+# MAGIC ### Tasks Completed
+# MAGIC
+# MAGIC - Imported all required libraries for data processing and visualization.
+# MAGIC - Loaded the Diabetes 130-US Hospitals dataset and IDS Mapping dataset from Unity Catalog Volumes.
+# MAGIC - Explored the dataset structure, including rows, columns, schema, and feature types.
+# MAGIC - Identified numerical and categorical features.
+# MAGIC - Assessed data quality by checking missing values, duplicate records, and dataset consistency.
+# MAGIC - Replaced missing values represented by '?' with NULL values.
+# MAGIC - Removed unnecessary identifier columns (`encounter_id` and `patient_nbr`).
+# MAGIC - Performed Exploratory Data Analysis (EDA) to understand patient demographics, hospital stay patterns, medication usage, and readmission distribution.
+# MAGIC - Engineered clinically meaningful features:
+# MAGIC   - **SeniorCitizen**
+# MAGIC   - **LongStay**
+# MAGIC   - **FrequentVisitor**
+# MAGIC - Saved the cleaned and feature-engineered dataset for the next stage of the machine learning pipeline.
+# MAGIC
+# MAGIC ---
+# MAGIC
+# MAGIC # Next Notebook
+# MAGIC
+# MAGIC ## **02_Feature_Engineering_Encoding**
+# MAGIC
+# MAGIC The next notebook focuses on transforming the cleaned dataset into a machine learning-ready dataset by performing:
+# MAGIC
+# MAGIC - Loading the cleaned dataset generated in Notebook 01
+# MAGIC - Handling any remaining missing values
+# MAGIC - Identifying numerical and categorical features
+# MAGIC - Encoding categorical variables using:
+# MAGIC   - String Indexing
+# MAGIC   - One-Hot Encoding
+# MAGIC - Creating the target (label) column for prediction
+# MAGIC - Assembling all features into a single feature vector
+# MAGIC - Building a Spark ML Feature Engineering Pipeline
+# MAGIC - Preparing the final dataset for machine learning model training
+# MAGIC
+# MAGIC ---
+# MAGIC
+# MAGIC ### Output of Notebook 02
+# MAGIC
+# MAGIC By the end of the next notebook, we will have:
+# MAGIC
+# MAGIC - A fully encoded dataset
+# MAGIC - A machine learning-ready feature vector
+# MAGIC - A target (`label`) column
+# MAGIC - A reusable Spark ML preprocessing pipeline
+# MAGIC
+# MAGIC This prepared dataset will then be used in **Notebook 03: Model Training**, where multiple classification models will be trained and compared.
