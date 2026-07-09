@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Data files
+data/raw/*.csv
+data/processed/*.pkl
+*.csv
+*.pkl
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Mac
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# IDE
+.idea/
+*.iml
+
+# Environment variables
+.env
+.env.local
