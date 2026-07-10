@@ -17,34 +17,34 @@ class DataPreprocessor:
     def load_data(self):
         """Load the dataset"""
         print("\n" + "="*60)
-        print("📂 LOADING DATA")
+        print("LOADING DATA")
         print("="*60)
         
         self.df = pd.read_csv('data/raw/diabetic_data.csv')
         self.original_shape = self.df.shape
-        print(f"✅ Loaded {self.df.shape[0]:,} rows and {self.df.shape[1]} columns")
+        print(f"Loaded {self.df.shape[0]:,} rows and {self.df.shape[1]} columns")
         return self.df
     
     def explore_data(self):
         """Print basic information about the dataset"""
         print("\n" + "="*60)
-        print("📊 DATA EXPLORATION")
+        print("DATA EXPLORATION")
         print("="*60)
         
-        print(f"\n📋 Shape: {self.df.shape}")
+        print(f"\nShape: {self.df.shape}")
         
         # Missing values
         missing = self.df.isnull().sum()
-        print(f"\n📋 Missing Values:\n{missing[missing > 0]}")
+        print(f"\nMissing Values:\n{missing[missing > 0]}")
         
         # Readmission distribution
-        print("\n📋 Readmission Distribution:")
+        print("\n Readmission Distribution:")
         print(self.df['readmitted'].value_counts())
         
         # Create binary target
         self.df['readmitted_binary'] = (self.df['readmitted'] == '<30').astype(int)
         
-        print("\n📋 Binary Target Distribution:")
+        print("\nBinary Target Distribution:")
         print(self.df['readmitted_binary'].value_counts())
         print(f"   - Readmitted within 30 days: {self.df['readmitted_binary'].sum():,}")
         print(f"   - Not readmitted: {len(self.df) - self.df['readmitted_binary'].sum():,}")
@@ -70,23 +70,23 @@ class DataPreprocessor:
         
         if len(cols_to_drop) > 0:
             df_clean = df_clean.drop(columns=cols_to_drop)
-            print(f"✅ Dropped columns with >50% missing: {list(cols_to_drop)}")
+            print(f"Dropped columns with >50% missing: {list(cols_to_drop)}")
         else:
-            print("✅ No columns with >50% missing to drop")
+            print("No columns with >50% missing to drop")
         
         # Remove invalid discharge dispositions
         invalid_discharge = [11, 13, 14, 19, 20, 21]
         df_clean = df_clean[~df_clean['discharge_disposition_id'].isin(invalid_discharge)]
-        print(f"✅ Removed invalid discharge records. New shape: {df_clean.shape}")
+        print(f"Removed invalid discharge records. New shape: {df_clean.shape}")
         
         # Fill missing 'medical_specialty'
         if 'medical_specialty' in df_clean.columns:
             df_clean['medical_specialty'] = df_clean['medical_specialty'].fillna('Missing')
-            print("✅ Filled missing 'medical_specialty'")
+            print("Filled missing 'medical_specialty'")
         
         # Drop rows with missing race or gender
         df_clean.dropna(subset=['race', 'gender'], inplace=True)
-        print(f"✅ Dropped rows with missing race/gender. New shape: {df_clean.shape}")
+        print(f"Dropped rows with missing race/gender. New shape: {df_clean.shape}")
         
         # Fill missing values in max_glu_serum and A1Cresult with 'None'
         if 'max_glu_serum' in df_clean.columns:
@@ -111,13 +111,13 @@ class DataPreprocessor:
             df_fe['glucose_tested'] = (df_fe['max_glu_serum'] != 'None').astype(int)
             features_created.append('glucose_tested')
         else:
-            print("⚠️ 'max_glu_serum' not found, skipping glucose_tested")
+            print(" 'max_glu_serum' not found, skipping glucose_tested")
         
         if 'A1Cresult' in df_fe.columns:
             df_fe['a1c_tested'] = (df_fe['A1Cresult'] != 'None').astype(int)
             features_created.append('a1c_tested')
         else:
-            print("⚠️ 'A1Cresult' not found, skipping a1c_tested")
+            print(" 'A1Cresult' not found, skipping a1c_tested")
         
         # 1. Total prior visits
         df_fe['total_prior_visits'] = (df_fe['number_outpatient'] + 
@@ -153,7 +153,7 @@ class DataPreprocessor:
         )
         features_created.append('stay_length_category')
         
-        print(f"✅ Created {len(features_created)} new features:")
+        print(f" Created {len(features_created)} new features:")
         for f in features_created:
             print(f"   - {f}")
         
@@ -163,7 +163,7 @@ class DataPreprocessor:
     def encode_categorical(self):
         """Encode categorical variables"""
         print("\n" + "="*60)
-        print("🔄 ENCODING CATEGORICAL VARIABLES")
+        print(" ENCODING CATEGORICAL VARIABLES")
         print("="*60)
         
         df_enc = self.df.copy()
@@ -175,13 +175,13 @@ class DataPreprocessor:
         age_mapping = {age: i for i, age in enumerate(age_order)}
         if 'age' in df_enc.columns:
             df_enc['age'] = df_enc['age'].map(age_mapping)
-            print("✅ Encoded 'age'")
+            print(" Encoded 'age'")
         
         # Ordinal encoding for stay length
         stay_order = {'Short': 0, 'Medium': 1, 'Long': 2, 'Extended': 3}
         if 'stay_length_category' in df_enc.columns:
             df_enc['stay_length_category'] = df_enc['stay_length_category'].map(stay_order)
-            print("✅ Encoded 'stay_length_category'")
+            print(" Encoded 'stay_length_category'")
         
         # One-hot encoding for nominal columns
         nominal_cols = ['race', 'gender', 'admission_type_id', 
@@ -191,8 +191,8 @@ class DataPreprocessor:
         existing_nominal = [col for col in nominal_cols if col in df_enc.columns]
         
         df_enc = pd.get_dummies(df_enc, columns=existing_nominal, drop_first=True)
-        print(f"✅ One-hot encoded {len(existing_nominal)} columns")
-        print(f"✅ New shape: {df_enc.shape}")
+        print(f" One-hot encoded {len(existing_nominal)} columns")
+        print(f" New shape: {df_enc.shape}")
         
         self.df = df_enc
         return self.df
@@ -200,7 +200,7 @@ class DataPreprocessor:
     def prepare_final_data(self):
         """Prepare final dataset for modeling"""
         print("\n" + "="*60)
-        print("💾 PREPARING FINAL DATA")
+        print(" PREPARING FINAL DATA")
         print("="*60)
         
         self.y = self.df['readmitted_binary']
@@ -220,9 +220,9 @@ class DataPreprocessor:
         joblib.dump(self.X, 'data/processed/X_processed.pkl')
         joblib.dump(self.y, 'data/processed/y_processed.pkl')
         
-        print(f"✅ Final X shape: {self.X.shape}")
-        print(f"✅ Final y shape: {self.y.shape}")
-        print(f"\n✅ Data saved to 'data/processed/'")
+        print(f" Final X shape: {self.X.shape}")
+        print(f" Final y shape: {self.y.shape}")
+        print(f"\n Data saved to 'data/processed/'")
         print(f"   - X_processed.pkl: {self.X.shape[1]} features")
         print(f"   - y_processed.pkl: {self.y.shape[0]:,} samples")
         
@@ -231,7 +231,7 @@ class DataPreprocessor:
     def run_pipeline(self):
         """Run complete pipeline"""
         print("="*60)
-        print("🚀 STARTING PREPROCESSING PIPELINE")
+        print(" STARTING PREPROCESSING PIPELINE")
         print("="*60)
         
         self.load_data()
@@ -242,9 +242,9 @@ class DataPreprocessor:
         X, y = self.prepare_final_data()
         
         print("\n" + "="*60)
-        print("✅ PIPELINE COMPLETE!")
+        print(" PIPELINE COMPLETE!")
         print("="*60)
-        print(f"\n📊 Summary:")
+        print(f"\n Summary:")
         print(f"   - Original samples: {self.original_shape[0]:,}")
         print(f"   - Final samples: {X.shape[0]:,}")
         print(f"   - Features: {X.shape[1]}")

@@ -1,8 +1,3 @@
-"""
-model_training.py
-Complete Model Building Pipeline - Week 2
-"""
-
 import pandas as pd
 import numpy as np
 import joblib
@@ -23,48 +18,48 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ============================================================
-# STEP 1: Load Data
+# Load Data
 # ============================================================
 
 def load_and_fix_data():
     """Load data and ensure all columns are numeric"""
     
     print("="*60)
-    print("📂 LOADING DATA")
+    print(" LOADING DATA")
     print("="*60)
     
     X = joblib.load('data/processed/X_processed.pkl')
     y = joblib.load('data/processed/y_processed.pkl')
     
-    print(f"✅ X shape: {X.shape}")
-    print(f"✅ y shape: {y.shape}")
+    print(f" X shape: {X.shape}")
+    print(f" y shape: {y.shape}")
     
     # Check for non-numeric columns
     non_numeric_cols = X.select_dtypes(include=['object']).columns.tolist()
     
     if non_numeric_cols:
-        print(f"\n⚠️ Found {len(non_numeric_cols)} non-numeric columns:")
+        print(f"\n Found {len(non_numeric_cols)} non-numeric columns:")
         for col in non_numeric_cols:
             try:
                 X[col] = pd.to_numeric(X[col], errors='raise')
             except:
                 le = LabelEncoder()
                 X[col] = le.fit_transform(X[col].astype(str))
-        print("✅ All columns are now numeric!")
+        print(" All columns are now numeric!")
     else:
-        print("✅ All columns are already numeric!")
+        print(" All columns are already numeric!")
     
     return X, y
 
 # ============================================================
-# STEP 2: Train Models
+# Train Models
 # ============================================================
 
 def train_models(X_train, X_test, y_train, y_test):
     """Train multiple models and compare performance"""
     
     print("\n" + "="*60)
-    print("🚀 TRAINING MODELS")
+    print(" TRAINING MODELS")
     print("="*60)
     
     models = {
@@ -98,7 +93,7 @@ def train_models(X_train, X_test, y_train, y_test):
     
     for name, model in models.items():
         print(f"\n{'='*50}")
-        print(f"📊 Training {name}...")
+        print(f" Training {name}...")
         print('='*50)
         
         try:
@@ -134,16 +129,16 @@ def train_models(X_train, X_test, y_train, y_test):
             }
             
             # Print results
-            print(f"✅ Accuracy:  {accuracy:.4f}")
-            print(f"✅ Precision: {precision:.4f}")
-            print(f"✅ Recall:    {recall:.4f}")
-            print(f"✅ F1 Score:  {f1:.4f}")
-            print(f"✅ ROC-AUC:   {roc_auc:.4f}")
-            print(f"✅ CV Score:  {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
+            print(f" Accuracy:  {accuracy:.4f}")
+            print(f" Precision: {precision:.4f}")
+            print(f" Recall:    {recall:.4f}")
+            print(f" F1 Score:  {f1:.4f}")
+            print(f" ROC-AUC:   {roc_auc:.4f}")
+            print(f" CV Score:  {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
             
             # Confusion Matrix
             cm = confusion_matrix(y_test, y_pred)
-            print(f"\n📋 Confusion Matrix:")
+            print(f"\n Confusion Matrix:")
             print(f"   TN: {cm[0,0]:,}  FP: {cm[0,1]:,}")
             print(f"   FN: {cm[1,0]:,}  TP: {cm[1,1]:,}")
             
@@ -159,14 +154,14 @@ def train_models(X_train, X_test, y_train, y_test):
     return results, best_model, best_name
 
 # ============================================================
-# STEP 3: Feature Importance
+# Feature Importance
 # ============================================================
 
 def analyze_feature_importance(best_model, X, feature_names):
     """Analyze and visualize feature importance"""
     
     print("\n" + "="*60)
-    print("🔍 FEATURE IMPORTANCE ANALYSIS")
+    print(" FEATURE IMPORTANCE ANALYSIS")
     print("="*60)
     
     if hasattr(best_model, 'feature_importances_'):
@@ -176,7 +171,7 @@ def analyze_feature_importance(best_model, X, feature_names):
             'importance': importance
         }).sort_values('importance', ascending=False)
         
-        print("\n📋 Top 10 Most Important Features:")
+        print("\n Top 10 Most Important Features:")
         print(importance_df.head(10).to_string(index=False))
         
         # Create plot
@@ -190,7 +185,7 @@ def analyze_feature_importance(best_model, X, feature_names):
         # Save plot
         os.makedirs('reports/visualizations', exist_ok=True)
         plt.savefig('reports/visualizations/feature_importance.png', dpi=150)
-        print("\n✅ Feature importance plot saved to 'reports/visualizations/feature_importance.png'")
+        print("\n Feature importance plot saved to 'reports/visualizations/feature_importance.png'")
         plt.show()
         
         return importance_df
@@ -204,29 +199,29 @@ def analyze_feature_importance(best_model, X, feature_names):
         return importance_df
     
     else:
-        print("⚠️ Model doesn't have feature importance attribute")
+        print(" Model doesn't have feature importance attribute")
         return None
 
 # ============================================================
-# STEP 4: Save Results
+# Save Results
 # ============================================================
 
 def save_results(results, best_model, best_name, X):
     """Save models and results"""
     
     print("\n" + "="*60)
-    print("💾 SAVING MODELS")
+    print(" SAVING MODELS")
     print("="*60)
     
     os.makedirs('models', exist_ok=True)
     
     # Save best model
     joblib.dump(best_model, 'models/risk_predictor.pkl')
-    print("✅ Best model saved to 'models/risk_predictor.pkl'")
+    print(" Best model saved to 'models/risk_predictor.pkl'")
     
     # Save feature names
     joblib.dump(X.columns.tolist(), 'models/feature_names.pkl')
-    print("✅ Feature names saved to 'models/feature_names.pkl'")
+    print(" Feature names saved to 'models/feature_names.pkl'")
     
     # Save results
     results_df = pd.DataFrame({
@@ -240,7 +235,7 @@ def save_results(results, best_model, best_name, X):
         'CV Std': [results[m]['cv_std'] for m in results]
     })
     results_df.to_csv('models/model_results.csv', index=False)
-    print("✅ Results saved to 'models/model_results.csv'")
+    print(" Results saved to 'models/model_results.csv'")
     
     # Save report
     with open('models/model_report.txt', 'w') as f:
@@ -256,9 +251,9 @@ def save_results(results, best_model, best_name, X):
         f.write("="*60 + "\n")
         f.write(results_df.to_string(index=False))
     
-    print("✅ Report saved to 'models/model_report.txt'")
+    print(" Report saved to 'models/model_report.txt'")
     
-    print(f"\n🏆 Best Model: {best_name}")
+    print(f"\n Best Model: {best_name}")
     print(f"   Accuracy:  {results[best_name]['accuracy']:.4f}")
     print(f"   F1 Score:  {results[best_name]['f1']:.4f}")
     print(f"   ROC-AUC:   {results[best_name]['roc_auc']:.4f}")
@@ -273,7 +268,7 @@ def run_model_pipeline():
     """Run complete model building pipeline"""
     
     print("="*60)
-    print("🚀 STARTING MODEL BUILDING PIPELINE")
+    print(" STARTING MODEL BUILDING PIPELINE")
     print("="*60)
     
     # Load data
@@ -283,8 +278,8 @@ def run_model_pipeline():
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
-    print(f"\n✅ Train shape: {X_train.shape}")
-    print(f"✅ Test shape: {X_test.shape}")
+    print(f"\n Train shape: {X_train.shape}")
+    print(f" Test shape: {X_test.shape}")
     
     # Train models
     results, best_model, best_name = train_models(X_train, X_test, y_train, y_test)
@@ -295,9 +290,7 @@ def run_model_pipeline():
     # Save results
     results_df = save_results(results, best_model, best_name, X)
     
-    print("\n" + "="*60)
-    print("✅ WEEK 2 - MODEL BUILDING COMPLETE!")
-    print("="*60)
+   
     
     return results, best_model, results_df
 

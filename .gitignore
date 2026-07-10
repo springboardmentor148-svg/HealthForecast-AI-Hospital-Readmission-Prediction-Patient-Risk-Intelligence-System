@@ -12,11 +12,14 @@ ENV/
 env.bak/
 venv.bak/
 
-# Data files
+# Data files (DO NOT PUSH LARGE DATA FILES)
 data/raw/*.csv
 data/processed/*.pkl
-*.csv
 *.pkl
+*.csv
+
+# Models (optional - if you want to push models, remove this line)
+models/*.pkl
 
 # Jupyter Notebooks
 .ipynb_checkpoints/

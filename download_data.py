@@ -8,7 +8,7 @@ def download_dataset():
     os.makedirs('data/raw', exist_ok=True)
     
     print("="*60)
-    print("📥 DOWNLOADING DATASET")
+    print("DOWNLOADING DATASET")
     print("="*60)
     
     try:
@@ -22,15 +22,15 @@ def download_dataset():
         file_path = 'data/raw/diabetic_data.csv'
         df.to_csv(file_path, index=False)
         
-        print(f"\n✅ Dataset downloaded successfully!")
-        print(f"📁 Saved to: {file_path}")
-        print(f"📊 Shape: {df.shape[0]:,} rows, {df.shape[1]} columns")
+        print(f"\nDataset downloaded successfully!")
+        print(f"Saved to: {file_path}")
+        print(f"Shape: {df.shape[0]:,} rows, {df.shape[1]} columns")
         
         return df
         
     except Exception as e:
-        print(f"\n❌ Error downloading dataset: {e}")
-        print("\n📌 Alternative: Download manually from Kaggle")
+        print(f"\nError downloading dataset: {e}")
+        print("\nAlternative: Download manually from Kaggle")
         print("   1. Go to: https://www.kaggle.com/datasets/brandao/diabetes/data")
         print("   2. Click Download")
         print("   3. Extract and copy 'diabetic_data.csv' to 'data/raw/'")
