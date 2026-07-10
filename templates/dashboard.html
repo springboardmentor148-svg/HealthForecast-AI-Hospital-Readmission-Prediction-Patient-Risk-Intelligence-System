@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard | HealthForecast AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<!-- Sidebar -->
+
+<div class="sidebar">
+
+    <h2>🏥 HealthForecast AI</h2>
+
+    <ul>
+
+        <li>
+           <a href="{{ url_for('dashboard') }}" class="active">
+    <i class="fa-solid fa-house"></i>
+    Dashboard
+</a>
+        </li>
+
+        <li>
+            <a href="{{ url_for('patient_records') }}">
+                <i class="fa-solid fa-user-plus"></i>
+                Patient Records
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ url_for('view_patients') }}">
+                <i class="fa-solid fa-users"></i>
+                View Patients
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ url_for('predict') }}">
+                <i class="fa-solid fa-stethoscope"></i>
+                Predict Patient
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ url_for('prediction_history') }}">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                Prediction History
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ url_for('analytics') }}">
+                <i class="fa-solid fa-chart-column"></i>
+                Analytics Dashboard
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ url_for('logout') }}">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Logout
+            </a>
+        </li>
+
+    </ul>
+
+</div>
+
+<!-- Main Content -->
+
+<div class="main-content">
+
+    <!-- Top Bar -->
+
+    <div class="topbar">
+
+        <h1>
+    Welcome Dr. {{ username }}
+</h1>
+
+    <span id="datetime"></span>
+
+    </div>
+
+    <!-- Statistics -->
+
+    <div class="stats-container">
+
+        <div class="stat-card">
+
+            <i class="fa-solid fa-users"></i>
+
+            <h3>{{ total_patients }}</h3>
+
+            <p>Total Patients</p>
+
+        </div>
+
+        <div class="stat-card">
+
+            <i class="fa-solid fa-stethoscope"></i>
+
+            <h3>{{ total_predictions }}</h3>
+
+            <p>Total Predictions</p>
+
+        </div>
+
+        <div class="stat-card">
+
+            <i class="fa-solid fa-triangle-exclamation"></i>
+
+            <h3>{{ high_risk }}</h3>
+
+            <p>High Risk Patients</p>
+
+        </div>
+
+        <div class="stat-card">
+
+            <i class="fa-solid fa-heart-circle-check"></i>
+
+            <h3>{{ low_risk }}</h3>
+
+            <p>Low Risk Patients</p>
+
+        </div>
+
+    </div>
+
+    <!-- Quick Actions -->
+
+    <h2 class="section-title">
+        Quick Actions
+    </h2>
+
+    <div class="cards">
+
+        <div class="card">
+
+            <i class="fa-solid fa-user-plus"></i>
+
+            <h2>Patient Records</h2>
+
+            <p>Add and manage patient information.</p>
+
+            <a href="{{ url_for('patient_records') }}">
+                Open Records
+            </a>
+
+        </div>
+
+        <div class="card">
+
+            <i class="fa-solid fa-heart-pulse"></i>
+
+            <h2>Predict Patient</h2>
+
+            <p>Predict patient readmission risk using AI.</p>
+
+            <a href="{{ url_for('predict') }}">
+                Start Prediction
+            </a>
+
+        </div>
+
+        <div class="card">
+
+            <i class="fa-solid fa-chart-column"></i>
+
+            <h2>Analytics Dashboard</h2>
+
+            <p>View charts and healthcare statistics.</p>
+
+            <a href="{{ url_for('analytics') }}">
+                Open Analytics
+            </a>
+
+        </div>
+
+        <div class="card">
+
+            <i class="fa-solid fa-clock-rotate-left"></i>
+
+            <h2>Prediction History</h2>
+
+            <p>View all previous prediction results.</p>
+
+            <a href="{{ url_for('prediction_history') }}">
+                View History
+            </a>
+
+        </div>
+
+    </div>
+
+    <!-- Recent Predictions -->
+
+    <h2 class="section-title">
+        Recent Predictions
+    </h2>
+
+    <div class="recent-table">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Patient Name</th>
+                    <th>Prediction</th>
+                    <th>Confidence</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% if recent_predictions %}
+
+                {% for patient in recent_predictions %}
+
+                <tr>
+
+                    <td>{{ patient.patient_name }}</td>
+
+                    <td>
+
+                        {% if patient.prediction == "<30" %}
+
+                            <span class="high-risk">
+                                🔴 High Risk
+                            </span>
+
+                        {% elif patient.prediction == ">30" %}
+
+                            <span class="moderate-risk">
+                                🟡 Moderate Risk
+                            </span>
+
+                        {% else %}
+
+                            <span class="low-risk">
+                                🟢 Low Risk
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>{{ patient.confidence }}%</td>
+
+                </tr>
+
+                {% endfor %}
+
+            {% else %}
+
+                <tr>
+
+                    <td colspan="3">
+                        No prediction records available.
+                    </td>
+
+                </tr>
+
+            {% endif %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- Footer -->
+
+<div class="footer">
+
+    © 2026 HealthForecast AI |
+    AI Hospital Readmission Prediction &
+    Patient Risk Intelligence System
+
+</div>
+
+<script>
+
+function updateTime(){
+
+    const now = new Date();
+
+    document.getElementById("datetime").innerHTML =
+        now.toLocaleString();
+
+}
+
+updateTime();
+
+setInterval(updateTime,1000);
+
+</script>
+
+</body>
+
+</html>

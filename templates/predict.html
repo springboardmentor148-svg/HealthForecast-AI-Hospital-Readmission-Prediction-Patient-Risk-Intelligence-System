@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Patient Readmission Prediction</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/predict.css') }}">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="prediction-card">
+
+        <div class="title">
+
+            <i class="fa-solid fa-heart-pulse"></i>
+
+            <h1>AI Hospital Readmission Prediction</h1>
+
+            <p>
+                Enter patient information to predict the hospital
+                readmission risk using the Random Forest model.
+            </p>
+
+        </div>
+
+        <form action="{{ url_for('result') }}" method="POST">
+
+            <!-- ================= Patient Information ================= -->
+
+            <h2 class="section-title">
+
+                <i class="fa-solid fa-user"></i>
+
+                Patient Information
+
+            </h2>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label>Patient ID</label>
+
+                    <input
+                        type="text"
+                        name="patient_id"
+                        placeholder="Enter Patient ID"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Patient Name</label>
+
+                    <input
+                        type="text"
+                        name="patient_name"
+                        placeholder="Enter Patient Name"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Race</label>
+
+                    <select name="race" required>
+
+                        <option value="Caucasian">Caucasian</option>
+                        <option value="AfricanAmerican">African American</option>
+                        <option value="Asian">Asian</option>
+                        <option value="Hispanic">Hispanic</option>
+                        <option value="Other">Other</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Gender</label>
+
+                    <select name="gender" required>
+
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Age</label>
+
+                    <select name="age" required>
+
+                        <option value="[0-10)">0-10</option>
+                        <option value="[10-20)">10-20</option>
+                        <option value="[20-30)">20-30</option>
+                        <option value="[30-40)">30-40</option>
+                        <option value="[40-50)">40-50</option>
+                        <option value="[50-60)">50-60</option>
+                        <option value="[60-70)">60-70</option>
+                        <option value="[70-80)">70-80</option>
+                        <option value="[80-90)">80-90</option>
+                        <option value="[90-100)">90-100</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Weight</label>
+
+                    <select name="weight" required>
+
+                        <option value="[0-25)">0-25</option>
+                        <option value="[25-50)">25-50</option>
+                        <option value="[50-75)">50-75</option>
+                        <option value="[75-100)">75-100</option>
+                        <option value="[100-125)">100-125</option>
+                        <option value="[125-150)">125-150</option>
+                        <option value="[150-175)">150-175</option>
+                        <option value="[175-200)">175-200</option>
+                        <option value=">200">Above 200</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <!-- ================= Clinical Information ================= -->
+
+            <h2 class="section-title">
+
+                <i class="fa-solid fa-stethoscope"></i>
+
+                Clinical Information
+
+            </h2>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label>Admission Type</label>
+
+                    <select name="admission_type_id" required>
+
+                        <option value="1">Emergency</option>
+                        <option value="2">Urgent</option>
+                        <option value="3">Elective</option>
+                        <option value="4">Newborn</option>
+                        <option value="5">Not Available</option>
+                        <option value="6">NULL</option>
+                        <option value="7">Trauma Center</option>
+                        <option value="8">Not Mapped</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Time in Hospital</label>
+
+                    <input
+                        type="number"
+                        name="time_in_hospital"
+                        min="1"
+                        max="14"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Number of Lab Procedures</label>
+
+                    <input
+                        type="number"
+                        name="num_lab_procedures"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Number of Procedures</label>
+
+                    <input
+                        type="number"
+                        name="num_procedures"
+                        required>
+
+                </div>
+                                <div class="form-group">
+
+                    <label>Number of Medications</label>
+
+                    <input
+                        type="number"
+                        name="num_medications"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Number of Diagnoses</label>
+
+                    <input
+                        type="number"
+                        name="number_diagnoses"
+                        required>
+
+                </div>
+
+            </div>
+
+            <!-- ================= Diabetes Information ================= -->
+
+            <h2 class="section-title">
+
+                <i class="fa-solid fa-notes-medical"></i>
+
+                Diabetes Information
+
+            </h2>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label>A1C Result</label>
+
+                    <select name="A1Cresult" required>
+
+                        <option value="Norm">Normal</option>
+
+                        <option value=">7">Greater than 7</option>
+
+                        <option value=">8">Greater than 8</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Insulin</label>
+
+                    <select name="insulin" required>
+
+                        <option value="No">No</option>
+
+                        <option value="Up">Up</option>
+
+                        <option value="Down">Down</option>
+
+                        <option value="Steady">Steady</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Change</label>
+
+                    <select name="change" required>
+
+                        <option value="No">No</option>
+
+                        <option value="Ch">Changed</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Diabetes Medication</label>
+
+                    <select name="diabetesMed" required>
+
+                        <option value="No">No</option>
+
+                        <option value="Yes">Yes</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <div class="button-area">
+
+                <button type="submit" class="predict-btn">
+
+                    <i class="fa-solid fa-stethoscope"></i>
+
+                    Predict Readmission Risk
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

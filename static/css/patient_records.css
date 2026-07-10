@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    background:#eef4fb;
+}
+
+/* Header */
+
+header{
+    background:#0b5fa5;
+    color:white;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px 60px;
+}
+
+.logo{
+    font-size:28px;
+    font-weight:700;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    margin-left:30px;
+    font-size:17px;
+}
+
+nav a:hover{
+    color:#ffd54f;
+}
+
+/* Container */
+
+.container{
+    display:flex;
+    justify-content:center;
+    padding:40px;
+}
+
+.card{
+    width:100%;
+    max-width:1000px;
+    background:white;
+    padding:40px;
+    border-radius:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.15);
+}
+
+.card h1{
+    text-align:center;
+    color:#0b5fa5;
+    margin-bottom:10px;
+}
+
+.card p{
+    text-align:center;
+    color:#666;
+    margin-bottom:35px;
+}
+
+/* Grid */
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+}
+
+.grid div{
+    display:flex;
+    flex-direction:column;
+}
+
+label{
+    margin-bottom:8px;
+    font-weight:600;
+    color:#333;
+}
+
+input,
+select{
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    outline:none;
+    font-size:15px;
+}
+
+input:focus,
+select:focus{
+    border-color:#0b5fa5;
+}
+
+/* Button */
+
+button{
+    margin-top:35px;
+    width:100%;
+    padding:15px;
+    background:#0b5fa5;
+    color:white;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:18px;
+    transition:.3s;
+}
+
+button:hover{
+    background:#084f82;
+}
+
+@media(max-width:768px){
+
+.grid{
+    grid-template-columns:1fr;
+}
+
+header{
+    flex-direction:column;
+    gap:15px;
+}
+
+.card{
+    padding:25px;
+}
+
+}

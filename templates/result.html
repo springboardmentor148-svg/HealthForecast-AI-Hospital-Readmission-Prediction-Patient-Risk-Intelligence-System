@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Prediction Result | HealthForecast AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="result-card">
+
+        <div class="result-icon">
+
+            <i class="fa-solid fa-heart-pulse"></i>
+
+        </div>
+
+        <h1>Hospital Readmission Prediction Result</h1>
+
+        <p class="subtitle">
+
+            Artificial Intelligence Powered Risk Assessment
+
+        </p>
+
+        <!-- Risk Status -->
+
+        <div class="risk-box">
+
+            <h2>{{ prediction_text }}</h2>
+
+        </div>
+
+        <!-- Details -->
+
+        <div class="details">
+
+            <!-- Confidence -->
+
+            <div class="detail-card">
+
+                <i class="fa-solid fa-chart-line"></i>
+
+                <h3>Confidence Score</h3>
+
+                <div class="progress">
+
+                    <div class="progress-bar"
+                         style="width: {{ confidence }}%;">
+
+                        {{ confidence }}%
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Prediction -->
+
+            <div class="detail-card">
+
+                <i class="fa-solid fa-file-medical"></i>
+
+                <h3>Prediction</h3>
+
+                {% if original_prediction == "<30" %}
+
+                    <div class="risk high">
+
+                        🔴 HIGH RISK
+
+                    </div>
+
+                {% elif original_prediction == ">30" %}
+
+                    <div class="risk moderate">
+
+                        🟡 MODERATE RISK
+
+                    </div>
+
+                {% else %}
+
+                    <div class="risk low">
+
+                        🟢 LOW RISK
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <!-- Recommendation -->
+
+        <div class="recommendation">
+
+            <h3>
+
+                <i class="fa-solid fa-user-doctor"></i>
+
+                Medical Recommendation
+
+            </h3>
+
+            <p>
+
+                {{ recommendation }}
+
+            </p>
+
+        </div>
+
+        <!-- Buttons -->
+
+        <div class="buttons">
+
+            <a href="{{ url_for('predict') }}" class="btn">
+
+                <i class="fa-solid fa-rotate"></i>
+
+                Predict Again
+
+            </a>
+
+            <a href="{{ url_for('download_report') }}" class="btn">
+
+                <i class="fa-solid fa-file-pdf"></i>
+
+                Download Report
+
+            </a>
+
+            <a href="{{ url_for('dashboard') }}" class="btn home-btn">
+
+                <i class="fa-solid fa-house"></i>
+
+                Dashboard
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

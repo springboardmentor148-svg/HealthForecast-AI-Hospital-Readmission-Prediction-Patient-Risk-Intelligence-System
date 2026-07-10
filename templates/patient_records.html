@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Patient Records | HealthForecast AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/patient_records.css') }}">
+
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🏥 HealthForecast AI
+    </div>
+
+    <nav>
+
+        <a href="/dashboard">Dashboard</a>
+
+        <a href="/predict">Prediction</a>
+
+        <a href="/logout">Logout</a>
+
+    </nav>
+
+</header>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>Patient Data Management</h1>
+
+        <p>
+            Register patient information before performing
+            readmission prediction.
+        </p>
+
+        <form action="/save_patient" method="POST">
+
+            <div class="grid">
+
+                <div>
+
+                    <label>Patient ID</label>
+
+                    <input
+                    type="text"
+                    name="patient_id"
+                    placeholder="P001"
+                    required>
+
+                </div>
+
+                <div>
+
+                    <label>Patient Name</label>
+
+                    <input
+                    type="text"
+                    name="patient_name"
+                    placeholder="Enter patient name"
+                    required>
+
+                </div>
+
+                <div>
+
+                    <label>Gender</label>
+
+                    <select name="gender">
+
+                        <option>Male</option>
+
+                        <option>Female</option>
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label>Age</label>
+
+                    <select name="age">
+
+                        <option>[0-10)</option>
+                        <option>[10-20)</option>
+                        <option>[20-30)</option>
+                        <option>[30-40)</option>
+                        <option>[40-50)</option>
+                        <option>[50-60)</option>
+                        <option>[60-70)</option>
+                        <option>[70-80)</option>
+                        <option>[80-90)</option>
+                        <option>[90-100)</option>
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label>Weight</label>
+
+                    <input
+                    type="text"
+                    name="weight"
+                    placeholder="[75-100)"
+                    required>
+
+                </div>
+
+                <div>
+
+                    <label>Admission Type</label>
+
+                    <input
+                    type="number"
+                    name="admission_type"
+                    required>
+
+                </div>
+
+                <div>
+
+                    <label>Diagnosis</label>
+
+                    <input
+                    type="text"
+                    name="diagnosis"
+                    placeholder="Diabetes"
+                    required>
+
+                </div>
+
+                <div>
+
+                    <label>Treatment</label>
+
+                    <input
+                    type="text"
+                    name="treatment"
+                    placeholder="Insulin Therapy"
+                    required>
+
+                </div>
+
+            </div>
+
+            <button type="submit">
+
+                <i class="fa-solid fa-floppy-disk"></i>
+
+                Save Patient
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

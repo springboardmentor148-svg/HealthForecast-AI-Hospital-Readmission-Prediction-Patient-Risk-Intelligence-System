@@ -1,0 +1,904 @@
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    background:#eef4fb;
+}
+
+/* ================= HEADER ================= */
+
+header{
+    width:100%;
+    background:#0b5fa5;
+    color:white;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px 60px;
+}
+
+.logo{
+    font-size:28px;
+    font-weight:700;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    margin-left:30px;
+    font-size:18px;
+    transition:0.3s;
+}
+
+nav a:hover{
+    color:#ffe082;
+}
+
+/* ================= MAIN CONTAINER ================= */
+
+.result-container{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:50px 20px;
+}
+
+/* ================= CARD ================= */
+
+.result-card{
+    width:100%;
+    max-width:1000px;
+    background:white;
+    border-radius:20px;
+    padding:40px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.15);
+    animation:fade 0.8s ease;
+}
+
+@keyframes fade{
+
+    from{
+        opacity:0;
+        transform:translateY(30px);
+    }
+
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+
+}
+
+.result-card h1{
+    text-align:center;
+    color:#0b5fa5;
+    margin-bottom:35px;
+    font-size:40px;
+}
+
+/* ================= FORM ================= */
+
+.result-card form{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px 30px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+.form-group label{
+    font-size:16px;
+    font-weight:600;
+    margin-bottom:8px;
+    color:#333;
+}
+
+.form-group input,
+.form-group select{
+    width:100%;
+    padding:12px;
+    border:1px solid #cfd8dc;
+    border-radius:8px;
+    font-size:15px;
+    outline:none;
+    transition:.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus{
+    border-color:#0b5fa5;
+    box-shadow:0 0 6px rgba(11,95,165,.3);
+}
+
+/* ================= BUTTON ================= */
+
+.predict-btn{
+    grid-column:1/3;
+    justify-self:center;
+    margin-top:20px;
+    padding:14px 45px;
+    background:#0b7ac4;
+    color:white;
+    border:none;
+    border-radius:35px;
+    font-size:18px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.predict-btn:hover{
+    background:#084f82;
+    transform:translateY(-2px);
+}
+
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:768px){
+
+header{
+
+    flex-direction:column;
+    gap:15px;
+    padding:20px;
+
+}
+
+nav{
+
+    margin-top:10px;
+
+}
+
+nav a{
+
+    margin:0 12px;
+
+}
+
+.result-card{
+
+    padding:25px;
+
+}
+
+.result-card form{
+
+    grid-template-columns:1fr;
+
+}
+
+.predict-btn{
+
+    grid-column:1;
+    width:100%;
+
+}
+
+.result-card h1{
+
+    font-size:30px;
+
+}
+
+.result-card h2{
+
+    font-size:26px;
+
+}
+
+.buttons{
+
+    flex-direction:column;
+
+}
+
+.btn{
+
+    width:100%;
+
+}
+
+}
+/* ==========================================
+   View Patients Page
+========================================== */
+
+body{
+
+    background:#eef4f8;
+    font-family:Arial, Helvetica, sans-serif;
+
+}
+
+.page-title{
+
+    color:#0d6efd;
+    font-weight:bold;
+    text-align:center;
+    margin-bottom:30px;
+
+}
+
+.table-container{
+
+    background:#ffffff;
+
+    padding:25px;
+
+    border-radius:15px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,0.15);
+
+}
+
+.table{
+
+    margin-bottom:0;
+
+}
+
+.table thead{
+
+    background:#0d6efd;
+
+    color:white;
+
+}
+
+.table th{
+
+    text-align:center;
+
+    vertical-align:middle;
+
+}
+
+.table td{
+
+    text-align:center;
+
+    vertical-align:middle;
+
+}
+
+.table tbody tr:hover{
+
+    background:#f2f8ff;
+
+}
+
+.btn-delete{
+
+    background:#dc3545;
+
+    color:white;
+
+    border:none;
+
+}
+
+.btn-delete:hover{
+
+    background:#bb2d3b;
+
+    color:white;
+
+}
+
+.btn-back{
+
+    margin-top:25px;
+
+    padding:10px 35px;
+
+    font-size:17px;
+
+    border-radius:30px;
+
+}
+
+.alert{
+
+    font-size:18px;
+
+}
+/* ==========================================
+   Phase 2 - Professional Effects
+========================================== */
+
+/* Smooth scrolling */
+
+html{
+
+    scroll-behavior:smooth;
+
+}
+
+/* Hero Animation */
+
+.content{
+
+    animation:slideLeft 1.2s ease;
+
+}
+
+.image{
+
+    animation:slideRight 1.2s ease;
+
+}
+
+@keyframes slideLeft{
+
+    from{
+
+        opacity:0;
+        transform:translateX(-70px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateX(0);
+
+    }
+
+}
+
+@keyframes slideRight{
+
+    from{
+
+        opacity:0;
+        transform:translateX(70px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateX(0);
+
+    }
+
+}
+
+/* Floating Hospital Image */
+
+.image img{
+
+    animation:floatImage 4s ease-in-out infinite;
+
+}
+
+@keyframes floatImage{
+
+    0%{
+
+        transform:translateY(0);
+
+    }
+
+    50%{
+
+        transform:translateY(-12px);
+
+    }
+
+    100%{
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/* Buttons */
+
+.btn1,
+.btn2{
+
+    transition:.35s;
+
+}
+
+.btn1:hover{
+
+    transform:translateY(-5px);
+
+    box-shadow:0 10px 20px rgba(0,0,0,.25);
+
+}
+
+.btn2:hover{
+
+    transform:translateY(-5px);
+
+    box-shadow:0 10px 20px rgba(0,0,0,.25);
+
+}
+
+/* Feature Cards */
+
+.card{
+
+    transition:.35s;
+
+}
+
+.card:hover{
+
+    transform:translateY(-10px);
+
+    box-shadow:0 18px 35px rgba(0,0,0,.18);
+
+}
+
+/* Workflow Cards */
+
+.step{
+
+    transition:.35s;
+
+}
+
+.step:hover{
+
+    transform:scale(1.08);
+
+}
+
+/* Footer */
+
+footer{
+
+    margin-top:60px;
+
+}
+/* ==========================================
+   Premium Feature Cards
+========================================== */
+
+.cards{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+
+    gap:30px;
+
+    padding:70px 8%;
+
+}
+
+.card{
+
+    background:#ffffff;
+
+    border-radius:20px;
+
+    padding:35px;
+
+    text-align:center;
+
+    transition:.4s;
+
+    box-shadow:0 12px 25px rgba(0,0,0,.10);
+
+    border-top:5px solid #0b5fa5;
+
+}
+
+.card:hover{
+
+    transform:translateY(-12px);
+
+    box-shadow:0 20px 40px rgba(0,0,0,.18);
+
+}
+
+.card i{
+
+    font-size:55px;
+
+    color:#0b5fa5;
+
+    margin-bottom:20px;
+
+}
+
+.card h3{
+
+    color:#1d3557;
+
+    margin-bottom:15px;
+
+    font-size:24px;
+
+}
+
+.card p{
+
+    color:#666;
+
+    line-height:1.8;
+
+}
+/* ==========================================
+   Technology Stack
+========================================== */
+
+.tech-stack{
+
+    padding:80px 8%;
+
+    background:#f4f8fc;
+
+    text-align:center;
+
+}
+
+.tech-stack h2{
+
+    color:#0b5fa5;
+
+    font-size:38px;
+
+    margin-bottom:45px;
+
+}
+
+.tech-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+    gap:25px;
+
+}
+
+.tech-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:30px;
+
+    box-shadow:0 10px 20px rgba(0,0,0,.10);
+
+    transition:.35s;
+
+}
+
+.tech-card:hover{
+
+    transform:translateY(-10px);
+
+    box-shadow:0 18px 35px rgba(0,0,0,.15);
+
+}
+
+.tech-card i{
+
+    font-size:50px;
+
+    color:#0b5fa5;
+
+    margin-bottom:20px;
+
+}
+
+.tech-card h3{
+
+    color:#1d3557;
+
+    margin-bottom:10px;
+
+}
+
+.tech-card p{
+
+    color:#666;
+
+}
+/* ==========================================
+   RESULT PAGE
+========================================== */
+
+.result-container{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:60px 20px;
+
+}
+
+.result-card{
+
+    width:850px;
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:40px;
+
+    box-shadow:0 15px 35px rgba(0,0,0,.15);
+
+    text-align:center;
+
+}
+
+.result-icon{
+
+    font-size:70px;
+
+    color:#0b5fa5;
+
+    margin-bottom:20px;
+
+}
+
+.result-card h1{
+
+    color:#0b5fa5;
+
+    margin-bottom:10px;
+
+}
+
+.prediction-box{
+
+    background:#eef6ff;
+
+    border-left:6px solid #0b5fa5;
+
+    padding:25px;
+
+    margin:30px 0;
+
+    border-radius:12px;
+
+}
+
+.prediction-box h2{
+
+    font-size:32px;
+
+    margin-bottom:15px;
+
+}
+
+.prediction-box h3{
+
+    margin:15px 0;
+
+    color:#444;
+
+}
+
+.prediction-box span{
+
+    color:#0b5fa5;
+
+    font-weight:bold;
+
+}
+
+.recommendation{
+
+    margin-top:30px;
+
+    background:#f8fbff;
+
+    padding:25px;
+
+    border-radius:15px;
+
+    text-align:left;
+
+}
+
+.recommendation h3{
+
+    color:#0b5fa5;
+
+    margin-bottom:15px;
+
+}
+
+.recommendation p{
+
+    line-height:1.8;
+
+    color:#555;
+
+}
+
+.buttons{
+
+    margin-top:35px;
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:20px;
+
+}
+
+.btn{
+
+    text-decoration:none;
+
+    padding:14px 30px;
+
+    border-radius:30px;
+
+    background:#0b5fa5;
+
+    color:white;
+
+    transition:.3s;
+
+}
+
+.btn:hover{
+
+    background:#084f82;
+
+    transform:translateY(-4px);
+
+}
+
+.home-btn{
+
+    background:#28a745;
+
+}
+
+.home-btn:hover{
+
+    background:#218838;
+
+}
+/* ==========================================
+   Result Detail Cards
+========================================== */
+
+.details{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:25px;
+
+    margin:35px 0;
+
+}
+
+.detail-card{
+
+    background:#f8fbff;
+
+    padding:30px;
+
+    border-radius:15px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.10);
+
+    transition:.3s;
+
+    text-align:center;
+
+}
+
+.detail-card:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:0 18px 35px rgba(0,0,0,.18);
+
+}
+
+.detail-card i{
+
+    font-size:45px;
+
+    color:#0b5fa5;
+
+    margin-bottom:15px;
+
+}
+
+.detail-card h3{
+
+    color:#555;
+
+    margin-bottom:15px;
+
+}
+
+.detail-card h2{
+
+    color:#0b5fa5;
+
+    font-size:28px;
+
+}
+
+@media(max-width:768px){
+
+.details{
+
+    grid-template-columns:1fr;
+
+}
+
+}
+/* ==========================================
+   Risk Badge
+========================================== */
+
+.risk{
+
+    display:inline-block;
+
+    margin-top:15px;
+
+    padding:14px 28px;
+
+    border-radius:30px;
+
+    font-size:18px;
+
+    font-weight:600;
+
+    color:white;
+
+}
+
+.high{
+
+    background:#dc3545;
+
+}
+
+.moderate{
+
+    background:#ffc107;
+
+    color:#333;
+
+}
+
+.low{
+
+    background:#28a745;
+
+}
+.btn i{
+
+    margin-right:8px;
+
+}
