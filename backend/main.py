@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database.database import database
 from app.api.auth import router as auth_router
 from app.utils.jwt_handler import verify_token
+from app.api.patient import router as patient_router
+from app.api.medical_history import router as medical_history_router
 
 
 
@@ -62,6 +64,8 @@ async def test_database():
 
 # Register authentication routes
 app.include_router(auth_router)
+app.include_router(patient_router)
+app.include_router(medical_history_router)
 
 
 

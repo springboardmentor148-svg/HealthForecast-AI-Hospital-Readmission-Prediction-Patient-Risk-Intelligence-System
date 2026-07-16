@@ -35,3 +35,9 @@ client = AsyncIOMotorClient(MONGODB_URL)
 # ============================================================
 
 database = client[DATABASE_NAME]
+
+
+# Test database connection
+if __name__ == "__main__":
+    print("MongoDB Client Created Successfully")
+    print("Database Name:", DATABASE_NAME)
