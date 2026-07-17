@@ -5,6 +5,8 @@ from app.api.auth import router as auth_router
 from app.utils.jwt_handler import verify_token
 from app.api.patient import router as patient_router
 from app.api.medical_history import router as medical_history_router
+from app.api.treatment import router as treatment_router
+from app.api import admission
 
 
 
@@ -66,6 +68,8 @@ async def test_database():
 app.include_router(auth_router)
 app.include_router(patient_router)
 app.include_router(medical_history_router)
+app.include_router(treatment_router)
+app.include_router(admission.router)
 
 
 
