@@ -4,7 +4,6 @@
 <head>
 
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>AI Patient Readmission Prediction</title>
@@ -31,14 +30,16 @@
 
             <p>
                 Enter patient information to predict the hospital
-                readmission risk using the Random Forest model.
+readmission risk using the XGBoost model.
             </p>
 
         </div>
 
         <form action="{{ url_for('result') }}" method="POST">
 
-            <!-- ================= Patient Information ================= -->
+            <!-- ========================= -->
+            <!-- Patient Information -->
+            <!-- ========================= -->
 
             <h2 class="section-title">
 
@@ -80,10 +81,16 @@
 
                     <select name="race" required>
 
+                        <option value="" selected disabled>Select Race</option>
+
                         <option value="Caucasian">Caucasian</option>
+
                         <option value="AfricanAmerican">African American</option>
+
                         <option value="Asian">Asian</option>
+
                         <option value="Hispanic">Hispanic</option>
+
                         <option value="Other">Other</option>
 
                     </select>
@@ -96,7 +103,10 @@
 
                     <select name="gender" required>
 
+                        <option value="" selected disabled>Select Gender</option>
+
                         <option value="Male">Male</option>
+
                         <option value="Female">Female</option>
 
                     </select>
@@ -109,16 +119,27 @@
 
                     <select name="age" required>
 
-                        <option value="[0-10)">0-10</option>
-                        <option value="[10-20)">10-20</option>
-                        <option value="[20-30)">20-30</option>
-                        <option value="[30-40)">30-40</option>
-                        <option value="[40-50)">40-50</option>
-                        <option value="[50-60)">50-60</option>
-                        <option value="[60-70)">60-70</option>
-                        <option value="[70-80)">70-80</option>
-                        <option value="[80-90)">80-90</option>
-                        <option value="[90-100)">90-100</option>
+                        <option value="" selected disabled>Select Age</option>
+
+                        <option value="[0-10)">0 - 10</option>
+
+                        <option value="[10-20)">10 - 20</option>
+
+                        <option value="[20-30)">20 - 30</option>
+
+                        <option value="[30-40)">30 - 40</option>
+
+                        <option value="[40-50)">40 - 50</option>
+
+                        <option value="[50-60)">50 - 60</option>
+
+                        <option value="[60-70)">60 - 70</option>
+
+                        <option value="[70-80)">70 - 80</option>
+
+                        <option value="[80-90)">80 - 90</option>
+
+                        <option value="[90-100)">90 - 100</option>
 
                     </select>
 
@@ -130,14 +151,24 @@
 
                     <select name="weight" required>
 
-                        <option value="[0-25)">0-25</option>
-                        <option value="[25-50)">25-50</option>
-                        <option value="[50-75)">50-75</option>
-                        <option value="[75-100)">75-100</option>
-                        <option value="[100-125)">100-125</option>
-                        <option value="[125-150)">125-150</option>
-                        <option value="[150-175)">150-175</option>
-                        <option value="[175-200)">175-200</option>
+                        <option value="" selected disabled>Select Weight</option>
+
+                        <option value="[0-25)">0 - 25</option>
+
+                        <option value="[25-50)">25 - 50</option>
+
+                        <option value="[50-75)">50 - 75</option>
+
+                        <option value="[75-100)">75 - 100</option>
+
+                        <option value="[100-125)">100 - 125</option>
+
+                        <option value="[125-150)">125 - 150</option>
+
+                        <option value="[150-175)">150 - 175</option>
+
+                        <option value="[175-200)">175 - 200</option>
+
                         <option value=">200">Above 200</option>
 
                     </select>
@@ -146,170 +177,296 @@
 
             </div>
 
-            <!-- ================= Clinical Information ================= -->
+            <!-- ========================= -->
+            <!-- Clinical Information -->
+            <!-- ========================= -->
 
-            <h2 class="section-title">
 
-                <i class="fa-solid fa-stethoscope"></i>
+<h2 class="section-title">
 
-                Clinical Information
+    <i class="fa-solid fa-stethoscope"></i>
 
-            </h2>
+    Clinical Information
 
-            <div class="form-grid">
+</h2>
 
-                <div class="form-group">
+<div class="form-grid">
 
-                    <label>Admission Type</label>
+    <div class="form-group">
 
-                    <select name="admission_type_id" required>
+        <label>Admission Type</label>
 
-                        <option value="1">Emergency</option>
-                        <option value="2">Urgent</option>
-                        <option value="3">Elective</option>
-                        <option value="4">Newborn</option>
-                        <option value="5">Not Available</option>
-                        <option value="6">NULL</option>
-                        <option value="7">Trauma Center</option>
-                        <option value="8">Not Mapped</option>
+        <select name="admission_type_id" required>
 
-                    </select>
+            <option value="1">Emergency</option>
+            <option value="2">Urgent</option>
+            <option value="3">Elective</option>
+            <option value="4">Newborn</option>
+            <option value="5">Not Available</option>
+            <option value="6">NULL</option>
+            <option value="7">Trauma Center</option>
+            <option value="8">Not Mapped</option>
 
-                </div>
+        </select>
 
-                <div class="form-group">
+    </div>
 
-                    <label>Time in Hospital</label>
+    <div class="form-group">
 
-                    <input
-                        type="number"
-                        name="time_in_hospital"
-                        min="1"
-                        max="14"
-                        required>
+        <label>Discharge Disposition</label>
 
-                </div>
+        <input
+            type="number"
+            name="discharge_disposition_id"
+            min="1"
+            max="30"
+            required>
 
-                <div class="form-group">
+    </div>
 
-                    <label>Number of Lab Procedures</label>
+    <div class="form-group">
 
-                    <input
-                        type="number"
-                        name="num_lab_procedures"
-                        required>
+        <label>Admission Source</label>
 
-                </div>
+        <input
+            type="number"
+            name="admission_source_id"
+            min="1"
+            max="30"
+            required>
 
-                <div class="form-group">
+    </div>
 
-                    <label>Number of Procedures</label>
+    <div class="form-group">
 
-                    <input
-                        type="number"
-                        name="num_procedures"
-                        required>
+        <label>Time in Hospital</label>
 
-                </div>
-                                <div class="form-group">
+        <input
+            type="number"
+            name="time_in_hospital"
+            min="1"
+            max="14"
+            required>
 
-                    <label>Number of Medications</label>
+    </div>
 
-                    <input
-                        type="number"
-                        name="num_medications"
-                        required>
+    <div class="form-group">
 
-                </div>
+        <label>Number of Lab Procedures</label>
 
-                <div class="form-group">
+        <input
+            type="number"
+            name="num_lab_procedures"
+            required>
 
-                    <label>Number of Diagnoses</label>
+    </div>
 
-                    <input
-                        type="number"
-                        name="number_diagnoses"
-                        required>
+    <div class="form-group">
 
-                </div>
+        <label>Number of Procedures</label>
 
-            </div>
+        <input
+            type="number"
+            name="num_procedures"
+            required>
 
-            <!-- ================= Diabetes Information ================= -->
+    </div>
 
-            <h2 class="section-title">
+    <div class="form-group">
 
-                <i class="fa-solid fa-notes-medical"></i>
+        <label>Number of Medications</label>
 
-                Diabetes Information
+        <input
+            type="number"
+            name="num_medications"
+            required>
 
-            </h2>
+    </div>
 
-            <div class="form-grid">
+    <div class="form-group">
 
-                <div class="form-group">
+        <label>Number of Outpatient Visits</label>
 
-                    <label>A1C Result</label>
+        <input
+            type="number"
+            name="number_outpatient"
+            required>
 
-                    <select name="A1Cresult" required>
+    </div>
 
-                        <option value="Norm">Normal</option>
+    <div class="form-group">
 
-                        <option value=">7">Greater than 7</option>
+        <label>Number of Emergency Visits</label>
 
-                        <option value=">8">Greater than 8</option>
+        <input
+            type="number"
+            name="number_emergency"
+            required>
 
-                    </select>
+    </div>
 
-                </div>
+    <div class="form-group">
 
-                <div class="form-group">
+        <label>Number of Inpatient Visits</label>
 
-                    <label>Insulin</label>
+        <input
+            type="number"
+            name="number_inpatient"
+            required>
 
-                    <select name="insulin" required>
+    </div>
 
-                        <option value="No">No</option>
+    <div class="form-group">
 
-                        <option value="Up">Up</option>
+        <label>Diagnosis 1</label>
 
-                        <option value="Down">Down</option>
+        <input
+            type="text"
+            name="diag_1"
+            placeholder="Example: 250"
+            required>
 
-                        <option value="Steady">Steady</option>
+    </div>
 
-                    </select>
+    <div class="form-group">
 
-                </div>
+        <label>Diagnosis 2</label>
 
-                <div class="form-group">
+        <input
+            type="text"
+            name="diag_2"
+            placeholder="Example: 401"
+            required>
 
-                    <label>Change</label>
+    </div>
 
-                    <select name="change" required>
+    <div class="form-group">
 
-                        <option value="No">No</option>
+        <label>Diagnosis 3</label>
 
-                        <option value="Ch">Changed</option>
+        <input
+            type="text"
+            name="diag_3"
+            placeholder="Example: 428"
+            required>
 
-                    </select>
+    </div>
 
-                </div>
+    <div class="form-group">
 
-                <div class="form-group">
+        <label>Number of Diagnoses</label>
 
-                    <label>Diabetes Medication</label>
+        <input
+            type="number"
+            name="number_diagnoses"
+            required>
 
-                    <select name="diabetesMed" required>
+    </div>
 
-                        <option value="No">No</option>
+</div>
+            <!-- ========================= -->
+<!-- Diabetes Information -->
+<!-- ========================= -->
 
-                        <option value="Yes">Yes</option>
+            <!-- ========================= -->
+<!-- Diabetes Information -->
+<!-- ========================= -->
 
-                    </select>
+<h2 class="section-title">
 
-                </div>
+    <i class="fa-solid fa-notes-medical"></i>
 
-            </div>
+    Diabetes Information
+
+</h2>
+
+<div class="form-grid">
+
+    <div class="form-group">
+
+        <label>Max Glucose Serum</label>
+
+        <select name="max_glu_serum" required>
+
+            <option value="None">None</option>
+
+            <option value="Norm">Normal</option>
+
+            <option value=">200">Greater than 200</option>
+
+            <option value=">300">Greater than 300</option>
+
+        </select>
+
+    </div>
+
+    <div class="form-group">
+
+        <label>A1C Result</label>
+
+        <select name="A1Cresult" required>
+
+            <option value="Norm">Normal</option>
+
+            <option value=">7">Greater than 7</option>
+
+            <option value=">8">Greater than 8</option>
+
+        </select>
+
+    </div>
+
+    <div class="form-group">
+
+        <label>Insulin</label>
+
+        <select name="insulin" required>
+
+            <option value="No">No</option>
+
+            <option value="Up">Up</option>
+
+            <option value="Down">Down</option>
+
+            <option value="Steady">Steady</option>
+
+        </select>
+
+    </div>
+
+    <div class="form-group">
+
+        <label>Medication Change</label>
+
+        <select name="change" required>
+
+            <option value="No">No Change</option>
+
+            <option value="Ch">Changed</option>
+
+        </select>
+
+    </div>
+
+    <div class="form-group">
+
+        <label>Diabetes Medication</label>
+
+        <select name="diabetesMed" required>
+
+            <option value="No">No</option>
+
+            <option value="Yes">Yes</option>
+
+        </select>
+
+    </div>
+
+</div>
+
+            <!-- ========================= -->
+            <!-- Buttons -->
+            <!-- ========================= -->
 
             <div class="button-area">
 
@@ -318,6 +475,17 @@
                     <i class="fa-solid fa-stethoscope"></i>
 
                     Predict Readmission Risk
+
+                </button>
+
+                <button
+                    type="reset"
+                    class="predict-btn"
+                    style="margin-left:15px;background:#6c757d;">
+
+                    <i class="fa-solid fa-rotate-right"></i>
+
+                    Reset
 
                 </button>
 

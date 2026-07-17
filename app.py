@@ -7,6 +7,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import os
+import math
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from flask import send_file
@@ -30,9 +31,9 @@ def get_db_connection():
 # Load Saved Model and Encoders
 # =====================================
 
-model = joblib.load("random_forest_model.pkl")
+model = joblib.load("xgboost_model.pkl")
+
 label_encoders = joblib.load("label_encoders.pkl")
-target_encoder = joblib.load("label_encoder.pkl")
 
 selected_features = [
 
@@ -41,11 +42,20 @@ selected_features = [
     "age",
     "weight",
     "admission_type_id",
+    "discharge_disposition_id",
+    "admission_source_id",
     "time_in_hospital",
     "num_lab_procedures",
     "num_procedures",
     "num_medications",
+    "number_outpatient",
+    "number_emergency",
+    "number_inpatient",
+    "diag_1",
+    "diag_2",
+    "diag_3",
     "number_diagnoses",
+    "max_glu_serum",
     "A1Cresult",
     "insulin",
     "change",
@@ -131,13 +141,11 @@ def dashboard():
     ).fetchone()[0]
 
     high_risk = conn.execute(
-        "SELECT COUNT(*) FROM prediction_history WHERE prediction='<30'"
+        "SELECT COUNT(*) FROM prediction_history WHERE prediction='High Risk'"
     ).fetchone()[0]
-
     low_risk = conn.execute(
-        "SELECT COUNT(*) FROM prediction_history WHERE prediction='NO'"
+        "SELECT COUNT(*) FROM prediction_history WHERE prediction='Not High Risk'"
     ).fetchone()[0]
-
     recent_predictions = conn.execute("""
         SELECT
             patient_name,
@@ -250,8 +258,6 @@ def predict():
         return redirect(url_for("login"))
 
     return render_template("predict.html")
-
-
 # =====================================
 # Prediction Result
 # =====================================
@@ -270,17 +276,32 @@ def result():
 
     # Convert to DataFrame
     df = pd.DataFrame([data])
+    print("Selected Features:", selected_features)
+    print("Form Data:", data)
+    print("DataFrame Columns:", df.columns.tolist())
+    print("\n========== FORM DATA ==========")
+    print(data)
+
+    print("\n========== DATAFRAME ==========")
+    print(df)
+
+    print("\n========== COLUMNS ==========")
+    print(df.columns.tolist())
 
     # Numeric Columns
     numeric_columns = [
         "admission_type_id",
+        "discharge_disposition_id",
+        "admission_source_id",
         "time_in_hospital",
         "num_lab_procedures",
         "num_procedures",
         "num_medications",
+        "number_outpatient",
+        "number_emergency",
+        "number_inpatient",
         "number_diagnoses"
     ]
-
     for col in numeric_columns:
         df[col] = df[col].astype(int)
 
@@ -293,84 +314,124 @@ def result():
                 df[col].astype(str)
             )
 
-    # Prediction
-    prediction = model.predict(df)
+    print("\nEncoded Input:")
+    print(df)
 
-    # Prediction Probability
+    # ===========================
+    # Prediction
+    # ===========================
+    # ===========================
+    # Binary Prediction
+    # ===========================
+
     probability = model.predict_proba(df)
 
-    confidence = max(probability[0]) * 100
+    high_probability = probability[0][1]
 
-    # Decode Prediction
-    prediction = target_encoder.inverse_transform(prediction)
+    threshold = 0.30
 
-    prediction_label = prediction[0]
+    prediction = 1 if high_probability >= threshold else 0
 
-    # Recommendation
+    confidence = round(high_probability * 100, 2)
 
-    if prediction_label == "<30":
+    high_risk = round(probability[0][1] * 100, 2)
+
+    not_high_risk = round(probability[0][0] * 100, 2)
+
+    # ===========================
+    # Risk Label
+    # ===========================
+
+    if prediction == 1:
+
+        prediction_label = "High Risk"
 
         risk = "🔴 High Readmission Risk"
 
         recommendation = (
-            "Patient has a high probability of readmission "
-            "within 30 days. Immediate follow-up, medication "
-            "review, diabetic counselling and continuous "
-            "monitoring are recommended."
-        )
-
-    elif prediction_label == ">30":
-
-        risk = "🟡 Moderate Readmission Risk"
-
-        recommendation = (
-            "Patient may require readmission after 30 days. "
-            "Regular follow-up visits, medication adherence "
-            "and healthy lifestyle monitoring are recommended."
+            "Patient has a HIGH probability of readmission within 30 days. "
+            "Immediate follow-up, medication review, diabetic counselling "
+            "and continuous monitoring are recommended."
         )
 
     else:
 
+        prediction_label = "Not High Risk"
 
-
-        risk = "🟢 Low Readmission Risk"
+        risk = "🟢 Not High Readmission Risk"
 
         recommendation = (
-            "Patient is unlikely to be readmitted. "
-            "Continue routine medical care, prescribed "
-            "medication and healthy lifestyle."
+            "Patient is unlikely to require early readmission. "
+            "Continue medication, regular follow-up and healthy lifestyle."
         )
 
-    # Save latest prediction for PDF
+    print("\nPrediction Probability:", probability)
+
+    print("Prediction:", prediction_label)
+    # ===========================
+    # Save Latest Prediction
+    # ===========================
+
     session["patient_id"] = request.form.get("patient_id", "")
+
     session["patient_name"] = request.form.get("patient_name", "")
+
     session["prediction"] = prediction_label
+
     session["confidence"] = f"{confidence:.2f}"
+
     session["recommendation"] = recommendation
 
+    # ===========================
+    # Save Prediction History
+    # ===========================
+
     conn = get_db_connection()
+
     patient_id = request.form.get("patient_id", "")
+
     patient_name = request.form.get("patient_name", "")
 
     conn.execute("""
-    INSERT INTO prediction_history(
-        patient_id,
-        patient_name,
-        prediction,
-        confidence,
-        recommendation
-    )
-    VALUES(?,?,?,?,?)
+
+        INSERT INTO prediction_history(
+
+            patient_id,
+
+            patient_name,
+
+            prediction,
+
+            confidence,
+
+            recommendation
+
+        )
+
+        VALUES(?,?,?,?,?)
+
     """, (
+
         patient_id,
+
         patient_name,
+
         prediction_label,
+
         f"{confidence:.2f}",
+
         recommendation
+
     ))
 
     conn.commit()
+
     conn.close()
+
+    # ===========================
+    # Show Result Page
+    # ===========================
+
     return render_template(
 
         "result.html",
@@ -381,9 +442,17 @@ def result():
 
         confidence=f"{confidence:.2f}",
 
+        high_risk=high_risk,
+
+        not_high_risk=not_high_risk,
         recommendation=recommendation
 
     )
+
+
+
+
+
 
 
 # =====================================
@@ -504,30 +573,27 @@ def analytics():
     """).fetchall()
 
     conn.close()
-
     high = 0
-    moderate = 0
-    low = 0
+    not_high = 0
 
     for row in history:
 
-        if row["prediction"] == "<30":
+        if row["prediction"] == "High Risk":
             high += 1
-
-        elif row["prediction"] == ">30":
-            moderate += 1
-
         else:
-            low += 1
-
-    total = high + moderate + low
+            not_high += 1
+    total = high + not_high
 
     # -------------------------------
     # Generate Pie Chart
     # -------------------------------
+    labels = ["High Risk", "Not High Risk"]
+    values = [high, not_high]
 
-    labels = ["High Risk", "Moderate Risk", "Low Risk"]
-    values = [high, moderate, low]
+    # If there are no predictions
+    if sum(values) == 0:
+        values = [1]
+        labels = ["No Data"]
 
     plt.figure(figsize=(6, 6))
 
@@ -540,19 +606,20 @@ def analytics():
 
     plt.title("Patient Readmission Risk Distribution")
 
+    os.makedirs("static/charts", exist_ok=True)
+
     chart_path = os.path.join("static", "charts", "pie_chart.png")
 
     plt.savefig(chart_path)
-
     plt.close()
+
     # -------------------------------
     # Generate Bar Chart
     # -------------------------------
 
     plt.figure(figsize=(7, 5))
-
-    categories = ["High", "Moderate", "Low"]
-    counts = [high, moderate, low]
+    categories = ["High Risk", "Not High Risk"]
+    counts = [high, not_high]
 
     plt.bar(categories, counts)
 
@@ -565,12 +632,12 @@ def analytics():
     plt.savefig(bar_chart_path)
 
     plt.close()
+
     return render_template(
         "analytics.html",
         total=total,
         high=high,
-        moderate=moderate,
-        low=low
+        not_high=not_high
     )
 # =====================================
 # Download Patient Report

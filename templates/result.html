@@ -55,7 +55,7 @@
 
                 <i class="fa-solid fa-chart-line"></i>
 
-                <h3>Confidence Score</h3>
+                <h3>High Risk Probability</h3>
 
                 <div class="progress">
 
@@ -78,7 +78,7 @@
 
                 <h3>Prediction</h3>
 
-                {% if original_prediction == "<30" %}
+                {% if original_prediction == "High Risk" %}
 
                     <div class="risk high">
 
@@ -86,25 +86,51 @@
 
                     </div>
 
-                {% elif original_prediction == ">30" %}
-
-                    <div class="risk moderate">
-
-                        🟡 MODERATE RISK
-
-                    </div>
-
                 {% else %}
 
                     <div class="risk low">
 
-                        🟢 LOW RISK
+                        🟢 NOT HIGH RISK
 
                     </div>
 
                 {% endif %}
 
             </div>
+
+        </div>
+
+        <!-- Prediction Probabilities -->
+
+        <div class="recommendation">
+
+            <h3>
+
+                <i class="fa-solid fa-chart-pie"></i>
+
+                Prediction Probabilities
+
+            </h3>
+
+            <table style="width:100%; margin-top:20px;">
+
+                <tr>
+
+                    <td><strong>🔴 High Risk</strong></td>
+
+                    <td>{{ high_risk }}%</td>
+
+                </tr>
+
+                <tr>
+
+                    <td><strong>🟢 Not High Risk</strong></td>
+
+                    <td>{{ not_high_risk }}%</td>
+
+                </tr>
+
+            </table>
 
         </div>
 

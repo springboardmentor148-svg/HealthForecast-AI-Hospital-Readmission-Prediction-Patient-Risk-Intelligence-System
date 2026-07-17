@@ -20,7 +20,9 @@
 
     <div class="row">
 
-        <div class="col-md-3">
+        <!-- Total Predictions -->
+
+        <div class="col-md-4">
 
             <div class="card bg-primary text-white">
 
@@ -36,7 +38,9 @@
 
         </div>
 
-        <div class="col-md-3">
+        <!-- High Risk -->
+
+        <div class="col-md-4">
 
             <div class="card bg-danger text-white">
 
@@ -52,31 +56,17 @@
 
         </div>
 
-        <div class="col-md-3">
+        <!-- Not High Risk -->
 
-            <div class="card bg-warning">
-
-                <div class="card-body">
-
-                    <h4>Moderate Risk</h4>
-
-                    <h2>{{ moderate }}</h2>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-3">
+        <div class="col-md-4">
 
             <div class="card bg-success text-white">
 
                 <div class="card-body">
 
-                    <h4>Low Risk</h4>
+                    <h4>Not High Risk</h4>
 
-                    <h2>{{ low }}</h2>
+                    <h2>{{ not_high }}</h2>
 
                 </div>
 
@@ -85,45 +75,43 @@
         </div>
 
     </div>
-<hr class="my-5">
 
-<h3 class="text-center mb-4">
-    Patient Risk Distribution
-</h3>
-<hr class="my-5">
+    <hr class="my-5">
 
-<h3 class="text-center mb-4">
-    Patient Risk Analysis
-</h3>
+    <h3 class="text-center mb-4">
+        Patient Risk Distribution
+    </h3>
 
-<div class="row">
+    <div class="row">
 
-    <div class="col-md-6 text-center">
+        <div class="col-md-6 text-center">
 
-        <h5>Pie Chart</h5>
+            <h5>Pie Chart</h5>
 
-        <img src="{{ url_for('static', filename='charts/pie_chart.png') }}"
-             class="img-fluid"
-             width="450">
+            <img src="{{ url_for('static', filename='charts/pie_chart.png') }}"
+                 class="img-fluid"
+                 width="450">
 
-    </div>
+        </div>
 
-    <div class="col-md-6 text-center">
+        <div class="col-md-6 text-center">
 
-        <h5>Bar Chart</h5>
+            <h5>Bar Chart</h5>
 
-        <img src="{{ url_for('static', filename='charts/bar_chart.png') }}"
-             class="img-fluid"
-             width="500">
+            <img src="{{ url_for('static', filename='charts/bar_chart.png') }}"
+                 class="img-fluid"
+                 width="500">
+
+        </div>
 
     </div>
-
-</div>
 
     <div class="text-center mt-5">
 
         <a href="{{ url_for('dashboard') }}" class="btn btn-success">
+
             Back to Dashboard
+
         </a>
 
     </div>

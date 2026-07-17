@@ -133,9 +133,8 @@
 
             <i class="fa-solid fa-heart-circle-check"></i>
 
-            <h3>{{ low_risk }}</h3>
-
-            <p>Low Risk Patients</p>
+           <h3>{{ not_high_risk }}</h3>
+            <p>Not High Risk Patients</p>
 
         </div>
 
@@ -240,26 +239,21 @@
                     <td>{{ patient.patient_name }}</td>
 
                     <td>
+                        {% if patient.prediction == "High Risk" %}
 
-                        {% if patient.prediction == "<30" %}
+<span class="high-risk">
+    🔴 High Risk
+</span>
 
-                            <span class="high-risk">
-                                🔴 High Risk
-                            </span>
+{% else %}
 
-                        {% elif patient.prediction == ">30" %}
+<span class="low-risk">
+    🟢 Not High Risk
+</span>
 
-                            <span class="moderate-risk">
-                                🟡 Moderate Risk
-                            </span>
+{% endif %}
 
-                        {% else %}
 
-                            <span class="low-risk">
-                                🟢 Low Risk
-                            </span>
-
-                        {% endif %}
 
                     </td>
 
