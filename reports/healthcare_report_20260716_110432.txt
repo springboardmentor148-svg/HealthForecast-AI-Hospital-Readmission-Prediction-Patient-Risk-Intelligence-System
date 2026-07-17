@@ -1,0 +1,61 @@
+======================================================================
+HEALTHCARE PERFORMANCE REPORT
+======================================================================
+Generated: 2026-07-16 11:04
+======================================================================
+
+EXECUTIVE SUMMARY
+----------------------------------------
+  Report Date: 2026-07-16 11:04
+  Total Patients: 97109
+  Readmitted Count: 11126
+  Readmission Rate: 11.46%
+  High Risk Patients: 6170
+  Medium Risk Patients: 57862
+  Low Risk Patients: 33077
+  High Risk Rate: 6.35%
+  Avg Risk Score: 46.73%
+  Avg Stay Length: 4.4 days
+  Readmitted High Risk: 1833
+  Total Features: 878
+
+DEMOGRAPHIC ANALYSIS
+----------------------------------------
+
+By Age:
+  <30: 96,950 patients, 11.5% readmission rate
+
+CLINICAL METRICS
+----------------------------------------
+Average Stay: 4.4 days
+Median Stay: 4.0 days
+Max Stay: 14 days
+
+Medication Usage:
+  metformin: 97,109 patients (100.0%), 11.5% readmission
+  insulin: 97,109 patients (100.0%), 11.5% readmission
+  glipizide: 97,109 patients (100.0%), 11.5% readmission
+  glyburide: 97,109 patients (100.0%), 11.5% readmission
+  pioglitazone: 97,109 patients (100.0%), 11.5% readmission
+  rosiglitazone: 97,109 patients (100.0%), 11.5% readmission
+
+RECOMMENDATIONS
+----------------------------------------
+
+[HIGH] Patient Care: Implement intensive follow-up for 6,170 high-risk patients
+  Reason: These patients have >70% readmission risk
+  Action Items:
+    - Schedule follow-up within 7 days
+    - Assign care coordinator
+    - Medication review and adherence check
+
+[MEDIUM] Operational: Optimize discharge planning for patients with extended stays
+  Reason: 14,405 patients have stays >7 days (14.0% readmission rate)
+  Action Items:
+    - Review discharge protocols
+    - Early discharge planning for high-risk patients
+    - Coordinate with care transition team
+
+PERFORMANCE METRICS
+----------------------------------------
+Avg Risk Score: 46.73%

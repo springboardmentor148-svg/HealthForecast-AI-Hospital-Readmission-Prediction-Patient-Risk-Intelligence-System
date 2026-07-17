@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #F0F4F8;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #E8ECF0; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: #B0C4DE; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #8AA0BB; }
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #0A6E5E 0%, #3B9A8E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-pulse-slow { animation: pulseSlow 3s ease-in-out infinite; }
+@keyframes pulseSlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+.status-dot.online { background: #2ECC71; box-shadow: 0 0 8px rgba(46, 204, 113, 0.5); }
+.status-dot.warning { background: #F39C12; box-shadow: 0 0 8px rgba(243, 156, 18, 0.5); }
+.status-dot.offline { background: #E74C3C; box-shadow: 0 0 8px rgba(231, 76, 60, 0.5); }
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #0A6E5E 0%, #3B9A8E 50%, #87CEEB 100%);
+}
