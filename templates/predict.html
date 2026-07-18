@@ -161,15 +161,12 @@ readmission risk using the XGBoost model.
 
                         <option value="[75-100)">75 - 100</option>
 
-                        <option value="[100-125)">100 - 125</option>
-
-                        <option value="[125-150)">125 - 150</option>
-
-                        <option value="[150-175)">150 - 175</option>
-
-                        <option value="[175-200)">175 - 200</option>
-
-                        <option value=">200">Above 200</option>
+                        <option value="?">Unknown</option>
+<option value="[0-25)">0 - 25</option>
+<option value="[25-50)">25 - 50</option>
+<option value="[50-75)">50 - 75</option>
+<option value="[75-100)">75 - 100</option>
+<option value=">100">Above 100</option>
 
                     </select>
 
@@ -368,9 +365,7 @@ readmission risk using the XGBoost model.
 <!-- Diabetes Information -->
 <!-- ========================= -->
 
-            <!-- ========================= -->
-<!-- Diabetes Information -->
-<!-- ========================= -->
+
 
 <h2 class="section-title">
 
@@ -402,19 +397,21 @@ readmission risk using the XGBoost model.
 
     <div class="form-group">
 
-        <label>A1C Result</label>
+    <label>A1C Result</label>
 
-        <select name="A1Cresult" required>
+    <select name="A1Cresult" required>
 
-            <option value="Norm">Normal</option>
+        <option value="None">None</option>
 
-            <option value=">7">Greater than 7</option>
+        <option value="Norm">Normal</option>
 
-            <option value=">8">Greater than 8</option>
+        <option value=">7">Greater than 7</option>
 
-        </select>
+        <option value=">8">Greater than 8</option>
 
-    </div>
+    </select>
+
+</div>
 
     <div class="form-group">
 

@@ -1,16 +1,27 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-import pandas as pd
-import joblib
+from flask import (
+    Flask,
+    render_template,
+    request,
+    request,
+    redirect,
+    url_for,
+    session,
+    send_file
+)
+from flask import send_file
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+import os
+import os
 import sqlite3
+import joblib
+import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
-
 import matplotlib.pyplot as plt
-import os
-import math
-from reportlab.lib.pagesizes import letter
+
 from reportlab.pdfgen import canvas
-from flask import send_file
+from reportlab.lib.pagesizes import letter
 
 app = Flask(__name__)
 app.secret_key = "healthforecast_secret_key"
@@ -34,6 +45,18 @@ def get_db_connection():
 model = joblib.load("xgboost_model.pkl")
 
 label_encoders = joblib.load("label_encoders.pkl")
+
+print("=" * 60)
+print("MODEL AND LABEL ENCODERS LOADED SUCCESSFULLY")
+print("=" * 60)
+
+for col, encoder in label_encoders.items():
+    print(f"{col} -> {list(encoder.classes_)}")
+
+
+# =====================================
+# Selected Features
+# =====================================
 
 selected_features = [
 
@@ -71,17 +94,13 @@ selected_features = [
 users = {
 
     "doctor": {
-
         "password": "doctor123",
         "role": "Doctor"
-
     },
 
     "admin": {
-
         "password": "admin123",
         "role": "Administrator"
-
     }
 
 }
@@ -98,7 +117,7 @@ def home():
 
 
 # =====================================
-# Login Page
+# Login
 # =====================================
 
 @app.route("/login", methods=["GET", "POST"])
@@ -106,8 +125,8 @@ def login():
 
     if request.method == "POST":
 
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username")
+        password = request.form.get("password")
 
         if username in users and users[username]["password"] == password:
 
@@ -123,6 +142,10 @@ def login():
 
     return render_template("login.html")
 
+
+# =====================================
+# Dashboard
+# =====================================
 
 @app.route("/dashboard")
 def dashboard():
@@ -143,9 +166,11 @@ def dashboard():
     high_risk = conn.execute(
         "SELECT COUNT(*) FROM prediction_history WHERE prediction='High Risk'"
     ).fetchone()[0]
-    low_risk = conn.execute(
+
+    not_high_risk = conn.execute(
         "SELECT COUNT(*) FROM prediction_history WHERE prediction='Not High Risk'"
     ).fetchone()[0]
+
     recent_predictions = conn.execute("""
         SELECT
             patient_name,
@@ -165,7 +190,7 @@ def dashboard():
         total_patients=total_patients,
         total_predictions=total_predictions,
         high_risk=high_risk,
-        low_risk=low_risk,
+        not_high_risk=not_high_risk,
         recent_predictions=recent_predictions
     )
 # =====================================
@@ -191,50 +216,45 @@ def save_patient():
     if "username" not in session:
         return redirect(url_for("login"))
 
-    patient_id = request.form["patient_id"]
-    patient_name = request.form["patient_name"]
-    gender = request.form["gender"]
-    age = request.form["age"]
-    weight = request.form["weight"]
-    admission_type = request.form["admission_type"]
-    diagnosis = request.form["diagnosis"]
-    treatment = request.form["treatment"]
+    patient_id = request.form.get("patient_id")
+    patient_name = request.form.get("patient_name")
+    gender = request.form.get("gender")
+    age = request.form.get("age")
+    weight = request.form.get("weight")
+    admission_type = request.form.get("admission_type")
+    diagnosis = request.form.get("diagnosis")
+    treatment = request.form.get("treatment")
 
     conn = get_db_connection()
 
     try:
 
-        conn.execute("""
-
-        INSERT INTO patients(
-
-            patient_id,
-            patient_name,
-            gender,
-            age,
-            weight,
-            admission_type,
-            diagnosis,
-            treatment
-
+        conn.execute(
+            """
+            INSERT INTO patients
+            (
+                patient_id,
+                patient_name,
+                gender,
+                age,
+                weight,
+                admission_type,
+                diagnosis,
+                treatment
+            )
+            VALUES (?,?,?,?,?,?,?,?)
+            """,
+            (
+                patient_id,
+                patient_name,
+                gender,
+                age,
+                weight,
+                admission_type,
+                diagnosis,
+                treatment
+            )
         )
-
-        VALUES(?,?,?,?,?,?,?,?)
-
-        """,
-
-        (
-
-            patient_id,
-            patient_name,
-            gender,
-            age,
-            weight,
-            admission_type,
-            diagnosis,
-            treatment
-
-        ))
 
         conn.commit()
 
@@ -242,11 +262,66 @@ def save_patient():
 
         conn.close()
 
-        return "Patient ID already exists."
+        return render_template(
+            "patient_records.html",
+            error="Patient ID already exists."
+        )
 
     conn.close()
 
-    return redirect(url_for("dashboard"))
+    return redirect(url_for("view_patients"))
+
+
+# =====================================
+# View Patients
+# =====================================
+
+@app.route("/view_patients")
+def view_patients():
+
+    if "username" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+
+    patients = conn.execute(
+        """
+        SELECT *
+        FROM patients
+        ORDER BY patient_id
+        """
+    ).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "view_patients.html",
+        patients=patients
+    )
+
+
+# =====================================
+# Delete Patient
+# =====================================
+
+@app.route("/delete_patient/<patient_id>")
+def delete_patient(patient_id):
+
+    if "username" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+
+    conn.execute(
+        "DELETE FROM patients WHERE patient_id=?",
+        (patient_id,)
+    )
+
+    conn.commit()
+
+    conn.close()
+
+    return redirect(url_for("view_patients"))
 # =====================================
 # Prediction Page
 # =====================================
@@ -268,28 +343,26 @@ def result():
     if "username" not in session:
         return redirect(url_for("login"))
 
+    # ----------------------------
+    # Collect Form Data
+    # ----------------------------
+
     data = {}
 
-    # Get all form data
     for feature in selected_features:
         data[feature] = request.form.get(feature)
 
-    # Convert to DataFrame
     df = pd.DataFrame([data])
-    print("Selected Features:", selected_features)
-    print("Form Data:", data)
-    print("DataFrame Columns:", df.columns.tolist())
-    print("\n========== FORM DATA ==========")
-    print(data)
 
-    print("\n========== DATAFRAME ==========")
-    print(df)
+    print("\n========== INPUT DATA ==========")
+    print(df.T)
 
-    print("\n========== COLUMNS ==========")
-    print(df.columns.tolist())
-
+    # ----------------------------
     # Numeric Columns
+    # ----------------------------
+
     numeric_columns = [
+
         "admission_type_id",
         "discharge_disposition_id",
         "admission_source_id",
@@ -301,28 +374,42 @@ def result():
         "number_emergency",
         "number_inpatient",
         "number_diagnoses"
-    ]
-    for col in numeric_columns:
-        df[col] = df[col].astype(int)
 
-    # Encode categorical columns
+    ]
+
+    for col in numeric_columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # ----------------------------
+    # Encode Categorical Columns
+    # ----------------------------
+
     for col in df.columns:
 
-        if col in label_encoders:
+        if col not in label_encoders:
+            continue
 
-            df[col] = label_encoders[col].transform(
-                df[col].astype(str)
-            )
+        value = str(df.at[0, col]).strip()
 
-    print("\nEncoded Input:")
-    print(df)
+        if value not in label_encoders[col].classes_:
 
-    # ===========================
+            return f"""
+            <h2>Encoding Error</h2>
+
+            <b>Column:</b> {col}<br><br>
+
+            <b>Received:</b> {value}<br><br>
+
+            <b>Allowed:</b><br>
+
+            {list(label_encoders[col].classes_)}
+            """
+
+        df[col] = label_encoders[col].transform([value])
+
+    # ----------------------------
     # Prediction
-    # ===========================
-    # ===========================
-    # Binary Prediction
-    # ===========================
+    # ----------------------------
 
     probability = model.predict_proba(df)
 
@@ -337,10 +424,6 @@ def result():
     high_risk = round(probability[0][1] * 100, 2)
 
     not_high_risk = round(probability[0][0] * 100, 2)
-
-    # ===========================
-    # Risk Label
-    # ===========================
 
     if prediction == 1:
 
@@ -365,188 +448,83 @@ def result():
             "Continue medication, regular follow-up and healthy lifestyle."
         )
 
-    print("\nPrediction Probability:", probability)
-
-    print("Prediction:", prediction_label)
-    # ===========================
-    # Save Latest Prediction
-    # ===========================
-
     session["patient_id"] = request.form.get("patient_id", "")
-
     session["patient_name"] = request.form.get("patient_name", "")
-
     session["prediction"] = prediction_label
-
     session["confidence"] = f"{confidence:.2f}"
-
     session["recommendation"] = recommendation
-
-    # ===========================
-    # Save Prediction History
-    # ===========================
-
-    conn = get_db_connection()
-
-    patient_id = request.form.get("patient_id", "")
-
-    patient_name = request.form.get("patient_name", "")
-
-    conn.execute("""
-
-        INSERT INTO prediction_history(
-
-            patient_id,
-
-            patient_name,
-
-            prediction,
-
-            confidence,
-
-            recommendation
-
-        )
-
-        VALUES(?,?,?,?,?)
-
-    """, (
-
-        patient_id,
-
-        patient_name,
-
-        prediction_label,
-
-        f"{confidence:.2f}",
-
-        recommendation
-
-    ))
-
-    conn.commit()
-
-    conn.close()
-
-    # ===========================
-    # Show Result Page
-    # ===========================
-
-    return render_template(
-
-        "result.html",
-
-        prediction_text=risk,
-
-        original_prediction=prediction_label,
-
-        confidence=f"{confidence:.2f}",
-
-        high_risk=high_risk,
-
-        not_high_risk=not_high_risk,
-        recommendation=recommendation
-
-    )
-
-
-
-
-
-
-
-# =====================================
-# View Patients
-# =====================================
-
-@app.route("/view_patients")
-def view_patients():
-
-    if "username" not in session:
-        return redirect(url_for("login"))
-
-    conn = get_db_connection()
-
-    patients = conn.execute(
-
-        "SELECT * FROM patients ORDER BY patient_id"
-
-    ).fetchall()
-
-    conn.close()
-
-    return render_template(
-
-        "view_patients.html",
-
-        patients=patients
-
-    )
-
-
-# =====================================
-# Delete Patient
-# =====================================
-
-@app.route("/delete_patient/<patient_id>")
-def delete_patient(patient_id):
-
-    if "username" not in session:
-        return redirect(url_for("login"))
 
     conn = get_db_connection()
 
     conn.execute(
-
-        "DELETE FROM patients WHERE patient_id=?",
-
-        (patient_id,)
-
+        """
+        INSERT INTO prediction_history
+        (
+            patient_id,
+            patient_name,
+            prediction,
+            confidence,
+            recommendation
+        )
+        VALUES (?,?,?,?,?)
+        """,
+        (
+            request.form.get("patient_id"),
+            request.form.get("patient_name"),
+            prediction_label,
+            f"{confidence:.2f}",
+            recommendation
+        )
     )
 
     conn.commit()
-
     conn.close()
 
-    return redirect(url_for("view_patients"))
-
-
+    return render_template(
+        "result.html",
+        prediction_text=risk,
+        original_prediction=prediction_label,
+        confidence=f"{confidence:.2f}",
+        high_risk=high_risk,
+        not_high_risk=not_high_risk,
+        recommendation=recommendation
+    )
 # =====================================
 # Prediction History
 # =====================================
+
 @app.route("/prediction_history")
 def prediction_history():
 
     if "username" not in session:
         return redirect(url_for("login"))
 
-    search = request.args.get("search", "")
+    search = request.args.get("search", "").strip()
 
     conn = get_db_connection()
 
     if search:
 
-        history = conn.execute("""
-
-        SELECT *
-        FROM prediction_history
-
-        WHERE patient_name LIKE ?
-        OR patient_id LIKE ?
-
-        ORDER BY id DESC
-
-        """, (f"%{search}%", f"%{search}%")).fetchall()
+        history = conn.execute(
+            """
+            SELECT *
+            FROM prediction_history
+            WHERE patient_id LIKE ?
+               OR patient_name LIKE ?
+            ORDER BY id DESC
+            """,
+            (f"%{search}%", f"%{search}%")
+        ).fetchall()
 
     else:
 
-        history = conn.execute("""
-
-        SELECT *
-        FROM prediction_history
-        ORDER BY id DESC
-
-        """).fetchall()
+        history = conn.execute(
+            """
+            SELECT *
+            FROM prediction_history
+            ORDER BY id DESC
+            """
+        ).fetchall()
 
     conn.close()
 
@@ -555,6 +533,8 @@ def prediction_history():
         history=history,
         search=search
     )
+
+
 # =====================================
 # Analytics Dashboard
 # =====================================
@@ -567,70 +547,41 @@ def analytics():
 
     conn = get_db_connection()
 
-    history = conn.execute("""
-        SELECT prediction
-        FROM prediction_history
-    """).fetchall()
+    total = conn.execute(
+        "SELECT COUNT(*) FROM prediction_history"
+    ).fetchone()[0]
+
+    high = conn.execute(
+        "SELECT COUNT(*) FROM prediction_history WHERE prediction='High Risk'"
+    ).fetchone()[0]
+
+    not_high = conn.execute(
+        "SELECT COUNT(*) FROM prediction_history WHERE prediction='Not High Risk'"
+    ).fetchone()[0]
 
     conn.close()
-    high = 0
-    not_high = 0
-
-    for row in history:
-
-        if row["prediction"] == "High Risk":
-            high += 1
-        else:
-            not_high += 1
-    total = high + not_high
-
-    # -------------------------------
-    # Generate Pie Chart
-    # -------------------------------
-    labels = ["High Risk", "Not High Risk"]
-    values = [high, not_high]
-
-    # If there are no predictions
-    if sum(values) == 0:
-        values = [1]
-        labels = ["No Data"]
-
-    plt.figure(figsize=(6, 6))
-
-    plt.pie(
-        values,
-        labels=labels,
-        autopct="%1.1f%%",
-        startangle=90
-    )
-
-    plt.title("Patient Readmission Risk Distribution")
 
     os.makedirs("static/charts", exist_ok=True)
 
-    chart_path = os.path.join("static", "charts", "pie_chart.png")
-
-    plt.savefig(chart_path)
+    # Pie Chart
+    plt.figure(figsize=(5, 5))
+    plt.pie(
+        [high, not_high],
+        labels=["High Risk", "Not High Risk"],
+        autopct="%1.1f%%"
+    )
+    plt.title("Patient Risk Distribution")
+    plt.savefig("static/charts/pie_chart.png")
     plt.close()
 
-    # -------------------------------
-    # Generate Bar Chart
-    # -------------------------------
-
-    plt.figure(figsize=(7, 5))
-    categories = ["High Risk", "Not High Risk"]
-    counts = [high, not_high]
-
-    plt.bar(categories, counts)
-
-    plt.title("Patient Risk Count")
-    plt.xlabel("Risk Level")
-    plt.ylabel("Number of Patients")
-
-    bar_chart_path = os.path.join("static", "charts", "bar_chart.png")
-
-    plt.savefig(bar_chart_path)
-
+    # Bar Chart
+    plt.figure(figsize=(5, 5))
+    plt.bar(
+        ["High Risk", "Not High Risk"],
+        [high, not_high]
+    )
+    plt.title("Patient Risk Distribution")
+    plt.savefig("static/charts/bar_chart.png")
     plt.close()
 
     return render_template(
@@ -639,67 +590,6 @@ def analytics():
         high=high,
         not_high=not_high
     )
-# =====================================
-# Download Patient Report
-# =====================================
-
-@app.route("/download_report")
-def download_report():
-
-    if "username" not in session:
-        return redirect(url_for("login"))
-
-    pdf_name = "Patient_Report.pdf"
-
-    c = canvas.Canvas(pdf_name, pagesize=letter)
-
-    width, height = letter
-
-    c.setFont("Helvetica-Bold", 20)
-    c.drawString(150, height-60, "HealthForecast AI")
-
-    c.setFont("Helvetica", 14)
-    c.drawString(120, height-90,
-                 "Hospital Readmission Prediction Report")
-
-    y = height - 140
-
-    c.drawString(60, y,
-                 f"Patient ID : {session.get('patient_id','')}")
-
-    y -= 30
-
-    c.drawString(60, y,
-                 f"Patient Name : {session.get('patient_name','')}")
-
-    y -= 30
-
-    c.drawString(60, y,
-                 f"Prediction : {session.get('prediction','')}")
-
-    y -= 30
-
-    c.drawString(60, y,
-                 f"Confidence : {session.get('confidence','')} %")
-
-    y -= 30
-
-    c.drawString(60, y,
-                 "Recommendation :")
-
-    y -= 25
-
-    text = c.beginText(60, y)
-
-    text.textLines(session.get("recommendation",""))
-
-    c.drawText(text)
-
-    c.save()
-
-    return send_file(pdf_name, as_attachment=True)
-
-
 
 
 # =====================================
@@ -713,11 +603,53 @@ def logout():
 
     return redirect(url_for("login"))
 
+@app.route("/download_report")
+def download_report():
 
+    filename = "HealthForecast_Report.pdf"
+
+    c = canvas.Canvas(filename, pagesize=letter)
+
+    width, height = letter
+
+    # Heading
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(160, height - 50, "HealthForecast AI")
+
+    c.setFont("Helvetica-Bold", 15)
+    c.drawString(190, height - 75, "Patient Report")
+
+    # Line
+    c.line(40, height - 90, width - 40, height - 90)
+
+    # Patient Information
+    c.setFont("Helvetica", 12)
+
+    c.drawString(50, height - 130,
+                 f"Patient ID : {session.get('patient_id','N/A')}")
+
+    c.drawString(50, height - 155,
+                 f"Patient Name : {session.get('patient_name','N/A')}")
+
+    c.drawString(50, height - 180,
+                 f"Prediction : {session.get('prediction','N/A')}")
+
+    c.drawString(50, height - 205,
+                 f"Confidence : {session.get('confidence','N/A')}%")
+
+    c.drawString(50, height - 230,
+                 f"Recommendation : {session.get('recommendation','N/A')}")
+
+    c.save()
+
+    return send_file(
+        filename,
+        as_attachment=True,
+        download_name="HealthForecast_Report.pdf"
+    )
 # =====================================
-# Run Application
+# Run Flask Application
 # =====================================
 
 if __name__ == "__main__":
-
-    app.run(debug=True)
+    app.run(debug=True, host="127.0.0.1", port=5000)

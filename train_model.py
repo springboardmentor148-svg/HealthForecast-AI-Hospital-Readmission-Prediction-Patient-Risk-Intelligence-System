@@ -143,17 +143,12 @@ print("\nReady for Binary XGBoost Training...\n")
 # ===========================
 
 xgb = XGBClassifier(
-
     objective="binary:logistic",
-
     eval_metric="logloss",
-
     random_state=42,
-
-
-
+    tree_method="hist",
+    n_jobs=-1
 )
-
 # ===========================
 # Hyperparameter Tuning
 # ===========================
@@ -175,26 +170,17 @@ param_dist = {
     "colsample_bytree": [0.8, 0.9, 1.0]
 
 }
-
 random_search = RandomizedSearchCV(
-
     estimator=xgb,
-
     param_distributions=param_dist,
-
-    n_iter=40,
-
-    cv=5,
-
+    n_iter=15,          # Reduced from 40
+    cv=3,               # Reduced from 5
     scoring="f1",
-
     random_state=42,
-
     n_jobs=-1,
-
     verbose=2
-
 )
+
 
 print("\n")
 print("=" * 60)

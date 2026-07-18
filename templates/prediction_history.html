@@ -77,17 +77,12 @@
 
                     <td>
 
-                        {% if row.prediction == "<30" %}
-                            <span class="badge bg-danger">High Risk</span>
+                       {% if row.prediction == "High Risk" %}
+    <span class="badge bg-danger">High Risk</span>
 
-                        {% elif row.prediction == ">30" %}
-                            <span class="badge bg-warning text-dark">Moderate Risk</span>
-
-                        {% else %}
-                            <span class="badge bg-success">Low Risk</span>
-
-                        {% endif %}
-
+{% else %}
+    <span class="badge bg-success">Not High Risk</span>
+{% endif %}
                     </td>
 
                     <td>{{ row.confidence }}%</td>
