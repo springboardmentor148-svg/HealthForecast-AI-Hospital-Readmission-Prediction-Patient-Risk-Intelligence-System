@@ -7,6 +7,7 @@ from app.api.patient import router as patient_router
 from app.api.medical_history import router as medical_history_router
 from app.api.treatment import router as treatment_router
 from app.api import admission
+from app.api import prediction
 
 
 
@@ -70,6 +71,7 @@ app.include_router(patient_router)
 app.include_router(medical_history_router)
 app.include_router(treatment_router)
 app.include_router(admission.router)
+app.include_router(prediction.router)
 
 
 
