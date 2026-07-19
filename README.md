@@ -43,8 +43,8 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/prognexa-ai.git
-cd prognexa-ai
+git clone https://github.com/your-username/folder-name.git
+cd folder-name
 ```
 
 ### 2. Create and Activate a Virtual Environment
