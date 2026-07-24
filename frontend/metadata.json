@@ -1,0 +1,6 @@
+{
+  "name": "HealthForecast AI",
+  "description": "Hospital readmission prediction and patient risk intelligence system with role-based decision support, treatment effectiveness analysis, and AI model management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
