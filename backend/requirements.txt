@@ -1,0 +1,22 @@
+# API
+fastapi
+uvicorn[standard]
+
+# Auth
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+
+# ML (inference)
+scikit-learn
+xgboost
+numpy
+joblib
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Utils
+python-dotenv
+pydantic[email]

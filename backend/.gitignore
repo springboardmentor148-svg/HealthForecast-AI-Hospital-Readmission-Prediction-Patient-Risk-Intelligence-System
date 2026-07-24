@@ -1,0 +1,53 @@
+# Python virtual environment
+venv/
+.venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+
+# Environment variables
+.env
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
+.tox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Package distribution
+*.egg-info/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Jupyter notebooks output
+.ipynb_checkpoints/
+
+# ML artifacts (large files, models, etc.)
+*.pkl
+*.joblib
+*.h5
+mlruns/
