@@ -1,0 +1,36 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:#F8FAFC;
+    color:#1F2937;
+}
+
+a{
+    text-decoration:none;
+}
+
+input,
+select,
+button{
+    border-radius:8px !important;
+}
+
+.card{
+    border:none;
+    border-radius:14px;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+
+.form-control{
+    height:48px;
+}
+
+.form-label{
+    font-weight:600;
+    margin-bottom:8px;
+}

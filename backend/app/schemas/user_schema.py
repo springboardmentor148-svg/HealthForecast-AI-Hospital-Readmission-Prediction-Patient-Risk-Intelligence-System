@@ -13,3 +13,7 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+# User profile update schema (only full_name is editable for now)
+class UserUpdate(BaseModel):
+    full_name: str

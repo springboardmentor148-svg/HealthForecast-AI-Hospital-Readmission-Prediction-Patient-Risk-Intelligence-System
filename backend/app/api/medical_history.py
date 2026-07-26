@@ -34,7 +34,7 @@ async def add_medical_history(
         admission_date=history.admission_date,
         discharge_date=history.discharge_date,
         notes=history.notes,
-        created_by=current_user["email"]
+        created_by=current_user["sub"]
     )
 
     # Save medical history in MongoDB
@@ -62,7 +62,7 @@ async def get_medical_history(
     history = await database.medical_history.find(
         {
             "patient_id": patient_id,
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     ).to_list(100)
 
@@ -92,7 +92,7 @@ async def update_medical_history(
     result = await database.medical_history.update_one(
         {
             "_id": ObjectId(history_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         },
         {
             "$set": updated_data
@@ -124,7 +124,7 @@ async def delete_medical_history(
     result = await database.medical_history.delete_one(
         {
             "_id": ObjectId(history_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     )
 

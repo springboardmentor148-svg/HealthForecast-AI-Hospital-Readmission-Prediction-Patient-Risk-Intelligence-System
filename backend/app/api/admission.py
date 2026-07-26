@@ -38,7 +38,7 @@ async def add_admission(
         ward=admission.ward,
         attending_doctor=admission.attending_doctor,
         discharge_summary=admission.discharge_summary,
-        created_by=current_user["email"]        # Store doctor's email
+        created_by=current_user["sub"]        # Store doctor's email
     )
 
     # Insert document into MongoDB
@@ -63,7 +63,7 @@ async def get_admissions(
     admissions = await database.admissions.find(
         {
             "patient_id": patient_id,
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     ).to_list(length=None)
 
@@ -92,7 +92,7 @@ async def update_admission(
     result = await database.admissions.update_one(
         {
             "_id": ObjectId(admission_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         },
         {
             "$set": update_data
@@ -124,7 +124,7 @@ async def delete_admission(
     result = await database.admissions.delete_one(
         {
             "_id": ObjectId(admission_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     )
 
@@ -138,4 +138,3 @@ async def delete_admission(
     return {
         "message": "Admission deleted successfully"
     }
-    

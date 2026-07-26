@@ -16,8 +16,20 @@ router = APIRouter(
 
 
 @router.get("/")
-async def test_treatment():
-    return {"message": "Treatment API is working"}
+async def get_all_treatments(
+    current_user: dict = Depends(verify_token)
+):
+
+    # Get every treatment this doctor has created, across all patients —
+    # used for Treatment Effectiveness analysis, not just per-patient view
+    treatments = await database.treatments.find(
+        {"created_by": current_user["sub"]}
+    ).to_list(length=None)
+
+    for treatment in treatments:
+        treatment["_id"] = str(treatment["_id"])
+
+    return treatments
 
 
 
@@ -40,7 +52,7 @@ async def add_treatment(
         end_date=treatment.end_date,
         status=treatment.status,
         doctor_notes=treatment.doctor_notes,
-        created_by=current_user["email"]          # Store doctor's email
+        created_by=current_user["sub"]          # Store doctor's email
     )
 
     # Insert treatment document into MongoDB collection
@@ -65,7 +77,7 @@ async def get_treatments(
     treatments = await database.treatments.find(
         {
             "patient_id": patient_id,
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     ).to_list(length=None)
 
@@ -94,7 +106,7 @@ async def update_treatment(
     result = await database.treatments.update_one(
         {
             "_id": ObjectId(treatment_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         },
         {
             "$set": update_data
@@ -124,7 +136,7 @@ async def delete_treatment(
     result = await database.treatments.delete_one(
         {
             "_id": ObjectId(treatment_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     )
 
@@ -137,4 +149,4 @@ async def delete_treatment(
     # Success response
     return {
         "message": "Treatment deleted successfully"
-    }    
+    }

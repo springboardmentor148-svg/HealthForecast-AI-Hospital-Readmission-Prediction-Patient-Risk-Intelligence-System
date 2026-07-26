@@ -1,7 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Depends
 
 from app.schemas.prediction_schema import PredictionRequest
 from app.services.prediction_service import predict_readmission
+from app.services.clinical_decision_service import generate_recommendations
+from app.utils.jwt_handler import verify_token
+from app.database.database import database
 
 
 # Prediction router
@@ -13,9 +17,29 @@ router = APIRouter(
 
 # Predict hospital readmission
 @router.post("/predict")
-def predict(patient_data: PredictionRequest):
+async def predict(
+    patient_data: PredictionRequest,
+    payload: dict = Depends(verify_token)
+):
     try:
         result = predict_readmission(patient_data)
+
+        # Generate clinical decision support recommendations based on
+        # the risk result and relevant patient factors
+        recommendations = generate_recommendations(
+            patient_data.model_dump(),
+            result
+        )
+        result["recommendations"] = recommendations
+
+        # Save this prediction to history, tied to the logged-in doctor
+        await database.predictions.insert_one({
+            "doctor_email": payload["sub"],
+            "patient_data": patient_data.model_dump(),
+            "result": result,
+            "created_at": datetime.utcnow()
+        })
+
         return result
 
     except Exception as e:
@@ -23,3 +47,17 @@ def predict(patient_data: PredictionRequest):
             status_code=500,
             detail=str(e)
         )
+
+
+# Get logged-in doctor's prediction history
+@router.get("/history")
+async def get_prediction_history(payload: dict = Depends(verify_token)):
+
+    # Fetch this doctor's predictions, most recent first
+    # _id excluded via projection since ObjectId isn't JSON serializable
+    records = await database.predictions.find(
+        {"doctor_email": payload["sub"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(length=None)
+
+    return records

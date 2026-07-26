@@ -29,7 +29,7 @@ async def add_patient(
         bmi=patient.bmi,
         insulin=patient.insulin,
         diabetes_med=patient.diabetes_med,
-        created_by=current_user["email"],
+        created_by=current_user["sub"],
         doctor_role=current_user["role"]
     )
 
@@ -53,7 +53,7 @@ async def get_all_patients(
     # Get logged in doctor's patients
     patients = await database.patients.find(
         {
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     ).to_list(100)
 
@@ -74,7 +74,7 @@ async def get_patient(
     patient = await database.patients.find_one(
         {
             "_id": ObjectId(patient_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     )
 
@@ -106,7 +106,7 @@ async def update_patient(
     result = await database.patients.update_one(
         {
             "_id": ObjectId(patient_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         },
         {
             "$set": updated_data
@@ -139,7 +139,7 @@ async def delete_patient(
     result = await database.patients.delete_one(
         {
             "_id": ObjectId(patient_id),
-            "created_by": current_user["email"]
+            "created_by": current_user["sub"]
         }
     )
 
