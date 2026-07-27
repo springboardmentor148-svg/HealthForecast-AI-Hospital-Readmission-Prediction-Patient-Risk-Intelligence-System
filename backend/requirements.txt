@@ -1,0 +1,21 @@
+fastapi
+uvicorn[standard]
+pydantic[email]
+joblib
+pandas
+numpy
+scikit-learn
+xgboost
+wandb
+
+# auth + database
+sqlalchemy
+pg8000
+python-jose[cryptography]
+bcrypt
+python-dotenv
+python-multipart
+
+# explainability + rate limiting
+shap
+slowapi

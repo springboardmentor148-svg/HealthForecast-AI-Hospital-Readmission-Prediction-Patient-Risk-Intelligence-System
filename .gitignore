@@ -1,0 +1,26 @@
+﻿# --- secrets, never commit these ---
+.env
+*.env
+!.env.example
+
+# --- backend (Python) ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.db
+*.sqlite3
+
+# model artifacts (large, and shouldn't need to be in git —
+# regenerate via save_model.py instead)
+*.joblib
+
+# --- frontend (Node) ---
+node_modules/
+dist/
+.vite/
+
+# --- OS / editor clutter ---
+.DS_Store
+Thumbs.db
