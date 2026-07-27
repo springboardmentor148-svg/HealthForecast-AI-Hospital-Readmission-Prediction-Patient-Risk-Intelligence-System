@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Ignore model files
+models/*.pkl
+
+# Ignore datasets
+data/*.csv
+data/*.xlsx
+
+# VS Code
+.vscode/
