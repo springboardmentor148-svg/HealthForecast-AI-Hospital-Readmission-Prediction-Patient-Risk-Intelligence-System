@@ -368,8 +368,4 @@ class InferenceService:
                 "description": f"{out} outpatient appointments attended",
                 "category": "utilization",
             })
-        overall_pct = round(
-            max(5, sum(abs(f["impactPercent"]) for f in factors)),
-            1,
-        )
         return factors
