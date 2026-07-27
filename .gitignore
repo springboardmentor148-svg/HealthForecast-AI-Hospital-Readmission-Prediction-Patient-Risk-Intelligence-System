@@ -5,12 +5,5 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
-# Ignore model files
-models/*.pkl
-
-# Ignore datasets
-data/*.csv
-data/*.xlsx
-
 # VS Code
 .vscode/
