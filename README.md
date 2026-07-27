@@ -1,4 +1,4 @@
-# 🏥 Prognexa AI – Hospital Readmission Prediction & Patient Risk Intelligence
+# 🏥 Prognexa AI – Hospital Readmission Prediction & Patient Risk Intelligence System
 
 **Prognexa AI** is an end‑to‑end healthcare analytics platform that uses machine learning (XGBoost) to predict hospital readmission risk. It provides role‑based dashboards for **Doctors**, **Hospital Administrators**, **Healthcare Researchers**, and **System Administrators** – with features for patient management, risk prediction, analytics, and report generation.
 
@@ -11,8 +11,13 @@
 - **📋 Patient Management** – Create, view, assign, and delete patient records.
 - **📊 Real‑Time Analytics** – Risk distribution charts, monthly trends, and summary stats.
 - **📑 Report Generation** – Generate and view reports that list patients with their risk levels and assigned doctors.
+- **📝 Notes & Appointments** – Doctors can add clinical notes and manage appointments.
+- **📅 Task Management** – Admins can assign tasks to doctors; doctors can view their assigned tasks.
+- **📄 Research Summaries** – Researchers can post and view research findings.
+- **🏥 Hospital Population Dashboard** – Admins/SysAdmins can view hospital occupancy and high‑risk patient priority lists.
 - **🔧 Settings** – Change password securely.
 - **🗄️ MongoDB Storage** – All data persisted locally via MongoDB.
+- **📊 Chart.js Visualizations** – Interactive charts for risk distribution, trends, and hospital population.
 
 ---
 
@@ -26,6 +31,7 @@
 | **ML Model**| XGBoost, scikit‑learn, pandas, numpy |
 | **Auth**    | JWT (python‑jose) + passlib (pbkdf2_sha256) |
 | **Server**  | Uvicorn (ASGI)                      |
+| **Styling** | Glassmorphism UI with Inter font    |
 
 ---
 
@@ -43,8 +49,9 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/folder-name.git
-cd folder-name
+git clone https://github.com/your-username/HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System.git
+cd HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System
+git checkout pragathi
 ```
 
 ### 2. Create and Activate a Virtual Environment
@@ -69,6 +76,23 @@ pip install -r requirements.txt
 > ```bash
 > pip install fastapi uvicorn pymongo python-jose[cryptography] passlib[bcrypt] python-multipart pydantic xgboost numpy pandas scikit-learn
 > ```
+
+### 4. Create `requirements.txt`
+
+```txt
+fastapi==0.104.1
+uvicorn==0.24.0
+pymongo==4.5.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+pydantic==2.5.0
+pydantic-settings==2.1.0
+xgboost==2.0.3
+numpy==1.24.3
+pandas==2.0.3
+scikit-learn==1.3.0
+```
 
 ---
 
@@ -124,6 +148,25 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 ---
 
+## 🌱 Seed the Database (Optional)
+
+To populate the database with sample patients, predictions, and research summaries:
+
+```bash
+python seed.py
+```
+
+This will create:
+- 4 users (doctor, admin, researcher, sysadmin)
+- 15 patients with varying risk trajectories
+- Prediction history for each patient
+- Research summaries
+- Sample reports
+
+> **Note:** Seed data does NOT include notes or schedules – these can be added through the UI.
+
+---
+
 ## 🚀 Run the Backend Server
 
 Make sure your virtual environment is active and you are in the project root.
@@ -144,24 +187,26 @@ Leave this terminal **open** – the server must stay running.
 
 ## 🌐 Run the Frontend
 
-You can open `index.html` directly in your browser, but it's better to serve it with a local web server to avoid CORS issues.
+Open `index.html` directly in your browser, or serve it with a local web server:
 
-- **Option A – Using Python's built‑in HTTP server**:
-  ```bash
-  cd frontend
-  python -m http.server 5500
-  ```
-  Then open `http://localhost:5500` in your browser.
+### Option A – Using Python's built‑in HTTP server:
+```bash
+cd frontend
+python -m http.server 5500
+```
+Then open `http://localhost:5500` in your browser.
 
-- **Option B – VS Code Live Server** (if you have the extension): right‑click `index.html` and select *Open with Live Server*.
+### Option B – VS Code Live Server:
+Right‑click `index.html` and select *Open with Live Server*.
 
 ---
 
 ## 👤 Register & Log In
 
-- On the login page, click **"Register here"**.
-- Choose a username, password, and **role** (Doctor, Admin, Researcher, SysAdmin).
-- After registration, you'll be logged in automatically.
+1. On the login page, click **"Get Started"** then **"Sign up"**.
+2. Choose a username, password, and **role** (Doctor, Admin, Researcher, SysAdmin).
+3. After registration, you'll be redirected to login.
+4. Use your credentials to access the platform.
 
 > **Note:** The first user must be registered via the UI – there are no default users.
 
@@ -169,27 +214,19 @@ You can open `index.html` directly in your browser, but it's better to serve it 
 
 ## 👥 User Roles & Permissions
 
-| Role               | Can Predict | Can Generate Reports | Can View Patients         |
-|--------------------|-------------|----------------------|---------------------------|
-| **Doctor**         | ✅ Yes      | ❌ No                | Only assigned patients    |
-| **Administrator**  | ❌ No       | ✅ Yes               | All patients              |
-| **Researcher**     | ❌ No       | ✅ Yes               | All (anonymised)          |
-| **System Admin**   | ✅ Yes      | ✅ Yes               | All patients              |
-
----
-
-## 🧪 Testing the Prediction
-
-Fill in the clinical form with realistic values. Example scenarios:
-
-- **High Risk** (probability ≥ 70%):  
-  Age `[70-80]`, Time in Hospital `10`, Medications `18`, Diagnoses `12`, Emergency `3`, Inpatient `3`, Insulin `Up`, A1Cresult `>7`, DiabetesMed `Yes`.
-
-- **Medium Risk** (probability 30–70%):  
-  Age `[50-60]`, Time in Hospital `6`, Medications `12`, Diagnoses `7`, Insulin `Steady`, A1Cresult `>7`, DiabetesMed `Yes`.
-
-- **Low Risk** (probability < 30%):  
-  Age `[30-40]`, Time in Hospital `2`, Medications `5`, Diagnoses `3`, Insulin `No`, A1Cresult `None`, DiabetesMed `No`.
+| Feature                | Doctor | Admin | Researcher | SysAdmin |
+|------------------------|--------|-------|------------|----------|
+| **Predict Readmission**| ✅ Yes | ❌ No | ❌ No      | ✅ Yes   |
+| **Generate Reports**   | ❌ No  | ✅ Yes| ✅ Yes     | ✅ Yes   |
+| **View Patients**      | ✅ Own | ✅ All| ✅ Anonymized | ✅ All |
+| **Add Notes**          | ✅ Yes | ❌ No | ❌ No      | ❌ No    |
+| **View Appointments**  | ✅ Yes | ❌ No | ❌ No      | ❌ No    |
+| **Assign Tasks**       | ❌ No  | ✅ Yes| ❌ No      | ❌ No    |
+| **View Tasks**         | ✅ Yes | ❌ No | ❌ No      | ❌ No    |
+| **Research Summaries** | ❌ No  | ✅ View| ✅ Post & View | ✅ View |
+| **User Management**    | ❌ No  | ❌ No | ❌ No      | ✅ Yes   |
+| **Model Management**   | ❌ No  | ❌ No | ❌ No      | ✅ Yes   |
+| **Hospital Population**| ❌ No  | ✅ Yes| ❌ No      | ✅ Yes   |
 
 ---
 
@@ -197,19 +234,40 @@ Fill in the clinical form with realistic values. Example scenarios:
 
 Once the backend is running, visit `http://localhost:8000/docs` to explore the auto‑generated OpenAPI documentation (Swagger UI).
 
+### Key Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/register` | Register a new user |
+| POST | `/login` | Login and get JWT token |
+| GET | `/me` | Get current user info |
+| GET | `/patients` | Get patients (role‑based) |
+| POST | `/predict` | Run prediction on patient data |
+| GET | `/analytics/overview` | Get dashboard statistics |
+| POST | `/reports/generate` | Generate a new report |
+| GET | `/reports` | Get all reports |
+| POST | `/notes` | Add a note (doctor only) |
+| GET | `/notes` | Get notes for current user |
+| POST | `/admin/schedule` | Create a task (admin only) |
+| GET | `/admin/schedules` | Get all schedules |
+| POST | `/research/summary` | Post research summary (researcher only) |
+| GET | `/research/summaries` | Get all research summaries |
+| GET | `/model/status` | Get model status (sysadmin only) |
+
 ---
 
 ## 🗂️ Project Structure
 
 ```
-prognexa-ai/
+HealthForecast-AI-Hospital-Readmission-Prediction-Patient-Risk-Intelligence-System/
 ├── app.py                 # FastAPI main application
 ├── config.py              # Configuration (MongoDB, JWT, model paths)
 ├── schemas.py             # Pydantic models (request/response)
 ├── predict.py             # Prediction logic (loads model, runs inference)
 ├── preprocessor.py        # Data preprocessing and feature engineering
+├── seed.py                # Database seeding script
 ├── requirements.txt       # Python dependencies
-├── model/                 # Contains model files (not included in repo)
+├── model/                 # Contains model files
 │   ├── readmission_model.json
 │   ├── feature_columns.json
 │   └── label_encoders.pkl
@@ -223,6 +281,6 @@ prognexa-ai/
 
 This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
 
-
+---
 
 **Prognexa AI** – *Intelligent healthcare, powered by AI.* 🚀
