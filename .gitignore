@@ -1,20 +1,59 @@
-# Python virtual environment
+# Python virtual environments
 .venv/
+venv/
+testenv/
+env/
 
 # Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
 
 # VS Code
 .vscode/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # OS files
 .DS_Store
 Thumbs.db
 
-testenv/
-*.pyc
-.vscode/
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build output
+frontend/dist/
+frontend/.cache/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# ML model files (large binary files)
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Generated reports
+generated_reports/

@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: healthforecast_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-healthforecast}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-healthforecast}
+      POSTGRES_DB: ${POSTGRES_DB:-healthforecast_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - healthforecast_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-healthforecast}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: healthforecast_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-healthforecast}:${POSTGRES_PASSWORD:-healthforecast}@db:5432/${POSTGRES_DB:-healthforecast_db}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ml:/app/ml
+      - ./logs:/app/logs
+      - ./generated_reports:/app/generated_reports
+
+volumes:
+  healthforecast_pgdata:
