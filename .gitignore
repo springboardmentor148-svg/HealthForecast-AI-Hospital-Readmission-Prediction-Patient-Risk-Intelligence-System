@@ -1,10 +1,17 @@
+# Python
 __pycache__/
 *.pyc
 .venv/
 venv/
-env/
-.env
-*.egg-info/
+ 
+# Backend runtime artifacts
+backend/healthforecast.db
+backend/*.db
+ 
+# OS junk
 .DS_Store
+Thumbs.db
+ 
+# Editor
 .vscode/
 .idea/
