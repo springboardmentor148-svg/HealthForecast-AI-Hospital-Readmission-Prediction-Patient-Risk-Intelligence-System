@@ -1,0 +1,74 @@
+{
+  "metrics": {
+    "accuracy": 0.6933133304757823,
+    "precision": 0.14582361175921604,
+    "recall": 0.4972155926809865,
+    "f1_score": 0.2255096518130976,
+    "roc_auc": 0.646749695309594,
+    "n_train": 55989,
+    "n_test": 13998,
+    "positive_rate_test": 0.08979854264894985
+  },
+  "top_features": [
+    {
+      "feature": "number_inpatient",
+      "importance": 0.0772
+    },
+    {
+      "feature": "discharge_disposition_id",
+      "importance": 0.0764
+    },
+    {
+      "feature": "diabetesMed",
+      "importance": 0.0364
+    },
+    {
+      "feature": "diag_1_group",
+      "importance": 0.0309
+    },
+    {
+      "feature": "prior_visits_total",
+      "importance": 0.0298
+    },
+    {
+      "feature": "number_emergency",
+      "importance": 0.0288
+    },
+    {
+      "feature": "time_in_hospital",
+      "importance": 0.0286
+    },
+    {
+      "feature": "metformin",
+      "importance": 0.0264
+    },
+    {
+      "feature": "age_numeric",
+      "importance": 0.0264
+    },
+    {
+      "feature": "payer_code",
+      "importance": 0.0263
+    },
+    {
+      "feature": "number_diagnoses",
+      "importance": 0.0257
+    },
+    {
+      "feature": "glimepiride",
+      "importance": 0.0255
+    },
+    {
+      "feature": "medical_specialty",
+      "importance": 0.025
+    },
+    {
+      "feature": "max_glu_serum",
+      "importance": 0.0249
+    },
+    {
+      "feature": "change",
+      "importance": 0.0248
+    }
+  ]
+}

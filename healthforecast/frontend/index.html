@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>HealthForecast AI — Readmission Telemetry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+<style>
+  :root{
+    --bg: #060a0f;
+    --panel: #0b141f;
+    --panel-2: #0f1c2b;
+    --panel-3: #0a121b;
+    --line: #1b2e40;
+    --line-bright: #2a4a63;
+    --ink: #DCEFEA;
+    --ink-dim: #6f93a0;
+    --ink-faint: #3f5866;
+    --green: #39FF88;
+    --green-dim: #1c7a48;
+    --cyan: #22D3EE;
+    --cyan-dim: #157084;
+    --amber: #FFB020;
+    --red: #FF4D6D;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background: var(--bg); color: var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(57,255,136,0.05) 0px, transparent 1px, transparent 28px),
+      repeating-linear-gradient(90deg, rgba(57,255,136,0.05) 0px, transparent 1px, transparent 28px),
+      repeating-linear-gradient(0deg, rgba(57,255,136,0.08) 0px, transparent 1px, transparent 140px),
+      repeating-linear-gradient(90deg, rgba(57,255,136,0.08) 0px, transparent 1px, transparent 140px);
+    min-height:100vh;
+  }
+  h1,h2,h3,.display,.mono{ font-family:'JetBrains Mono', monospace; letter-spacing:-0.01em; }
+  .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--cyan); font-weight:600; }
+  ::selection{ background: var(--cyan-dim); color:#fff; }
+  a{ color: inherit; }
+  button{ font-family: inherit; cursor:pointer; }
+  input, select, textarea{ font-family: 'IBM Plex Sans', inherit; }
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb{ background:var(--line-bright); border-radius:5px; }
+  ::-webkit-scrollbar-track{ background:var(--panel); }
+
+  @keyframes ledBlinkFast{ 0%,100%{opacity:1} 50%{opacity:.15} }
+  @keyframes ledBlinkSlow{ 0%,100%{opacity:1} 50%{opacity:.45} }
+  @keyframes vitalsScroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+  @keyframes sweepGlow{ 0%{ opacity:0.15 } 50%{ opacity:0.5 } 100%{ opacity:0.15 } }
+  @keyframes bootFlicker{ 0%{opacity:0} 8%{opacity:1} 10%{opacity:0.4} 12%{opacity:1} 100%{opacity:1} }
+  @keyframes riseIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:translateY(0);} }
+
+  .led{ width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
+
+  .tile{ position:relative; background:var(--panel); border:1px solid var(--line); border-radius:3px; padding:20px; animation:riseIn .35s ease both; }
+  .tile::before, .tile::after{ content:''; position:absolute; width:9px; height:9px; pointer-events:none; }
+  .tile::before{ top:-1px; left:-1px; border-top:2px solid var(--line-bright); border-left:2px solid var(--line-bright); }
+  .tile::after{ bottom:-1px; right:-1px; border-bottom:2px solid var(--line-bright); border-right:2px solid var(--line-bright); }
+
+  .field-input{
+    width:100%; background:var(--panel-3); border:1px solid var(--line);
+    border-radius:3px; padding:9px 11px; color:var(--ink); font-size:13.5px; outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .field-input:focus{ border-color:var(--cyan); box-shadow:0 0 0 3px rgba(34,211,238,0.12); }
+
+  .btn-primary{
+    background:var(--green); color:#04150C; border:none; border-radius:3px;
+    padding:10px 18px; font-weight:700; font-size:13px; font-family:'JetBrains Mono',monospace;
+    letter-spacing:0.04em; text-transform:uppercase; transition:filter .15s, transform .1s;
+  }
+  .btn-primary:hover{ filter:brightness(1.12); }
+  .btn-primary:active{ transform:scale(0.98); }
+  .btn-primary:disabled{ opacity:0.5; cursor:default; }
+
+  .btn-ghost{
+    background:transparent; border:1px solid var(--line-bright); color:var(--ink-dim);
+    border-radius:3px; padding:8px 12px; font-size:12px; font-family:'JetBrains Mono',monospace;
+  }
+  .btn-ghost:hover{ color:var(--ink); border-color:var(--cyan-dim); }
+
+  .navitem{
+    display:flex; align-items:center; gap:10px; text-align:left; padding:10px 12px; border-radius:3px;
+    border:1px solid transparent; background:transparent; color:var(--ink-dim);
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; letter-spacing:0.03em; width:100%;
+  }
+  .navitem.active{ background:var(--panel-2); color:var(--ink); border-color:var(--line); }
+  .navitem:hover:not(.active){ color:var(--ink); }
+
+  .chart-row{ transition: background .12s; cursor:pointer; }
+  .chart-row:hover{ background: var(--panel-2); }
+
+  .demo-btn{ background:var(--panel-2); border:1px solid var(--line); border-radius:3px; padding:9px 10px; color:var(--ink-dim); text-align:left; font-size:11.5px; font-family:'JetBrains Mono',monospace; transition:border-color .15s,color .15s; }
+  .demo-btn:hover{ border-color:var(--cyan-dim); color:var(--ink); }
+
+  @media (max-width: 860px){
+    .app-shell{ flex-direction:column; }
+    .app-sidebar{ width:100% !important; flex-direction:row !important; overflow-x:auto; padding:12px !important; }
+    .app-main{ padding:20px !important; }
+    .grid-3{ grid-template-columns:1fr !important; }
+    .grid-4{ grid-template-columns:1fr 1fr !important; }
+    .flex-stats{ flex-direction:column !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+
+const { useState, useEffect, useMemo, useCallback } = React;
+const API = "http://localhost:8000";
+
+// ---------------------------------------------------------------- helpers
+async function api(path, { token, method = "GET", body, form } = {}) {
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  let payload = body;
+  if (form) {
+    headers["Content-Type"] = "application/x-www-form-urlencoded";
+    payload = new URLSearchParams(form).toString();
+  } else if (body) {
+    headers["Content-Type"] = "application/json";
+    payload = JSON.stringify(body);
+  }
+  const res = await fetch(`${API}${path}`, { method, headers, body: payload });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Request failed");
+  }
+  return res.json();
+}
+
+const RISK_COLOR = { High: "var(--red)", Medium: "var(--amber)", Low: "var(--green)" };
+const RISK_LABEL = { High: "CRITICAL", Medium: "ELEVATED", Low: "STABLE" };
+
+const ROLE_LABEL = {
+  doctor: "Doctor",
+  hospital_admin: "Hospital Administrator",
+  researcher: "Healthcare Researcher",
+  system_admin: "System Administrator",
+};
+
+// ================================================================== SIGNATURE: live vitals waveform
+function ecgPath(width, height, score, cycles) {
+  const mid = height / 2;
+  const cw = width / cycles;
+  const pts = [];
+  for (let c = 0; c < cycles; c++) {
+    const x0 = c * cw;
+    const jitter = (Math.sin(c * 12.9) * 0.5 + 0.5) * score * height * 0.06;
+    const amp = height * 0.26 + score * height * 0.58 + jitter;
+    pts.push([x0, mid]);
+    pts.push([x0 + cw * 0.16, mid]);
+    pts.push([x0 + cw * 0.23, mid - height * 0.06]);
+    pts.push([x0 + cw * 0.29, mid]);
+    pts.push([x0 + cw * 0.35, mid + height * 0.06]);
+    pts.push([x0 + cw * 0.40, mid - amp]);
+    pts.push([x0 + cw * 0.45, mid + height * 0.20]);
+    pts.push([x0 + cw * 0.50, mid]);
+    pts.push([x0 + cw * 0.66, mid - height * 0.12 - score * height * 0.10]);
+    pts.push([x0 + cw * 0.80, mid]);
+    if (score > 0.45 && c % 2 === 0) {
+      pts.push([x0 + cw * 0.88, mid - height * 0.22 * score]);
+      pts.push([x0 + cw * 0.93, mid]);
+    }
+    pts.push([x0 + cw, mid]);
+  }
+  return pts.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+}
+
+function VitalsWaveform({ score = 0.08, category = "Low", width = 520, height = 84, animate = true }) {
+  const color = RISK_COLOR[category] || "var(--green)";
+  const cycles = Math.max(3, Math.round(3 + score * 8));
+  const d = useMemo(() => ecgPath(width, height, score, cycles), [width, height, score, cycles]);
+  const dur = Math.max(2.4, 7.5 - score * 5.4).toFixed(1) + "s";
+  return (
+    <div style={{ width, height, overflow: "hidden", position: "relative" }}>
+      <div style={{
+        position: "absolute", inset: 0, background: `linear-gradient(90deg, var(--panel) 0%, transparent 6%, transparent 94%, var(--panel) 100%)`,
+        zIndex: 2, pointerEvents: "none"
+      }} />
+      <div style={{ width: width * 2, animation: animate ? `vitalsScroll ${dur} linear infinite` : "none" }}>
+        {[0, 1].map(i => (
+          <svg key={i} width={width} height={height} style={{ display: "block", float: "left" }}>
+            <path d={d} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+              style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+          </svg>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ================================================================== SIGNATURE: analog risk gauge
+function ptAt(cx, cy, r, t) {
+  const deg = 180 - t * 180;
+  const rad = (deg * Math.PI) / 180;
+  return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)];
+}
+function arcPath(cx, cy, r, t0, t1, steps = 24) {
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = t0 + ((t1 - t0) * i) / steps;
+    pts.push(ptAt(cx, cy, r, t));
+  }
+  return pts.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(2) + " " + p[1].toFixed(2)).join(" ");
+}
+
+function RiskGauge({ score = 0, category = "Low", size = 190 }) {
+  const cx = size / 2, cy = size * 0.56, r = size * 0.40;
+  const t = Math.max(0, Math.min(1, score));
+  const [nx, ny] = ptAt(cx, cy, r * 0.86, t);
+  const color = RISK_COLOR[category] || "var(--ink-dim)";
+  return (
+    <div style={{ width: size, height: size * 0.72, position: "relative" }}>
+      <svg width={size} height={size * 0.72}>
+        <path d={arcPath(cx, cy, r, 0, 0.25)} stroke="var(--green)" strokeWidth={size * 0.045} fill="none" strokeLinecap="round" opacity={0.85} />
+        <path d={arcPath(cx, cy, r, 0.25, 0.5)} stroke="var(--amber)" strokeWidth={size * 0.045} fill="none" strokeLinecap="round" opacity={0.85} />
+        <path d={arcPath(cx, cy, r, 0.5, 1)} stroke="var(--red)" strokeWidth={size * 0.045} fill="none" strokeLinecap="round" opacity={0.85} />
+        <line x1={cx} y1={cy} x2={nx} y2={ny} stroke={color} strokeWidth={size * 0.018} strokeLinecap="round"
+          style={{ filter: `drop-shadow(0 0 5px ${color})`, transition: "all 0.7s cubic-bezier(.2,.9,.3,1.2)" }} />
+        <circle cx={cx} cy={cy} r={size * 0.045} fill="var(--panel)" stroke={color} strokeWidth="2" />
+      </svg>
+      <div className="mono" style={{ position: "absolute", left: 0, right: 0, bottom: 2, textAlign: "center", fontSize: size * 0.16, fontWeight: 800, color }}>
+        {Math.round(t * 100)}%
+      </div>
+    </div>
+  );
+}
+
+function LED({ color, category }) {
+  const anim = category === "High" ? "ledBlinkFast 0.7s ease-in-out infinite" : category === "Medium" ? "ledBlinkSlow 1.8s ease-in-out infinite" : "none";
+  return <span className="led" style={{ background: color, boxShadow: `0 0 6px ${color}`, animation: anim }} />;
+}
+
+function Pill({ category, children }) {
+  const color = RISK_COLOR[category] || "var(--ink-dim)";
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 10px 4px 8px",
+      borderRadius: 2, fontSize: 11.5, fontWeight: 700, background: `${color}18`,
+      color, border: `1px solid ${color}55`, fontFamily: "'JetBrains Mono',monospace", letterSpacing: "0.05em"
+    }}>
+      <LED color={color} category={category} />
+      {children}
+    </span>
+  );
+}
+
+function Card({ children, style }) {
+  return <div className="tile" style={style}>{children}</div>;
+}
+
+function Field({ label, children, hint }) {
+  return (
+    <label style={{ display: "block", marginBottom: 14 }}>
+      <div className="eyebrow" style={{ marginBottom: 6, color: "var(--ink-dim)" }}>{label}</div>
+      {children}
+      {hint && <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 4 }}>{hint}</div>}
+    </label>
+  );
+}
+
+// ================================================================== LOGIN (boot / channel-select screen)
+function Login({ onLogin }) {
+  const [email, setEmail] = useState("doctor@healthforecast.ai");
+  const [password, setPassword] = useState("doctor123");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError(""); setLoading(true);
+    try {
+      const data = await api("/auth/login", { method: "POST", form: { username: email, password } });
+      onLogin(data);
+    } catch (err) {
+      setError(err.message || "Login failed");
+    } finally { setLoading(false); }
+  };
+
+  const demo = [
+    ["DOCTOR", "doctor@healthforecast.ai", "doctor123"],
+    ["HOSPITAL ADMIN", "admin@healthforecast.ai", "admin123"],
+    ["RESEARCHER", "researcher@healthforecast.ai", "research123"],
+    ["SYSTEM ADMIN", "sysadmin@healthforecast.ai", "sysadmin123"],
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ width: 400, animation: "bootFlicker 0.6s ease both" }}>
+        <div style={{ textAlign: "center", marginBottom: 26 }}>
+          <VitalsWaveform score={0.12} category="Low" width={340} height={54} />
+          <div className="eyebrow" style={{ marginTop: 10 }}>READMISSION TELEMETRY · SYSTEM READY</div>
+          <h1 style={{ margin: "6px 0 0", fontSize: 26, fontWeight: 800 }}>HEALTHFORECAST <span style={{ color: "var(--green)" }}>AI</span></h1>
+        </div>
+        <Card>
+          <form onSubmit={submit}>
+            <Field label="Operator email">
+              <input className="field-input" value={email} onChange={e=>setEmail(e.target.value)} />
+            </Field>
+            <Field label="Access code">
+              <input type="password" className="field-input" value={password} onChange={e=>setPassword(e.target.value)} />
+            </Field>
+            {error && <div style={{ color: "var(--red)", fontSize: 12.5, marginBottom: 12, fontFamily:"'JetBrains Mono',monospace" }}>⚠ {error}</div>}
+            <button type="submit" disabled={loading} className="btn-primary" style={{ width: "100%", padding: "12px 0" }}>
+              {loading ? "AUTHENTICATING…" : "SIGN IN →"}
+            </button>
+          </form>
+        </Card>
+        <div style={{ marginTop: 18 }}>
+          <div className="eyebrow" style={{ marginBottom: 8, color: "var(--ink-faint)" }}>QUICK CHANNEL SELECT — DEMO ROLES</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {demo.map(([label, em, pw]) => (
+              <button key={em} className="demo-btn" onClick={() => { setEmail(em); setPassword(pw); }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ================================================================== SHELL (control panel)
+function Shell({ session, onLogout, children, active, setActive }) {
+  const nav = [
+    { key: "dashboard", label: "OVERVIEW" },
+    { key: "patients", label: "PATIENT CHARTS" },
+    { key: "new-patient", label: "NEW ENCOUNTER", hide: session.role === "researcher" },
+    { key: "analytics", label: "POPULATION ANALYTICS" },
+  ].filter(n => !n.hide);
+
+  return (
+    <div className="app-shell" style={{ display: "flex", minHeight: "100vh" }}>
+      <div className="app-sidebar" style={{ width: 250, background: "var(--panel)", borderRight: "1px solid var(--line)", padding: "22px 16px", display: "flex", flexDirection: "column" }}>
+        <div style={{ marginBottom: 26, paddingLeft: 4 }}>
+          <div className="eyebrow" style={{ fontSize: 10 }}>TELEMETRY / RISK</div>
+          <h2 style={{ margin: "4px 0 0", fontSize: 16.5 }}>HEALTHFORECAST <span style={{color:"var(--green)"}}>AI</span></h2>
+        </div>
+        <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {nav.map(n => (
+            <button key={n.key} onClick={() => setActive(n.key)} className={"navitem" + (active === n.key ? " active" : "")}>
+              <LED color={active === n.key ? "var(--green)" : "var(--ink-faint)"} category="" />
+              {n.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{session.full_name}</div>
+          <div className="mono" style={{ fontSize: 10.5, color: "var(--ink-dim)", marginBottom: 10, letterSpacing:"0.04em" }}>{ROLE_LABEL[session.role].toUpperCase()}</div>
+          <button onClick={onLogout} className="btn-ghost" style={{ width: "100%" }}>SIGN OUT</button>
+        </div>
+      </div>
+      <div className="app-main" style={{ flex: 1, padding: "28px 36px", maxWidth: 1140 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ================================================================== DASHBOARD
+function Sparkline({ value, color, width = 100, height = 26 }) {
+  const pts = useMemo(() => {
+    let seed = 0;
+    for (let i = 0; i < 8; i++) seed += (i + 1) * value;
+    const arr = [];
+    for (let i = 0; i < 12; i++) {
+      const wobble = Math.sin(i * 1.7 + seed) * 0.5 + 0.5;
+      arr.push(0.25 + wobble * 0.5 * (0.4 + value));
+    }
+    return arr;
+  }, [value]);
+  const step = width / (pts.length - 1);
+  const d = pts.map((p, i) => (i === 0 ? "M" : "L") + (i * step).toFixed(1) + "," + (height - p * height).toFixed(1)).join(" ");
+  return (
+    <svg width={width} height={height}>
+      <path d={d} fill="none" stroke={color} strokeWidth="1.6" opacity="0.8" />
+    </svg>
+  );
+}
+
+function StatTile({ label, value, color, spark }) {
+  return (
+    <Card style={{ flex: 1 }}>
+      <div className="eyebrow" style={{ color: "var(--ink-dim)" }}>{label}</div>
+      <div className="display" style={{ fontSize: 30, fontWeight: 800, marginTop: 8, color: color || "var(--ink)" }}>{value}</div>
+      {spark !== undefined && <div style={{ marginTop: 8 }}><Sparkline value={spark} color={color || "var(--cyan)"} /></div>}
+    </Card>
+  );
+}
+
+function Dashboard({ token }) {
+  const [summary, setSummary] = useState(null);
+  const [perf, setPerf] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    Promise.all([
+      api("/analytics/summary", { token }),
+      api("/analytics/model-performance", { token }),
+    ]).then(([s, p]) => { setSummary(s); setPerf(p); }).catch(e => setError(e.message));
+  }, [token]);
+
+  if (error) return <Card><div style={{color:"var(--red)"}}>⚠ {error}</div></Card>;
+  if (!summary) return <div className="mono" style={{color:"var(--ink-dim)"}}>LOADING TELEMETRY…</div>;
+
+  const dist = summary.risk_distribution || {};
+  const total = Object.values(dist).reduce((a,b)=>a+b,0) || 1;
+  const avgScore = summary.average_risk_score || 0;
+  const avgCategory = avgScore >= 0.5 ? "High" : avgScore >= 0.2 ? "Medium" : "Low";
+
+  return (
+    <div>
+      <div className="eyebrow">LIVE FEED · ALL WARDS</div>
+      <h1 style={{ fontSize: 24, margin: "4px 0 4px" }}>Population Risk Overview</h1>
+      <p style={{ color: "var(--ink-dim)", marginTop: 0, marginBottom: 18, fontSize: 13.5 }}>Aggregate readmission telemetry across your patient population.</p>
+
+      <Card style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>COMPOSITE RISK PULSE</div>
+            <VitalsWaveform score={avgScore} category={avgCategory} width={420} height={70} />
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div className="mono" style={{ fontSize: 34, fontWeight: 800, color: RISK_COLOR[avgCategory] }}>{(avgScore*100).toFixed(1)}%</div>
+            <Pill category={avgCategory}>{RISK_LABEL[avgCategory]} AVG.</Pill>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex-stats" style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+        <StatTile label="TOTAL PATIENTS" value={summary.total_patients} spark={0.3} color="var(--cyan)" />
+        <StatTile label="PREDICTIONS RUN" value={summary.total_predictions} spark={0.5} color="var(--cyan)" />
+        <StatTile label="HIGH-RISK PATIENTS" value={summary.high_risk_count} spark={0.85} color="var(--red)" />
+        <StatTile label="AVG. RISK SCORE" value={(avgScore*100).toFixed(1) + "%"} spark={avgScore} color="var(--amber)" />
+      </div>
+
+      <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <Card>
+          <h3 style={{ marginTop: 0, fontSize: 14 }}>RISK DISTRIBUTION</h3>
+          {["High","Medium","Low"].map(cat => (
+            <div key={cat} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 4 }}>
+                <Pill category={cat}>{RISK_LABEL[cat]}</Pill>
+                <span className="mono" style={{color:"var(--ink-dim)"}}>{dist[cat] || 0}</span>
+              </div>
+              <div style={{ height: 7, background: "var(--panel-2)", borderRadius: 2, overflow:"hidden" }}>
+                <div style={{ width: `${((dist[cat]||0)/total)*100}%`, height: "100%", background: RISK_COLOR[cat], transition:"width 0.6s", boxShadow:`0 0 6px ${RISK_COLOR[cat]}` }} />
+              </div>
+            </div>
+          ))}
+        </Card>
+        <Card>
+          <h3 style={{ marginTop: 0, fontSize: 14 }}>MODEL PERFORMANCE <span style={{fontSize:10.5, color:"var(--ink-dim)", fontWeight:500, textTransform:"none"}}>· XGBoost, held-out test set</span></h3>
+          {perf && Object.entries(perf.metrics).filter(([k])=>["accuracy","precision","recall","f1_score","roc_auc"].includes(k)).map(([k,v]) => (
+            <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderBottom:"1px solid var(--line)" }}>
+              <span style={{ color: "var(--ink-dim)", fontSize: 12.5, textTransform:"capitalize" }}>{k.replace("_"," ")}</span>
+              <span className="mono" style={{ fontWeight: 700, color:"var(--cyan)" }}>{(v*100).toFixed(1)}%</span>
+            </div>
+          ))}
+        </Card>
+      </div>
+
+      {perf && (
+        <Card style={{ marginTop: 16 }}>
+          <h3 style={{ marginTop: 0, fontSize: 14 }}>TOP PREDICTIVE FACTORS <span style={{fontSize:10.5, color:"var(--ink-dim)", fontWeight:500, textTransform:"none"}}>· global model importance</span></h3>
+          <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 24px" }}>
+            {perf.top_features.slice(0,8).map(f => (
+              <div key={f.feature} style={{ display:"flex", alignItems:"center", gap:10, padding:"7px 0" }}>
+                <div className="mono" style={{ width: 150, fontSize: 11.5, color:"var(--ink-dim)" }}>{f.feature.replace(/_/g," ")}</div>
+                <div style={{ flex:1, height:6, background:"var(--panel-2)", borderRadius:2 }}>
+                  <div style={{ width: `${(f.importance/perf.top_features[0].importance)*100}%`, height:"100%", background:"var(--cyan)", borderRadius:2, boxShadow:"0 0 5px var(--cyan)" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ================================================================== PATIENTS LIST (chart rack)
+function Patients({ token, onOpen }) {
+  const [patients, setPatients] = useState([]);
+  const [error, setError] = useState("");
+  const [q, setQ] = useState("");
+
+  useEffect(() => {
+    api("/patients", { token }).then(setPatients).catch(e => setError(e.message));
+  }, [token]);
+
+  if (error) return <Card><div style={{color:"var(--red)"}}>⚠ {error}</div></Card>;
+
+  const filtered = patients.filter(p =>
+    !q || p.full_name.toLowerCase().includes(q.toLowerCase()) || p.mrn.toLowerCase().includes(q.toLowerCase())
+  );
+
+  return (
+    <div>
+      <div className="eyebrow">CHART RACK</div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom: 16, flexWrap:"wrap", gap:10 }}>
+        <h1 style={{ fontSize: 24, margin: "4px 0" }}>Patients</h1>
+        <input className="field-input" style={{ width: 240 }} placeholder="Search name or MRN…" value={q} onChange={e=>setQ(e.target.value)} />
+      </div>
+      <Card style={{ padding: 0 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr className="mono" style={{ textAlign: "left", fontSize: 10.5, color: "var(--ink-dim)", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+              <th style={{ padding: 14 }}>MRN</th><th>Name</th><th>Age</th><th>Gender</th><th>Diabetes Med</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(p => (
+              <tr key={p.id} className="chart-row" style={{ borderTop: "1px solid var(--line)" }} onClick={() => onOpen(p.id)}>
+                <td style={{ padding: 14 }} className="mono">{p.mrn}</td>
+                <td>{p.full_name}</td>
+                <td className="mono" style={{fontSize:13}}>{p.age_bracket}</td>
+                <td style={{fontSize:13}}>{p.gender}</td>
+                <td>{p.diabetesMed === "Yes" ? <span style={{color:"var(--cyan)", fontSize:12.5}} className="mono">YES</span> : <span style={{color:"var(--ink-faint)", fontSize:12.5}} className="mono">NO</span>}</td>
+                <td style={{ color: "var(--green)", fontSize: 12, textAlign:"right", paddingRight:14 }} className="mono">OPEN CHART →</td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr><td colSpan={6} style={{ padding: 24, color: "var(--ink-dim)", textAlign:"center" }}>No patients match — add one from "New Encounter".</td></tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+// ================================================================== NEW PATIENT (intake clipboard)
+function Section({ title, children }) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <div className="eyebrow" style={{ marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid var(--line)" }}>{title}</div>
+      <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function NewPatient({ token, onCreated }) {
+  const [form, setForm] = useState({
+    mrn: "", full_name: "", age_bracket: "[60-70)", gender: "Female", race: "Caucasian",
+    admission_type_id: 1, discharge_disposition_id: 1, admission_source_id: 7, time_in_hospital: 3,
+    num_lab_procedures: 40, num_procedures: 1, num_medications: 12,
+    number_outpatient: 0, number_emergency: 0, number_inpatient: 0, number_diagnoses: 5,
+    diag_1: "250.83", diag_2: "", diag_3: "",
+    max_glu_serum: "None", A1Cresult: "None", change: "No", diabetesMed: "Yes",
+  });
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const setNum = (k) => (e) => setForm({ ...form, [k]: parseInt(e.target.value || 0, 10) });
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSaving(true); setError("");
+    try {
+      const p = await api("/patients", { token, method: "POST", body: { ...form, medications: {} } });
+      onCreated(p.id);
+    } catch (err) { setError(err.message); } finally { setSaving(false); }
+  };
+
+  const ageOptions = ["[0-10)","[10-20)","[20-30)","[30-40)","[40-50)","[50-60)","[60-70)","[70-80)","[80-90)","[90-100)"];
+
+  return (
+    <div>
+      <div className="eyebrow">INTAKE FORM</div>
+      <h1 style={{ fontSize: 24, margin: "4px 0 16px" }}>New Patient / Encounter</h1>
+      <Card>
+        <form onSubmit={submit}>
+          <Section title="IDENTIFICATION">
+            <Field label="MRN"><input className="field-input" value={form.mrn} onChange={set("mrn")} required /></Field>
+            <Field label="Full name"><input className="field-input" value={form.full_name} onChange={set("full_name")} required /></Field>
+            <Field label="Age bracket">
+              <select className="field-input" value={form.age_bracket} onChange={set("age_bracket")}>
+                {ageOptions.map(a => <option key={a}>{a}</option>)}
+              </select>
+            </Field>
+            <Field label="Gender">
+              <select className="field-input" value={form.gender} onChange={set("gender")}>
+                <option>Female</option><option>Male</option>
+              </select>
+            </Field>
+            <Field label="Race"><input className="field-input" value={form.race} onChange={set("race")} /></Field>
+          </Section>
+
+          <Section title="ENCOUNTER METRICS">
+            <Field label="Time in hospital (days)"><input type="number" className="field-input" value={form.time_in_hospital} onChange={setNum("time_in_hospital")} /></Field>
+            <Field label="Lab procedures (#)"><input type="number" className="field-input" value={form.num_lab_procedures} onChange={setNum("num_lab_procedures")} /></Field>
+            <Field label="Procedures (#)"><input type="number" className="field-input" value={form.num_procedures} onChange={setNum("num_procedures")} /></Field>
+            <Field label="Medications (#)"><input type="number" className="field-input" value={form.num_medications} onChange={setNum("num_medications")} /></Field>
+            <Field label="Prior outpatient visits"><input type="number" className="field-input" value={form.number_outpatient} onChange={setNum("number_outpatient")} /></Field>
+            <Field label="Prior emergency visits"><input type="number" className="field-input" value={form.number_emergency} onChange={setNum("number_emergency")} /></Field>
+            <Field label="Prior inpatient stays"><input type="number" className="field-input" value={form.number_inpatient} onChange={setNum("number_inpatient")} /></Field>
+          </Section>
+
+          <Section title="CLINICAL">
+            <Field label="Primary diagnosis (ICD9)"><input className="field-input" value={form.diag_1} onChange={set("diag_1")} placeholder="e.g. 250.83" /></Field>
+            <Field label="A1C result">
+              <select className="field-input" value={form.A1Cresult} onChange={set("A1Cresult")}>
+                <option>None</option><option>Norm</option><option>&gt;7</option><option>&gt;8</option>
+              </select>
+            </Field>
+            <Field label="Diabetes medication prescribed">
+              <select className="field-input" value={form.diabetesMed} onChange={set("diabetesMed")}>
+                <option>Yes</option><option>No</option>
+              </select>
+            </Field>
+          </Section>
+
+          {error && <div style={{ color: "var(--red)", marginBottom: 12, fontSize: 13 }}>⚠ {error}</div>}
+          <button disabled={saving} className="btn-primary">
+            {saving ? "SAVING…" : "SAVE PATIENT & CONTINUE →"}
+          </button>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
+// ================================================================== PATIENT DETAIL
+function PatientDetail({ token, patientId, onBack }) {
+  const [patient, setPatient] = useState(null);
+  const [prediction, setPrediction] = useState(null);
+  const [error, setError] = useState("");
+  const [predicting, setPredicting] = useState(false);
+
+  const load = useCallback(() => {
+    api(`/patients/${patientId}`, { token }).then(setPatient).catch(e => setError(e.message));
+  }, [token, patientId]);
+
+  useEffect(load, [load]);
+
+  const runPrediction = async () => {
+    setPredicting(true); setError("");
+    try {
+      const p = await api(`/patients/${patientId}/predict`, { token, method: "POST" });
+      setPrediction(p);
+    } catch (e) { setError(e.message); } finally { setPredicting(false); }
+  };
+
+  if (error) return <Card><div style={{color:"var(--red)"}}>⚠ {error}</div></Card>;
+  if (!patient) return <div className="mono" style={{color:"var(--ink-dim)"}}>LOADING CHART…</div>;
+
+  return (
+    <div>
+      <button onClick={onBack} className="btn-ghost" style={{ marginBottom: 16, border:"none", padding:0, color:"var(--ink-dim)" }}>← BACK TO CHART RACK</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap:"wrap", gap:12 }}>
+        <div>
+          <div className="eyebrow">{patient.mrn}</div>
+          <h1 style={{ fontSize: 24, margin: "2px 0 0" }}>{patient.full_name}</h1>
+          <div style={{ color: "var(--ink-dim)", fontSize: 13 }} className="mono">{patient.age_bracket} · {patient.gender}</div>
+        </div>
+        <button onClick={runPrediction} disabled={predicting} className="btn-primary">
+          {predicting ? "SCORING…" : "RUN READMISSION RISK PREDICTION"}
+        </button>
+      </div>
+
+      <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems:"stretch" }}>
+        <Card>
+          <h3 style={{ marginTop: 0, fontSize: 14 }}>ENCOUNTER SUMMARY</h3>
+          {[
+            ["Time in hospital", patient.time_in_hospital + " days"],
+            ["Lab procedures", patient.num_lab_procedures],
+            ["Medications", patient.num_medications],
+            ["Prior inpatient stays", patient.number_inpatient],
+            ["Prior emergency visits", patient.number_emergency],
+            ["Primary diagnosis (ICD9)", patient.diag_1],
+            ["A1C result", patient.A1Cresult],
+            ["On diabetes medication", patient.diabetesMed],
+          ].map(([k,v]) => (
+            <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid var(--line)", fontSize: 13 }}>
+              <span style={{ color: "var(--ink-dim)" }}>{k}</span><span className="mono">{v}</span>
+            </div>
+          ))}
+        </Card>
+
+        <Card style={{ minHeight: 280 }}>
+          <h3 style={{ marginTop: 0, fontSize: 14 }}>READMISSION RISK</h3>
+          {!prediction && (
+            <div>
+              <VitalsWaveform score={0.06} category="Low" width={300} height={60} />
+              <div style={{ color: "var(--ink-dim)", fontSize: 13, marginTop: 12 }}>Run a prediction to see this patient's 30-day readmission risk score, key drivers, and recommended care actions.</div>
+            </div>
+          )}
+          {prediction && (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12, flexWrap:"wrap" }}>
+                <RiskGauge score={prediction.risk_score} category={prediction.risk_category} />
+                <div>
+                  <Pill category={prediction.risk_category}>{RISK_LABEL[prediction.risk_category]}</Pill>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-dim)", marginTop: 6 }}>30-day readmission probability</div>
+                </div>
+              </div>
+              <VitalsWaveform score={prediction.risk_score} category={prediction.risk_category} width={300} height={54} />
+              <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 6, marginTop: 14 }} className="eyebrow">CARE RECOMMENDATIONS</div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "var(--ink-dim)" }}>
+                {prediction.care_recommendations.map((r,i) => <li key={i} style={{marginBottom:5}}>{r}</li>)}
+              </ul>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {prediction && (
+        <Card style={{ marginTop: 16 }}>
+          <h3 style={{ marginTop: 0, fontSize: 14 }}>KEY RISK FACTORS FOR THIS PATIENT</h3>
+          <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            {prediction.top_factors.map(f => (
+              <div key={f.feature} style={{ background:"var(--panel-2)", borderRadius:3, padding:12, border:"1px solid var(--line)" }}>
+                <div className="eyebrow" style={{ fontSize: 10.5, color:"var(--ink-dim)" }}>{f.feature.replace(/_/g," ")}</div>
+                <div className="mono" style={{ fontSize: 17, fontWeight:700, marginTop:4, color:"var(--cyan)" }}>{f.value}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ================================================================== ANALYTICS (researcher-safe, aggregated)
+function Analytics({ token }) {
+  return <Dashboard token={token} />; // aggregated data only — safe for all roles per Access Matrix
+}
+
+// ================================================================== APP
+function App() {
+  const [session, setSession] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("hf_session")); } catch { return null; }
+  });
+  const [active, setActive] = useState("dashboard");
+  const [openPatientId, setOpenPatientId] = useState(null);
+
+  const handleLogin = (data) => {
+    const s = { token: data.access_token, role: data.role, full_name: data.full_name };
+    setSession(s);
+    localStorage.setItem("hf_session", JSON.stringify(s));
+  };
+  const handleLogout = () => { setSession(null); localStorage.removeItem("hf_session"); };
+
+  if (!session) return <Login onLogin={handleLogin} />;
+
+  let content;
+  if (active === "dashboard") content = <Dashboard token={session.token} />;
+  else if (active === "patients") content = openPatientId
+    ? <PatientDetail token={session.token} patientId={openPatientId} onBack={() => setOpenPatientId(null)} />
+    : <Patients token={session.token} onOpen={setOpenPatientId} />;
+  else if (active === "new-patient") content = <NewPatient token={session.token} onCreated={(id) => { setActive("patients"); setOpenPatientId(id); }} />;
+  else if (active === "analytics") content = <Analytics token={session.token} />;
+
+  return (
+    <Shell session={session} onLogout={handleLogout} active={active} setActive={(k) => { setActive(k); setOpenPatientId(null); }}>
+      {content}
+    </Shell>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
