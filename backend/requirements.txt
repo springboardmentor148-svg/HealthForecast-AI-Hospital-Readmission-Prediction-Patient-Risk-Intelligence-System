@@ -11,6 +11,7 @@ python-multipart
 scikit-learn
 xgboost
 numpy
+pandas
 joblib
 
 # Database
