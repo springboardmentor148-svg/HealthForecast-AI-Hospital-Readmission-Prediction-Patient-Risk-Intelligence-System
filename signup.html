@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create an Account</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: #f4f6f9;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .signup-container {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .signup-card {
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .signup-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .signup-header h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .signup-header p {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .signup-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-group input.invalid {
+      border-color: #dc2626;
+    }
+
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: #2563eb;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .checkbox-group {
+      margin-top: 4px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #555;
+      cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    .checkbox-label a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .checkbox-label a:hover {
+      text-decoration: underline;
+    }
+
+    .error-message {
+      font-size: 12px;
+      color: #dc2626;
+      margin-top: 4px;
+      min-height: 16px;
+    }
+
+    .submit-btn {
+      background-color: #2563eb;
+      color: #ffffff;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-top: 8px;
+    }
+
+    .submit-btn:hover {
+      background-color: #1d4ed8;
+    }
+
+    .submit-btn:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+
+    .signup-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .signup-footer a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .signup-footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="signup-container">
+    <div class="signup-card">
+      <div class="signup-header">
+        <h2>Create Account</h2>
+        <p>Join us today! Please fill in your details below.</p>
+      </div>
+
+      <form id="signupForm" class="signup-form" novalidate>
+        <!-- Full Name -->
+        <div class="form-group">
+          <label for="fullName">Full Name</label>
+          <input 
+            type="text" 
+            id="fullName" 
+            name="fullName" 
+            placeholder="John Doe" 
+            required 
+          />
+          <span class="error-message" id="nameError"></span>
+        </div>
+
+        <!-- Email Address -->
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            placeholder="john@example.com" 
+            required 
+          />
+          <span class="error-message" id="emailError"></span>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="password-wrapper">
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              placeholder="At least 8 characters" 
+              required 
+            />
+            <button type="button" class="toggle-password" id="togglePassword">Show</button>
+          </div>
+          <span class="error-message" id="passwordError"></span>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input 
+            type="password" 
+            id="confirmPassword" 
+            name="confirmPassword" 
+            placeholder="Re-enter password" 
+            required 
+          />
+          <span class="error-message" id="confirmPasswordError"></span>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="terms" name="terms" required />
+            <span>I agree to the <a href="#">Terms of Service</a> & <a href="#">Privacy Policy</a></span>
+          </label>
+          <span class="error-message" id="termsError"></span>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="submit-btn" id="submitBtn">Sign Up</button>
+      </form>
+
+      <div class="signup-footer">
+        <p>Already have an account? <a href="login.html">Log In</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("signupForm");
+      const fullName = document.getElementById("fullName");
+      const email = document.getElementById("email");
+      const password = document.getElementById("password");
+      const confirmPassword = document.getElementById("confirmPassword");
+      const terms = document.getElementById("terms");
+      const togglePasswordBtn = document.getElementById("togglePassword");
+
+      // Toggle Password Visibility
+      togglePasswordBtn.addEventListener("click", () => {
+        const isPassword = password.type === "password";
+        password.type = isPassword ? "text" : "password";
+        togglePasswordBtn.textContent = isPassword ? "Hide" : "Show";
+      });
+
+      // Helper Functions
+      const showError = (input, errorEl, message) => {
+        if (input) input.classList.add("invalid");
+        errorEl.textContent = message;
+      };
+
+      const clearError = (input, errorEl) => {
+        if (input) input.classList.remove("invalid");
+        errorEl.textContent = "";
+      };
+
+      const isValidEmail = (emailVal) => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+      };
+
+      // Real-time clear errors on input
+      fullName.addEventListener("input", () => clearError(fullName, document.getElementById("nameError")));
+      email.addEventListener("input", () => clearError(email, document.getElementById("emailError")));
+      password.addEventListener("input", () => clearError(password, document.getElementById("passwordError")));
+      confirmPassword.addEventListener("input", () => clearError(confirmPassword, document.getElementById("confirmPasswordError")));
+      terms.addEventListener("change", () => clearError(null, document.getElementById("termsError")));
+
+      // Form Submission Validation
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        let isValid = true;
+
+        // Validate Name
+        if (!fullName.value.trim()) {
+          showError(fullName, document.getElementById("nameError"), "Full name is required.");
+          isValid = false;
+        }
+
+        // Validate Email
+        if (!email.value.trim()) {
+          showError(email, document.getElementById("emailError"), "Email address is required.");
+          isValid = false;
+        } else if (!isValidEmail(email.value.trim())) {
+          showError(email, document.getElementById("emailError"), "Please enter a valid email address.");
+          isValid = false;
+        }
+
+        // Validate Password
+        if (!password.value) {
+          showError(password, document.getElementById("passwordError"), "Password is required.");
+          isValid = false;
+        } else if (password.value.length < 8) {
+          showError(password, document.getElementById("passwordError"), "Password must be at least 8 characters.");
+          isValid = false;
+        }
+
+        // Validate Confirm Password
+        if (!confirmPassword.value) {
+          showError(confirmPassword, document.getElementById("confirmPasswordError"), "Please confirm your password.");
+          isValid = false;
+        } else if (confirmPassword.value !== password.value) {
+          showError(confirmPassword, document.getElementById("confirmPasswordError"), "Passwords do not match.");
+          isValid = false;
+        }
+
+        // Validate Terms
+        if (!terms.checked) {
+          showError(null, document.getElementById("termsError"), "You must accept the terms to proceed.");
+          isValid = false;
+        }
+
+        if (!isValid) return;
+
+        // Simulate API Request
+     const submitBtn = document.getElementById("submitBtn");
+submitBtn.disabled = true;
+submitBtn.textContent = "Creating Account...";
+
+try {
+
+    const response = await fetch("http://127.0.0.1:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            name: fullName.value.trim(),
+            email: email.value.trim(),
+            password: password.value
+        })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+
+        
+
+        form.reset();
+
+        window.location.href = "login.html";
+
+    } else {
+
+        alert(result.message || "Registration failed.");
+
+    }
+
+} catch (error) {
+
+    console.error(error);
+    alert("Unable to connect to server.");
+
+}
+
+submitBtn.disabled = false;
+submitBtn.textContent = "Sign Up";
+      });
+    });
+  </script>
+</body>
+</html>

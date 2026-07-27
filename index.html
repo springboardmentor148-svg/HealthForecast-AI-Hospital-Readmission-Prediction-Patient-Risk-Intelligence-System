@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiaReadmit AI - Premium Diabetes Readmission Prediction System</title>
+    
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Core Styles -->
+    <style>
+        :root {
+            --primary-color: #1565C0;
+            --primary-light: #42A5F5;
+            --success-color: #4CAF50;
+            --danger-color: #E53935;
+            --warning-color: #FB8C00;
+            --bg-color: #F8FAFC;
+            --card-shadow: 0 10px 30px rgba(21, 101, 192, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Premium Glassmorphic Navbar */
+        .navbar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            transition: all 0.4s ease;
+            z-index: 1030;
+        }
+
+        .navbar.scrolled {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 10px 0;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--primary-color) !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            color: var(--text-dark) !important;
+            padding: 8px 16px !important;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color) !important;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 16px;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: calc(100% - 32px);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding: 180px 0 100px 0;
+            background: radial-gradient(circle at 90% 10%, rgba(66, 165, 245, 0.08) 0%, transparent 40%),
+                        radial-gradient(circle at 10% 90%, rgba(21, 101, 192, 0.05) 0%, transparent 40%);
+            position: relative;
+        }
+
+        .hero-title {
+            font-weight: 800;
+            font-size: 3.5rem;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-lead {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+
+        /* Premium Buttons */
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(21, 101, 192, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(21, 101, 192, 0.4);
+            color: #fff;
+        }
+
+        .btn-secondary-custom {
+            background: #fff;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            padding: 10px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary-custom:hover {
+            background: var(--primary-color);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        /* Hero AI Illustration Container */
+        .hero-img-container {
+            position: relative;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .hero-img-container::before {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(21, 101, 192, 0.15) 0%, transparent 70%);
+            top: 10%;
+            left: 10%;
+            z-index: -1;
+        }
+
+        /* Features Cards */
+        .section-title {
+            font-weight: 700;
+            font-size: 2.25rem;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--primary-color);
+            margin: 15px auto 0 auto;
+            border-radius: 2px;
+        }
+
+        .feature-card {
+            background: #fff;
+            border: 1px solid rgba(21, 101, 192, 0.08);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(21, 101, 192, 0.1);
+            border-color: var(--primary-light);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 18px;
+            background: rgba(21, 101, 192, 0.05);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        /* Statistics Counter Section */
+        .stats-section {
+            background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+            color: #fff;
+            padding: 80px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-item h3 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .stat-item p {
+            font-size: 1.1rem;
+            opacity: 0.85;
+            margin: 0;
+        }
+
+        /* Testimonials */
+        .testimonial-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .client-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #0F172A;
+            color: #94A3B8;
+            padding: 80px 0 30px 0;
+        }
+
+        footer h5 {
+            color: #fff;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+
+        footer a {
+            color: #94A3B8;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: var(--primary-light);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 30px;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Responsive Navigation Bar -->
+    <nav class="navbar navbar-expand-lg fixed-top py-3">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="fa-solid fa-square-h fa-lg"></i>
+                <span>DiaReadmit <span style="font-weight: 300;">AI</span></span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="about.html">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">Analytics</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="contact.html">Contact</a>
+                    </li>
+                    <li class="nav-item ms-lg-3 mt-3 mt-lg-0">
+                        <a class="btn btn-primary-custom" href="predict.html">
+                            <i class="fa-solid fa-stethoscope me-2"></i>Analyze Patient
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section d-flex align-items-center">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6 text-center text-lg-start">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 fw-semibold">
+                        <i class="fa-solid fa-atom me-2"></i>Clinical Decision Support System
+                    </span>
+                    <h1 class="hero-title">
+                        Predicting <span>Diabetes Readmission</span> with Clinical AI
+                    </h1>
+                    <p class="hero-lead">
+                        An advanced clinical intelligence engine helping healthcare providers evaluate risk scores, formulate treatment pathways, and decrease critical 30-day readmission cycles dynamically.
+                    </p>
+                    <div class="d-flex flex-column flex-sm-row justify-content-center justify-content-lg-start gap-3">
+                        <a href="predict.html" class="btn btn-primary-custom btn-lg">
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Run Risk Prediction
+                        </a>
+                        <a href="dashboard.html" class="btn btn-secondary-custom btn-lg">
+                            <i class="fa-solid fa-chart-line me-2"></i>System Dashboard
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="hero-img-container text-center">
+                        <!-- Modern Visual SVG instead of external stock photo -->
+                        <svg viewBox="0 0 500 400" width="100%" height="auto" style="max-width: 480px;">
+                            <defs>
+                                <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#1565C0" />
+                                    <stop offset="100%" stop-color="#42A5F5" />
+                                </linearGradient>
+                            </defs>
+                            <rect x="50" y="50" width="400" height="300" rx="24" fill="#ffffff" filter="drop-shadow(0px 20px 40px rgba(21,101,192,0.12))"/>
+                            <!-- Chart elements -->
+                            <path d="M90,260 L180,180 L270,220 L380,110" fill="none" stroke="url(#blueGrad)" stroke-width="6" stroke-linecap="round"/>
+                            <circle cx="380" cy="110" r="10" fill="#E53935" />
+                            <circle cx="180" cy="180" r="6" fill="#1565C0" />
+                            <circle cx="270" cy="220" r="6" fill="#1565C0" />
+                            <!-- Clean Clinical Dashboard Simulator UI -->
+                            <rect x="90" y="90" width="120" height="15" rx="5" fill="#E2E8F0"/>
+                            <rect x="90" y="115" width="70" height="10" rx="3" fill="#F1F5F9"/>
+                            <circle cx="400" cy="280" r="25" fill="#4CAF50" fill-opacity="0.1"/>
+                            <path d="M393,280 L398,285 L407,275" fill="none" stroke="#4CAF50" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Features Section -->
+    <section class="py-5" id="features">
+        <div class="container py-5">
+            <h2 class="section-title text-center">Key System Capabilities</h2>
+            <div class="row g-4 mt-2">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-microscope"></i>
+                        </div>
+                        <h3>Deep Analytics</h3>
+                        <p class="text-muted mb-0">Processes over 40 distinct features including medication, demographics, and lab results for unmatched diagnostic precision.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <h3>Instant Risk-Profiling</h3>
+                        <p class="text-muted mb-0">Computes readmission risk index scores within milliseconds using optimized front-end analytical pipelines.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-file-shield"></i>
+                        </div>
+                        <h3>Explainable AI</h3>
+                        <p class="text-muted mb-0">Generates structured action items and specific discharge planning frameworks along with raw predictive results.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-section">
+        <div class="container text-center">
+            <div class="row g-4">
+                <div class="col-md-3 stat-item">
+                    <h3>94.8%</h3>
+                    <p>Algorithm Precision</p>
+                </div>
+                <div class="col-md-3 stat-item">
+                    <h3>&lt; 2s</h3>
+                    <p>Inference Delivery</p>
+                </div>
+                <div class="col-md-3 stat-item">
+                    <h3>30%</h3>
+                    <p>Readmission Drop Rate</p>
+                </div>
+                <div class="col-md-3 stat-item">
+                    <h3>45k+</h3>
+                    <p>Evaluations Saved</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Professional Testimonials Section -->
+    <section class="py-5 bg-light">
+        <div class="container py-5">
+            <h2 class="section-title text-center">Trusted by Leading Clinicians</h2>
+            <div class="row g-4 justify-content-center mt-2">
+                <div class="col-lg-8">
+                    <div class="testimonial-card">
+                        <p class="fs-5 italic text-muted">
+                            "Integrating this prediction platform into our discharge process has given our clinical team actionable insights. It identifies patients at high risk of relapse whom we would have otherwise missed entirely."
+                        </p>
+                        <div class="d-flex align-items-center gap-3 mt-4">
+                            <!-- Visual placeholder replacing generic broken img links -->
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 55px; height: 55px;">
+                                EH
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Dr. Evelyn Harper, MD</h5>
+                                <small class="text-muted">Chief of Endocrinology, Metropolitan Health Center</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <a class="navbar-brand text-white mb-4" href="#">
+                        <i class="fa-solid fa-square-h fa-lg"></i>
+                        <span class="text-white">DiaReadmit <span style="font-weight: 300;">AI</span></span>
+                    </a>
+                    <p class="mt-3">Transforming standard medical record data points into predictive insights to empower proactive, precise outpatient care planning.</p>
+                </div>
+                <div class="col-lg-3 col-md-6 offset-lg-1">
+                    <h5>Resource Center</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="about.html">Architecture Details</a></li>
+                        <li class="mb-2"><a href="dashboard.html">Interactive Charts</a></li>
+                        <li class="mb-2"><a href="predict.html">Prediction Tool</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <h5>Emergency Support</h5>
+                    <p>Need custom enterprise integration assistance? Reach out immediately.</p>
+                    <a href="mailto:support@diareadmit.ai" class="btn btn-outline-light rounded-pill px-4">
+                        <i class="fa-regular fa-envelope me-2"></i>Contact Support
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom text-center">
+                <p class="mb-0">&copy; 2026 DiaReadmit AI. All rights reserved. Created for premium medical decision assistance.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JavaScript & Core Scroll Effect Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Smooth glassmorphic navigation scroll reaction
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Assessment Report - DiaReadmit AI</title>
+    
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Style Sheet -->
+    <style>
+        :root {
+            --primary-color: #1565C0;
+            --primary-light: #42A5F5;
+            --success-color: #4CAF50;
+            --danger-color: #E53935;
+            --warning-color: #FB8C00;
+            --bg-color: #F8FAFC;
+            --card-shadow: 0 10px 30px rgba(21, 101, 192, 0.05);
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
+
+        .main-content {
+            padding-top: 120px;
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+        }
+
+        /* Result Cards */
+        .result-card {
+            background: #ffffff;
+            border: 1px solid rgba(21, 101, 192, 0.08);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Risk Badge styles */
+        .risk-badge {
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .risk-high {
+            background: rgba(229, 57, 53, 0.1);
+            color: var(--danger-color);
+        }
+
+        .risk-low {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+        }
+
+        /* Radial Progress Meter */
+        .risk-meter-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px auto;
+        }
+
+        .risk-meter-svg {
+            transform: rotate(-90deg);
+        }
+
+        .meter-bg {
+            fill: none;
+            stroke: #E2E8F0;
+            stroke-width: 12;
+        }
+
+        .meter-fill {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .meter-fill-high {
+            stroke: var(--danger-color);
+        }
+
+        .meter-fill-low {
+            stroke: var(--success-color);
+        }
+
+        .meter-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .meter-text .percent {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1;
+            color: #0F172A;
+        }
+
+        .meter-text .label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        /* Clinical Recommendation Block */
+        .recommendation-box {
+            background: #F8FAFC;
+            border-radius: 16px;
+            padding: 24px;
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .recommendation-box.danger-accent {
+            border-left-color: var(--danger-color);
+        }
+
+        .recommendation-box.success-accent {
+            border-left-color: var(--success-color);
+        }
+
+        .btn-custom {
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(21, 101, 192, 0.2);
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(21, 101, 192, 0.3);
+            color: white;
+        }
+
+        .patient-summary-tag {
+            background: #F1F5F9;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        @media (max-width: 768px) {
+            .result-card {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Responsive Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+                <i class="fa-solid fa-square-h fa-lg"></i>
+                <span>DiaReadmit <span>AI</span></span>
+            </a>
+            <div class="ms-auto">
+                <a href="predict.html" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                    <i class="fa-solid fa-chevron-left me-2"></i>New Assessment
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-content">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                
+                <!-- Main Header Details -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+                    <div>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-2">
+                                <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+                                <li class="breadcrumb-item"><a href="predict.html">Form</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Risk Report</li>
+                            </ol>
+                        </nav>
+                        <h2 class="fw-bold m-0">Clinical Risk Assessment Report</h2>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary rounded-pill px-3" onclick="window.print()">
+                            <i class="fa-solid fa-print me-2"></i>Print Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Split Content Layout -->
+                <div class="row g-4">
+                    
+                    <!-- Left Panel: Risk Gauge & Quick Stats -->
+                    <div class="col-md-5">
+                        <div class="result-card text-center shadow-sm">
+                            <div id="riskBadge" class="risk-badge risk-high">High Risk</div>
+                            
+                            <!-- Circular Gauge -->
+                            <div class="risk-meter-container">
+                                <svg class="risk-meter-svg" width="200" height="200" viewBox="0 0 200 200">
+                                    <circle class="meter-bg" cx="100" cy="100" r="85"></circle>
+                                    <circle id="meterProgress" class="meter-fill meter-fill-high" cx="100" cy="100" r="85" stroke-dasharray="534" stroke-dashoffset="534"></circle>
+                                </svg>
+                                <div class="meter-text">
+                                    <div id="riskPercent" class="percent">78%</div>
+                                    <div class="label">Readmit Risk</div>
+                                </div>
+                            </div>
+
+                            <p class="text-muted px-3">
+                                This calculation is evaluated relative to comparable patient models within our global research database.
+                            </p>
+
+                            <hr class="my-4">
+
+                            <!-- Patient Meta -->
+                            <div class="text-start">
+                                <div class="patient-summary-tag">
+                                    <span class="text-muted">Patient Identification:</span>
+                                    <strong id="summaryPatientId">PT-99482</strong>
+                                </div>
+                                <div class="patient-summary-tag">
+                                    <span class="text-muted">Demographics:</span>
+                                    <strong id="summaryDemographics">Male, [60-100]</strong>
+                                </div>
+                                <div class="patient-summary-tag">
+                                    <span class="text-muted">Stay Duration:</span>
+                                    <strong id="summaryStay">6 Days</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Comprehensive Clinical Recommendations -->
+                    <div class="col-md-7">
+                        <div class="result-card shadow-sm">
+                            <h3 class="fw-bold mb-4 fs-4 text-slate-800"><i class="fa-solid fa-clipboard-list me-3 text-primary"></i>Decision Pathways</h3>
+
+                            <!-- Primary Action -->
+                            <div class="recommendation-box danger-accent" id="recommendation1">
+                                <h5 class="fw-bold text-danger d-flex align-items-center gap-2 mb-2">
+                                    <i class="fa-solid fa-circle-exclamation"></i> Priority Clinical Outpatient Action
+                                </h5>
+                                <p class="mb-0 text-muted">
+                                    Schedule a personalized 1-on-1 primary clinical follow-up appointment within 48 to 72 hours of discharge. Ensure absolute pharmacotherapy alignment to prevent critical readmission.
+                                </p>
+                            </div>
+
+                            <!-- Support Action -->
+                            <div class="recommendation-box" id="recommendation2">
+                                <h5 class="fw-bold text-primary d-flex align-items-center gap-2 mb-2">
+                                    <i class="fa-solid fa-heart-pulse"></i> Dietary & Diabetes Guidance
+                                </h5>
+                                <p class="mb-0 text-muted">
+                                    Coordinate directly with an on-staff certified diabetes specialist to calibrate dynamic insulin curves based on daily fasting tests.
+                                </p>
+                            </div>
+
+                            <!-- Pharmacy Action -->
+                            <div class="recommendation-box" id="recommendation3">
+                                <h5 class="fw-bold text-primary d-flex align-items-center gap-2 mb-2">
+                                    <i class="fa-solid fa-prescription-bottle-medical"></i> Pharmacotherapy Alignment
+                                </h5>
+                                <p class="mb-0 text-muted">
+                                    Review historical records to resolve potential drug contraindications, emphasizing strict adherence guidelines.
+                                </p>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-3 mt-4 pt-2">
+                                <a href="dashboard.html" class="btn btn-primary-custom btn-custom flex-grow-1">
+                                    <i class="fa-solid fa-chart-pie me-2"></i>View Clinic Analytics
+                                </a>
+                                <a href="predict.html" class="btn btn-outline-secondary btn-custom flex-grow-1">
+                                    <i class="fa-solid fa-rotate me-2"></i>Assess Next Patient
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- row -->
+            </div> <!-- col -->
+        </div> <!-- row -->
+    </div> <!-- container -->
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Interactive Animation and Dynamic Population Scripts -->
+    <script>
+       document.addEventListener("DOMContentLoaded", function(){
+
+      
+    const probability = parseFloat(localStorage.getItem("probability")) || 0;
+
+    const patientId = localStorage.getItem("patientId") || "N/A";
+const gender = localStorage.getItem("gender") || "N/A";
+const ageGroup = localStorage.getItem("ageGroup") || "N/A";
+const stay = localStorage.getItem("timeInHospital") || "0";
+    document.getElementById("summaryPatientId").innerText = patientId;
+
+    let ageText = "";
+
+switch (ageGroup) {
+    case "1":
+        ageText = "0 - 30";
+        break;
+    case "2":
+        ageText = "30 - 60";
+        break;
+    case "3":
+        ageText = "60 - 100";
+        break;
+    default:
+        ageText = "Unknown";
+}
+
+document.getElementById("summaryDemographics").innerText =
+`${gender}, ${ageText}`;
+    document.getElementById("summaryStay").innerText =
+        stay + " Days";
+
+    let risk = Math.round(probability * 100);
+
+    document.getElementById("riskPercent").innerText =
+        risk + "%";
+    // Decide risk based on percentage
+const  prediction = risk >= 50 ? "High Risk" : "Low Risk";
+     const badge = document.getElementById("riskBadge");
+const circle = document.getElementById("meterProgress");
+
+if (prediction === "High Risk") {
+    badge.innerText = "HIGH RISK";
+    badge.className = "risk-badge risk-high";
+    circle.classList.remove("meter-fill-low");
+    circle.classList.add("meter-fill-high");
+} else {
+    badge.innerText = "LOW RISK";
+    badge.className = "risk-badge risk-low";
+    circle.classList.remove("meter-fill-high");
+    circle.classList.add("meter-fill-low");
+}
+ if(prediction === "High Risk"){
+
+    document.getElementById("recommendation1").innerHTML =
+    `
+    <h5 class="fw-bold text-danger">
+        Immediate Follow-up
+    </h5>
+
+    <p>
+        Schedule follow-up within 48 hours.
+    </p>
+    `;
+
+}
+else{
+
+    document.getElementById("recommendation1").innerHTML =
+    `
+    <h5 class="fw-bold text-success">
+        Routine Monitoring
+    </h5>
+
+    <p>
+        Continue regular diabetes management.
+    </p>
+    `;
+
+}
+
+    const circumference = 2 * Math.PI * 85;
+
+    circle.style.strokeDasharray = circumference;
+
+  setTimeout(() => {
+
+    circle.style.strokeDashoffset =
+        circumference - (risk/100)*circumference;
+
+},300);
+});
+    </script>
+</body>
+</html>

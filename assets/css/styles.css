@@ -1,0 +1,375 @@
+/**
+ * @file style.css
+ * @project Diabetes Readmission Prediction System
+ * @brief Main Global Stylesheet (Variables, Layouts, Components, Forms, and Utilities)
+ * @version 1.0.0
+ * 
+ * Designed to seamlessly integrate with Bootstrap 5 CDN classes, providing 
+ * an elegant medical-themed glassmorphism interface, custom typography, 
+ * clean input groups, robust dashboard analytics, and clean dark mode overrides.
+ */
+
+/* ==========================================================================
+   1. COLOR VARIABLES & THEME TOKENS
+   ========================================================================== */
+:root {
+    /* --- Brand Spectrum (Clinical Teal & Deep Navy Blue) --- */
+    --primary: #1565C0;              /* Deep Trustworthy Blue */
+    --primary-light: #42A5F5;        /* Active Electric Blue */
+    --primary-dark: #0D47A1;         /* Deep Contrast Blue */
+    
+    /* --- Semantic Diagnostics --- */
+    --success: #2E7D32;              /* Low Risk / Safe Discharge */
+    --success-bg: rgba(46, 125, 50, 0.08);
+    --warning: #EF6C00;              /* Moderate Risk / Watch Alert */
+    --warning-bg: rgba(239, 108, 0, 0.08);
+    --danger: #C62828;               /* High Risk / Readmission Likely */
+    --danger-bg: rgba(198, 40, 40, 0.08);
+    --info: #00838F;                 /* Telemetry Metrics */
+    --info-bg: rgba(0, 131, 143, 0.08);
+
+    /* --- Neutral Scales --- */
+    --bg-body: #F8FAFC;              /* Clean Medical Slate White */
+    --bg-card: #FFFFFF;              /* Solid High-Contrast White */
+    --bg-accent: #F1F5F9;            /* Layout structures / Dividers */
+    --text-main: #1E293B;            /* Slate-800 for optimal legibility */
+    --text-muted: #64748B;           /* Accessible Slate-500 for labels */
+    
+    /* --- Borders, Glassmorphism & Shadows --- */
+    --border-color: rgba(21, 101, 192, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 10px 30px -3px rgba(21, 101, 192, 0.05);
+    --shadow-lg: 0 20px 40px -5px rgba(21, 101, 192, 0.1);
+    
+    /* --- Constants --- */
+    --font-primary: 'Poppins', system-ui, -apple-system, sans-serif;
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-pill: 9999px;
+    --navbar-height: 80px;
+}
+
+/* ==========================================================================
+   2. GLOBAL RESET & TYPOGRAPHY
+   ========================================================================== */
+body {
+    font-family: var(--font-primary);
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    line-height: 1.6;
+    overflow-x: hidden;
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-main);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+}
+
+p {
+    color: var(--text-muted);
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--primary-light);
+}
+
+/* Accessible selection overlay */
+::selection {
+    background-color: var(--primary-light);
+    color: #ffffff;
+}
+
+/* Custom Minimalist Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-body);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--bg-body);
+}
+
+/* ==========================================================================
+   3. NAVBAR COMPONENT
+   ========================================================================== */
+.navbar {
+    height: var(--navbar-height);
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border) !important;
+    box-shadow: var(--shadow-sm);
+    z-index: 1030;
+    transition: all var(--transition-normal);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--primary) !important;
+    letter-spacing: -0.01em;
+}
+
+.navbar-brand span {
+    color: var(--primary-light);
+}
+
+.nav-link {
+    font-weight: 500;
+    color: var(--text-muted) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.nav-link:hover, 
+.nav-link.active {
+    color: var(--primary) !important;
+    background-color: rgba(21, 101, 192, 0.05);
+}
+
+/* ==========================================================================
+   4. HERO & LANDING SECTIONS
+   ========================================================================== */
+.hero-section {
+    position: relative;
+    padding: 140px 0 100px 0;
+    background: radial-gradient(circle at 80% 20%, rgba(66, 165, 245, 0.08) 0%, transparent 45%);
+    overflow: hidden;
+}
+
+.hero-badge {
+    background-color: rgba(21, 101, 192, 0.06);
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 6px 16px;
+    border-radius: var(--radius-pill);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ==========================================================================
+   5. REUSABLE GLASSMORPHIC CARDS
+   ========================================================================== */
+.doc-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 30px;
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.doc-card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+/* Custom Alert Callouts */
+.clinical-callout {
+    border-left: 4px solid var(--primary);
+    background-color: var(--bg-accent);
+    padding: 15px 20px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin: 20px 0;
+}
+
+/* ==========================================================================
+   6. FORMS & USER CONTROLS
+   ========================================================================== */
+.form-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.form-control, 
+.form-select {
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    background-color: var(--bg-card);
+    color: var(--text-main);
+    transition: all var(--transition-fast);
+}
+
+.form-control:focus, 
+.form-select:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 4px rgba(66, 165, 245, 0.15);
+    background-color: var(--bg-card);
+    color: var(--text-main);
+}
+
+.form-control::placeholder {
+    color: var(--text-light);
+    opacity: 0.8;
+}
+
+/* Split-Panel Form Navigation indicators */
+.form-step-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--bg-accent);
+    padding-bottom: 15px;
+}
+
+.step-node {
+    font-weight: 600;
+    color: var(--text-muted);
+    position: relative;
+}
+
+.step-node.active {
+    color: var(--primary);
+}
+
+/* ==========================================================================
+   7. BUTTONS & ACTIONS
+   ========================================================================== */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(21, 101, 192, 0.2);
+    transition: all var(--transition-normal);
+}
+
+.btn-primary:hover, 
+.btn-primary:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(21, 101, 192, 0.35);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: #ffffff;
+}
+
+.btn-outline-secondary {
+    border: 1.5px solid var(--border-color);
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    transition: all var(--transition-normal);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--bg-accent);
+    color: var(--text-main);
+    border-color: var(--text-muted);
+}
+
+/* ==========================================================================
+   8. DASHBOARD SPECIFICS & METRIC TILES
+   ========================================================================== */
+.metric-card {
+    border-radius: var(--radius-md);
+    padding: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform var(--transition-normal);
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+}
+
+.metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.metric-data h3 {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+}
+
+/* ==========================================================================
+   9. CLINICAL PATIENT TABLES
+   ========================================================================== */
+.table-responsive {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: var(--bg-accent);
+    color: var(--text-main);
+    font-weight: 600;
+    border-bottom: 1.5px solid var(--border-color);
+    padding: 14px 18px;
+}
+
+.table td {
+    padding: 14px 18px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   10. FOOTER & COMPLIANCE MARKS
+   ========================================================================== */
+footer {
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    padding: 40px 0;
+    margin-top: auto;
+}
+
+footer p {
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   11. SYSTEM UTILITY CLASSES
+   ========================================================================== */
+.text-danger { color: var(--danger) !important; }
+.text-success { color: var(--success) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-info { color: var(--info) !important; }
+
+.bg-danger-subtle { background-color: var(--danger-bg) !important; }
+.bg-success-subtle { background-color: var(--success-bg) !important; }
+.bg-warning-subtle { background-color: var(--warning-bg) !important; }
+.bg-info-subtle { background-color: var(--info-bg) !important; }
+
+.z-index-up { z-index: 10; position: relative; }
+.max-w-600 { max-width: 600px; margin: 0 auto; }

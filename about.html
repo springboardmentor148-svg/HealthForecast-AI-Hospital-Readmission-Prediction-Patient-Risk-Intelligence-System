@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About the System - DiaReadmit AI</title>
+    
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Style Sheet -->
+    <style>
+        :root {
+            --primary-color: #1565C0;
+            --primary-light: #42A5F5;
+            --success-color: #4CAF50;
+            --danger-color: #E53935;
+            --warning-color: #FB8C00;
+            --bg-color: #F8FAFC;
+            --card-shadow: 0 10px 30px rgba(21, 101, 192, 0.05);
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+        }
+
+        .main-content {
+            padding-top: 120px;
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+        }
+
+        /* Glassmorphic Cards */
+        .doc-card {
+            background: #ffffff;
+            border: 1px solid rgba(21, 101, 192, 0.08);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+        }
+
+        /* Medical Timeline / Pipeline Map */
+        .pipeline-flow {
+            position: relative;
+            padding-left: 30px;
+            border-left: 3px solid rgba(21, 101, 192, 0.1);
+        }
+
+        .pipeline-step {
+            position: relative;
+            padding-bottom: 30px;
+        }
+
+        .pipeline-step::before {
+            content: '';
+            position: absolute;
+            left: -41px;
+            top: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 4px solid var(--primary-color);
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .pipeline-step:hover::before {
+            background: var(--primary-light);
+            transform: scale(1.2);
+        }
+
+        .tech-badge {
+            background: rgba(21, 101, 192, 0.05);
+            color: var(--primary-color);
+            border: 1px solid rgba(21, 101, 192, 0.1);
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .team-profile {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .team-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 auto 15px auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Responsive Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+                <i class="fa-solid fa-square-h fa-lg"></i>
+                <span>DiaReadmit <span>AI</span></span>
+            </a>
+            <div class="ms-auto">
+                <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="fa-solid fa-arrow-left me-2"></i>Exit Portal
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-content">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                
+                <div class="mb-4 text-center text-lg-start">
+                    <nav aria-label="breadcrumb" class="d-inline-block">
+                        <ol class="breadcrumb mb-2">
+                            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">System Architecture</li>
+                        </ol>
+                    </nav>
+                    <h2 class="fw-bold">Algorithm Architecture & Clinical Pipeline</h2>
+                    <p class="text-muted">A clear, explainable walkthrough of our medical validation protocols, predictive accuracy layers, and baseline telemetry metrics.</p>
+                </div>
+
+                <!-- 1. System Intent Overview -->
+                <div class="doc-card">
+                    <h3 class="fw-bold mb-4 fs-4"><i class="fa-solid fa-bullseye me-3 text-primary"></i>Core Intent & Objectives</h3>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <p class="text-muted">
+                                Our core objective is to decrease preventable clinical relapse cycles by evaluating historical metrics on patient intake. Modern hospitalization can create complex medication adjustment curves; our machine learning structure identifies latent risk patterns before discharge orders are written.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i><strong>Reduce 30-Day Readmission Cycle:</strong> Up to 30% reduction.</li>
+                                <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i><strong>Identify High-Risk Profiles:</strong> Dynamic patient classification.</li>
+                                <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i><strong>Optimize Treatment Paths:</strong> Actionable discharge summaries.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Machine Learning Pipeline -->
+                <div class="doc-card">
+                    <h3 class="fw-bold mb-4 fs-4"><i class="fa-solid fa-diagram-project me-3 text-primary"></i>Predictive Pipeline Lifecycle</h3>
+                    
+                    <div class="pipeline-flow">
+                        <div class="pipeline-step">
+                            <h5 class="fw-bold mb-2">1. Multimodal Intake Array</h5>
+                            <p class="text-muted mb-0">Demographics, inpatient counts, and lab assays are aggregated into an integrated numerical matrix.</p>
+                        </div>
+                        <div class="pipeline-step">
+                            <h5 class="fw-bold mb-2">2. Dynamic Weight Vector Analysis</h5>
+                            <p class="text-muted mb-0">Missing markers are safely handled using medical regression imputers to prevent inference distortion.</p>
+                        </div>
+                        <div class="pipeline-step">
+                            <h5 class="fw-bold mb-2">3. Risk Classification Execution</h5>
+                            <p class="text-muted mb-0">An optimized ensemble classifier evaluates complex patient variables against historical clinical profiles.</p>
+                        </div>
+                        <div class="pipeline-step">
+                            <h5 class="fw-bold mb-2">4. Decision Tree Output Rendering</h5>
+                            <p class="text-muted mb-0">The risk score is mapped directly to a targeted intervention checklist for the clinical staff.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Underlying Research Dataset -->
+                <div class="doc-card">
+                    <h3 class="fw-bold mb-4 fs-4"><i class="fa-solid fa-database me-3 text-primary"></i>Clinical Baseline Validation</h3>
+                    <p class="text-muted">
+                        Our model matrices are configured to mirror the 130-US hospital diabetes database (encompassing ten years of clinical encounters). The baseline training distribution leverages:
+                    </p>
+                    <div class="row g-3 text-center mt-2">
+                        <div class="col-sm-4">
+                            <div class="p-3 border rounded-3 bg-light">
+                                <h4 class="fw-bold text-primary m-0">101,766</h4>
+                                <small class="text-muted">Unique Encounters Analyzed</small>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="p-3 border rounded-3 bg-light">
+                                <h4 class="fw-bold text-primary m-0">55</h4>
+                                <small class="text-muted">Structured Features</small>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="p-3 border rounded-3 bg-light">
+                                <h4 class="fw-bold text-primary m-0">24+</h4>
+                                <small class="text-muted">Active Medication Tracks</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Clinical Project Team -->
+                <div class="doc-card">
+                    <h3 class="fw-bold mb-5 fs-4 text-center"><i class="fa-solid fa-users-gear me-3 text-primary"></i>Core Engineering Leads</h3>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="team-profile">
+                                <div class="team-avatar">JC</div>
+                                <h5 class="fw-bold mb-1">Dr. Julius Carter</h5>
+                                <p class="text-muted small">Senior AI Architect</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="team-profile">
+                                <div class="team-avatar">AM</div>
+                                <h5 class="fw-bold mb-1">Elena Rostova</h5>
+                                <p class="text-muted small">Lead Clinical Data Engineer</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="team-profile">
+                                <div class="team-avatar">TL</div>
+                                <h5 class="fw-bold mb-1">Dr. Todd Liang</h5>
+                                <p class="text-muted small">Chief Medical Advisor</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- col-lg-10 -->
+        </div> <!-- row -->
+    </div> <!-- container -->
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
