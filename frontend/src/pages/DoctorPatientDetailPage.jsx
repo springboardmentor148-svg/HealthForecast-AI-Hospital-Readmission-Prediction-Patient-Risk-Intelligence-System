@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa6";
 
 // Step 1: Dummy patient database (baad me API se ek hi patient fetch hoga id ke through)
+// NOTE: Yeh saare 6 patients DoctorPatientsPage.jsx ki assignedPatients list se match karte hain
 const patientDatabase = {
   "PT-1001": {
     name: "A. Johnson",
@@ -47,6 +48,86 @@ const patientDatabase = {
     careRecommendations: [
       "Routine follow-up in 30 days",
       "Continue current medication regimen",
+    ],
+  },
+  "PT-1003": {
+    name: "S. Williams",
+    age: 71,
+    gender: "Male",
+    condition: "Heart Failure",
+    admissionDate: "14 Jul 2026",
+    lastVisit: "20 Jul 2026",
+    riskLevel: "High",
+    readmissionProbability: "85%",
+    confidence: "93%",
+    medicalHistory: [
+      "Diagnosed with congestive heart failure in 2020",
+      "Hospitalized twice in the last 6 months for fluid overload",
+      "Currently on diuretics and beta-blockers",
+    ],
+    careRecommendations: [
+      "Schedule follow-up within 3 days of discharge",
+      "Daily weight monitoring, report gain of 2+ kg immediately",
+      "Refer to cardiology for medication review",
+    ],
+  },
+  "PT-1004": {
+    name: "R. Gomez",
+    age: 49,
+    gender: "Male",
+    condition: "Type 2 Diabetes",
+    admissionDate: "12 Jul 2026",
+    lastVisit: "18 Jul 2026",
+    riskLevel: "Low",
+    readmissionProbability: "19%",
+    confidence: "80%",
+    medicalHistory: [
+      "Diagnosed with Type 2 Diabetes in 2022",
+      "Well-controlled with oral medication, no recent complications",
+    ],
+    careRecommendations: [
+      "Routine follow-up in 30 days",
+      "Continue current diet and medication plan",
+    ],
+  },
+  "PT-1005": {
+    name: "L. Chen",
+    age: 66,
+    gender: "Female",
+    condition: "COPD",
+    admissionDate: "10 Jul 2026",
+    lastVisit: "15 Jul 2026",
+    riskLevel: "High",
+    readmissionProbability: "81%",
+    confidence: "89%",
+    medicalHistory: [
+      "Diagnosed with COPD in 2017, former smoker",
+      "Hospitalized for acute exacerbation in June 2026",
+      "On long-term oxygen therapy",
+    ],
+    careRecommendations: [
+      "Schedule follow-up within 5 days of discharge",
+      "Pulmonary rehabilitation referral",
+      "Review inhaler technique and adherence",
+    ],
+  },
+  "PT-1006": {
+    name: "K. Brown",
+    age: 54,
+    gender: "Female",
+    condition: "Hypertension",
+    admissionDate: "05 Jul 2026",
+    lastVisit: "12 Jul 2026",
+    riskLevel: "Low",
+    readmissionProbability: "16%",
+    confidence: "78%",
+    medicalHistory: [
+      "Diagnosed with Hypertension in 2023",
+      "Blood pressure stable on current medication",
+    ],
+    careRecommendations: [
+      "Routine follow-up in 30 days",
+      "Continue lifestyle modifications (low-sodium diet, exercise)",
     ],
   },
 };

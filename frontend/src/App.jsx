@@ -208,8 +208,8 @@ export function App() {
         <Route path="reports" element={<HospitalAdminReportsPage />} />
         <Route path="settings" element={<HospitalAdminSettingsPage />} />
         <Route path="risk-forecast" element={<HospitalAdminRiskForecastPage />} />
-<Route path="treatment-effectiveness" element={<HospitalAdminTreatmentEffectivenessPage />} />
-<Route path="population-health" element={<HospitalAdminPopulationHealthPage />} />
+        <Route path="treatment-effectiveness" element={<HospitalAdminTreatmentEffectivenessPage />} />
+        <Route path="population-health" element={<HospitalAdminPopulationHealthPage />} />
       </Route>
 
       <Route
@@ -242,33 +242,18 @@ export function App() {
         }
       >
         <Route index element={<Navigate to="overview" replace />} />
-        {/* Doctor ke pages yahan ek-ek karke add honge:
-            overview, patients, predictions, treatment-effectiveness,
-            care-recommendations, reports, settings */}
+        <Route path="overview" element={<DoctorOverviewPage />} />
+        <Route path="patients" element={<DoctorPatientsPage />} />
+        <Route path="patients/:patientId" element={<DoctorPatientDetailPage />} />
+        <Route path="predictions" element={<PredictionHistoryPage />} />
+        <Route path="predictions/new" element={<PredictionPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="treatment-effectiveness" element={<DoctorTreatmentEffectivenessPage />} />
+        <Route path="care-recommendations" element={<DoctorCareRecommendationsPage />} />
+        <Route path="settings" element={<DoctorSettingsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />
-      <Route
-  path="/app/doctor"
-  element={
-    <ProtectedRoute>
-      <RoleRoute allowedRoles={['Doctor']}>
-        <DoctorLayout />
-      </RoleRoute>
-    </ProtectedRoute>
-  }
->
-  <Route index element={<Navigate to="overview" replace />} />
-  <Route path="overview" element={<DoctorOverviewPage />} />
-  <Route path="patients" element={<DoctorPatientsPage />} />
-  <Route path="patients/:patientId" element={<DoctorPatientDetailPage />} />
-  <Route path="predictions" element={<PredictionHistoryPage />} />
-  <Route path="predictions/new" element={<PredictionPage />} />
-  <Route path="reports" element={<ReportsPage />} />
-  <Route path="treatment-effectiveness" element={<DoctorTreatmentEffectivenessPage />} />
-<Route path="care-recommendations" element={<DoctorCareRecommendationsPage />} />
-<Route path="settings" element={<DoctorSettingsPage />} />
-</Route>
     </Routes>
   )
 }
