@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+:root {
+  /* ---- Color tokens: clinical-chart palette ---- */
+  --paper: #F7F9FA;
+  --paper-raised: #FFFFFF;
+  --ink: #0F2438;
+  --ink-soft: #4C5F71;
+  --line: #DCE3E8;
+  --line-soft: #EAEFF2;
+
+  --primary: #0E7C86;       /* muted teal - clinical, not corporate blue */
+  --primary-ink: #06333A;
+  --primary-soft: #E3F1F1;
+
+  --accent: #3D5A80;        /* slate blue - structural accent */
+
+  --risk-low: #2F9E62;
+  --risk-low-soft: #E6F5EC;
+  --risk-medium: #C98A1E;
+  --risk-medium-soft: #FBF0DC;
+  --risk-high: #D9622B;
+  --risk-high-soft: #FCE9DE;
+  --risk-critical: #C23B3B;
+  --risk-critical-soft: #FBE3E3;
+
+  --font-display: "Fraunces", "Georgia", serif;
+  --font-body: "IBM Plex Sans", -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--primary-soft);
+  color: var(--primary-ink);
+}
+
+/* Focus visibility for accessibility */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Thin scrollbars to match clinical, dense UI */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-soft); }
+
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-mono); }
+
+/* Vitals-strip signature divider */
+.hairline {
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg, var(--line) 0, var(--line) 4px, transparent 4px, transparent 9px
+  );
+}
