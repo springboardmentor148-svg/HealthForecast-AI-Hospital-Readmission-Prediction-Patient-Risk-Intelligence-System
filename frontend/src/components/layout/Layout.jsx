@@ -1,32 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, AppBar, Toolbar, Typography, CssBaseline, IconButton } from '@mui/material';
-import { Logout } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { Box, CssBaseline, Toolbar } from '@mui/material';
+import Navbar from './Navbar';
+import Sidebar from './Sidebar';
+
+const drawerWidth = 280;
 
 const Layout = () => {
-  const { user, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <CssBaseline />
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap component="div">
-            🏥 HealthForecast AI
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2">
-              Welcome, {user?.full_name || user?.username || 'User'}
-            </Typography>
-            <IconButton color="inherit" onClick={logout}>
-              <Logout />
-            </IconButton>
-          </Box>
-        </Toolbar>
-      </AppBar>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8 }}>
-        <Outlet />
+      <Navbar drawerWidth={drawerWidth} handleDrawerToggle={handleDrawerToggle} />
+      <Sidebar drawerWidth={drawerWidth} mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} />
+      
+      {/* ====== CHANGED HERE ====== */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 0,               // <--- CHANGED: Set padding to 0
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          // ml: { sm: `${drawerWidth}px` },
+          mt: '0px',
+          bgcolor: '#F0F4F8',
+          minHeight: '100vh',
+        }}
+      >
+        <Toolbar />
+        <Box sx={{ mt: 2 }}>  {/* Keeps a small top margin between navbar and content */}
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );

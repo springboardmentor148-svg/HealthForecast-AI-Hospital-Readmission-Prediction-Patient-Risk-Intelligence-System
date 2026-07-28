@@ -1,14 +1,4 @@
 import React from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts';
 
 const RiskChart = ({ data }) => {
   const defaultData = [
@@ -25,30 +15,65 @@ const RiskChart = ({ data }) => {
   ];
 
   const chartData = data?.length > 0 ? data : defaultData;
+  const maxCount = Math.max(...chartData.map(d => d.count));
 
-  const colors = ['#2ECC71', '#2ECC71', '#2ECC71', '#F39C12', '#F39C12', '#F39C12', '#E74C3C', '#E74C3C', '#E74C3C', '#E74C3C'];
+  const getColor = (range) => {
+    const value = parseInt(range?.replace('%', '') || 0);
+    if (value > 70) return '#E74C3C';
+    if (value > 40) return '#F39C12';
+    return '#2ECC71';
+  };
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#E8ECF0" />
-        <XAxis dataKey="range" stroke="#5A6A7A" fontSize={12} />
-        <YAxis stroke="#5A6A7A" fontSize={12} />
-        <Tooltip
-          contentStyle={{
-            borderRadius: 8,
-            border: 'none',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-          }}
-          formatter={(value) => [value, 'Patients']}
-        />
-        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-          {chartData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', padding: '10px 0' }}>
+      {chartData.map((item, index) => {
+        const percentage = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+        return (
+          <div
+            key={index}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              height: '100%',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <div
+              style={{
+                width: '60%',
+                maxWidth: '40px',
+                height: `${Math.max(percentage, 5)}%`,
+                minHeight: '10px',
+                backgroundColor: getColor(item.range),
+                borderRadius: '4px 4px 0 0',
+                transition: 'height 0.5s ease',
+                position: 'relative',
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-20px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontSize: '9px',
+                  color: '#5A6A7A',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {item.count >= 1000 ? `${(item.count / 1000).toFixed(1)}k` : item.count}
+              </span>
+            </div>
+            <span style={{ fontSize: '9px', marginTop: '6px', color: '#5A6A7A', textAlign: 'center' }}>
+              {item.range}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 };
 

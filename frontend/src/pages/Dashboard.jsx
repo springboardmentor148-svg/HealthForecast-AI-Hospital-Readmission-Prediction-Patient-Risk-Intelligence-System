@@ -1,32 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Grid,
-  Paper,
-  Typography,
-  Box,
-  Chip,
-  Button,
-  Avatar,
-  LinearProgress,
-  Card,
-  CardContent,
-  IconButton,
-  Menu,
-  MenuItem,
+  Grid, Paper, Typography, Box, Chip, Button, LinearProgress, IconButton, Menu, MenuItem,
 } from '@mui/material';
 import {
-  TrendingUp,
-  TrendingDown,
-  People,
-  Warning,
-  CheckCircle,
-  Schedule,
-  MoreVert,
-  ArrowUpward,
-  ArrowDownward,
-  LocalHospital,
-  Refresh,
-  Download,
+  TrendingUp, TrendingDown, People, Warning, Schedule, MoreVert, Refresh, Download,
 } from '@mui/icons-material';
 import { analyticsAPI } from '../api/endpoints';
 import MetricCard from '../components/dashboard/MetricCard';
@@ -40,16 +17,16 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  useEffect(() => { fetchDashboardData(); }, []);
 
   const fetchDashboardData = async () => {
     try {
+      setLoading(true);
       const response = await analyticsAPI.getDashboard();
       setData(response.data);
+      setError(null);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -67,15 +44,19 @@ const Dashboard = () => {
     );
   }
 
-  const metrics = data?.metrics || {
-    totalPatients: 97109,
-    readmissionRate: 0.1146,
-    highRiskPatients: 6170,
-    avgRiskScore: 0.32,
-  };
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">Error: {error}</Typography>
+        <Button variant="contained" onClick={fetchDashboardData} sx={{ mt: 2, bgcolor: '#0A6E5E' }}>Retry</Button>
+      </Box>
+    );
+  }
+
+  const metrics = data?.metrics || { totalPatients: 0, readmissionRate: 0, highRiskPatients: 0, avgRiskScore: 0 };
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, className: 'animate-fade-in' }}>
       {/* Header */}
       <Box
         sx={{
@@ -88,32 +69,13 @@ const Dashboard = () => {
         }}
       >
         <Box>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Healthcare Dashboard
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Real-time patient readmission risk monitoring and analytics
-          </Typography>
+          <Typography variant="h4" fontWeight={700} gutterBottom>🏥 Healthcare Dashboard</Typography>
+          <Typography variant="body2" color="textSecondary">Real-time patient readmission risk monitoring</Typography>
         </Box>
         <Box display="flex" gap={1}>
-          <Button
-            variant="outlined"
-            startIcon={<Refresh />}
-            onClick={fetchDashboardData}
-            size="small"
-          >
-            Refresh
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Download />}
-            size="small"
-          >
-            Export Report
-          </Button>
-          <IconButton onClick={handleMenuOpen}>
-            <MoreVert />
-          </IconButton>
+          <Button variant="outlined" startIcon={<Refresh />} onClick={fetchDashboardData} size="small">Refresh</Button>
+          <Button variant="contained" startIcon={<Download />} size="small" sx={{ bgcolor: '#0A6E5E' }}>Export Report</Button>
+          <IconButton onClick={handleMenuOpen}><MoreVert /></IconButton>
           <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
             <MenuItem onClick={handleMenuClose}>Last 7 days</MenuItem>
             <MenuItem onClick={handleMenuClose}>Last 30 days</MenuItem>
@@ -166,40 +128,29 @@ const Dashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Charts */}
+      {/* Charts Row - FIXED: Ensure proper height */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} lg={8}>
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: 3, borderRadius: 3, height: '100%', minHeight: 350 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6" fontWeight={600}>
-                Risk Score Distribution
-              </Typography>
+              <Typography variant="h6" fontWeight={600}>Risk Score Distribution</Typography>
               <Chip label="Last 30 days" size="small" variant="outlined" />
             </Box>
-            <RiskChart data={data?.riskDistribution || []} />
+            <Box sx={{ height: 250, width: '100%' }}>
+              <RiskChart data={data?.riskDistribution || []} />
+            </Box>
           </Paper>
         </Grid>
         <Grid item xs={12} lg={4}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Risk Categories
-            </Typography>
-            <RiskDistribution data={data?.riskCategories || { low: 25000, medium: 15000, high: 6170 }} />
-            
+          <Paper sx={{ p: 3, height: '100%', minHeight: 350, borderRadius: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>Risk Categories</Typography>
+            <RiskDistribution data={data?.riskCategories || { low: 0, medium: 0, high: 0 }} />
             <Box mt={3}>
-              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                Quick Actions
-              </Typography>
+              <Typography variant="subtitle2" color="textSecondary" gutterBottom>Quick Actions</Typography>
               <Box display="flex" flexDirection="column" gap={1}>
-                <Button variant="outlined" fullWidth startIcon={<People />}>
-                  View All Patients
-                </Button>
-                <Button variant="outlined" fullWidth startIcon={<Warning />}>
-                  High Risk Patients
-                </Button>
-                <Button variant="contained" fullWidth startIcon={<Schedule />}>
-                  Generate Report
-                </Button>
+                <Button variant="outlined" fullWidth startIcon={<People />}>View All Patients</Button>
+                <Button variant="outlined" fullWidth startIcon={<Warning />} color="error">High Risk Patients</Button>
+                <Button variant="contained" fullWidth startIcon={<Schedule />} sx={{ bgcolor: '#0A6E5E' }}>Generate Report</Button>
               </Box>
             </Box>
           </Paper>
@@ -207,14 +158,10 @@ const Dashboard = () => {
       </Grid>
 
       {/* Patient Table */}
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" fontWeight={600}>
-            Recent Patients
-          </Typography>
-          <Button size="small" variant="outlined">
-            View All
-          </Button>
+          <Typography variant="h6" fontWeight={600}>Recent Patients</Typography>
+          <Button size="small" variant="outlined">View All</Button>
         </Box>
         <PatientTable patients={data?.recentPatients || []} />
       </Paper>

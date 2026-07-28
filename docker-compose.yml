@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: healthforecast-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: healthforecast
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - healthforecast-network
+
+  backend:
+    build: ./backend
+    container_name: healthforecast-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URL: mongodb://admin:admin123@mongodb:27017
+      MONGODB_DB_NAME: healthforecast
+      SECRET_KEY: your-super-secret-key-change-this
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend:/app
+    networks:
+      - healthforecast-network
+
+  frontend:
+    build: ./frontend
+    container_name: healthforecast-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - healthforecast-network
+
+volumes:
+  mongo_data:
+
+networks:
+  healthforecast-network:
+    driver: bridge

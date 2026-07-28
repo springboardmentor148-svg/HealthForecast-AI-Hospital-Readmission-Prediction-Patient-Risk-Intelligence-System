@@ -1,49 +1,31 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Box,
-  Divider,
-  Typography,
-  Avatar,
-  useMediaQuery,
-  useTheme,
+  Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
+  Toolbar, Box, Divider, Typography, Avatar, useMediaQuery, useTheme,
 } from '@mui/material';
 import {
-  Dashboard,
-  People,
-  Analytics,
-  Assessment,
-  Settings,
-  Logout,
-  LocalHospital,
-  Notifications,
-  Schedule,
-  Warning,
+  Dashboard, People, Analytics, Assessment, Notifications, Settings,
+  Logout, LocalHospital, Warning, Schedule,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
 const menuItems = [
-  { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', color: '#0A6E5E' },
-  { text: 'Patients', icon: <People />, path: '/patients', color: '#3498DB' },
-  { text: 'Analytics', icon: <Analytics />, path: '/analytics', color: '#9B59B6' },
-  { text: 'Reports', icon: <Assessment />, path: '/reports', color: '#F39C12' },
-  { text: 'Alerts', icon: <Notifications />, path: '/alerts', color: '#E74C3C' },
-  { text: 'Settings', icon: <Settings />, path: '/settings', color: '#2C3E50' },
+  { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+  { text: 'Patients', icon: <People />, path: '/patients' },
+  { text: 'Analytics', icon: <Analytics />, path: '/analytics' },
+  { text: 'Reports', icon: <Assessment />, path: '/reports' },
+  { text: 'Alerts', icon: <Notifications />, path: '/alerts' },
+  { text: 'Settings', icon: <Settings />, path: '/settings' },
 ];
 
+// Define quickActions here - this was missing!
 const quickActions = [
   { text: 'High Risk Patients', icon: <Warning />, color: '#E74C3C' },
   { text: 'Schedule Follow-up', icon: <Schedule />, color: '#F39C12' },
 ];
 
-const Sidebar = ({ open, onClose }) => {
+const Sidebar = ({ drawerWidth, mobileOpen, handleDrawerToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -52,13 +34,12 @@ const Sidebar = ({ open, onClose }) => {
 
   const handleNavigation = (path) => {
     navigate(path);
-    if (isMobile) onClose();
+    if (isMobile) handleDrawerToggle();
   };
-
-  const drawerWidth = 280;
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
       <Toolbar
         sx={{
           justifyContent: 'center',
@@ -66,6 +47,7 @@ const Sidebar = ({ open, onClose }) => {
           color: 'white',
           py: 2,
           minHeight: 100,
+          px: 2,
         }}
       >
         <Box display="flex" alignItems="center" gap={1.5}>
@@ -81,6 +63,7 @@ const Sidebar = ({ open, onClose }) => {
         </Box>
       </Toolbar>
 
+      {/* User Info */}
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <Avatar
           sx={{
@@ -91,18 +74,19 @@ const Sidebar = ({ open, onClose }) => {
             fontSize: 28,
           }}
         >
-          {user?.full_name?.charAt(0) || 'U'}
+          {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
         </Avatar>
         <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 1 }}>
           {user?.full_name || 'Administrator'}
         </Typography>
-        <Typography variant="caption" color="textSecondary">
-          {user?.role || 'Healthcare Administrator'}
+        <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+          {user?.role?.replace('_', ' ').toUpperCase() || 'Healthcare Administrator'}
         </Typography>
       </Box>
 
       <Divider />
 
+      {/* Menu Items */}
       <List sx={{ flex: 1, px: 1, py: 1 }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
@@ -120,13 +104,13 @@ const Sidebar = ({ open, onClose }) => {
                   },
                 },
                 '&:hover': {
-                  background: location.pathname === item.path ? 'linear-gradient(135deg, #0A6E5E, #3B9A8E)' : '#F0F4F8',
+                  background: location.pathname === item.path
+                    ? 'linear-gradient(135deg, #0A6E5E, #3B9A8E)'
+                    : '#F0F4F8',
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 40, color: item.color }}>
-                {item.icon}
-              </ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>
           </ListItem>
@@ -157,6 +141,7 @@ const Sidebar = ({ open, onClose }) => {
 
       <Divider />
 
+      {/* Logout */}
       <List sx={{ px: 1, pb: 2 }}>
         <ListItem disablePadding>
           <ListItemButton
@@ -177,17 +162,12 @@ const Sidebar = ({ open, onClose }) => {
   );
 
   return (
-    <Box
-      component="nav"
-      sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-    >
+    <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
       <Drawer
         variant={isMobile ? 'temporary' : 'permanent'}
-        open={open}
-        onClose={onClose}
-        ModalProps={{
-          keepMounted: true,
-        }}
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{ keepMounted: true }}
         sx={{
           '& .MuiDrawer-paper': {
             width: drawerWidth,

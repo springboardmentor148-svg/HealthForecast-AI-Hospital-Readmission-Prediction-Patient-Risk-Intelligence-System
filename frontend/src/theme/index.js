@@ -13,35 +13,15 @@ export const theme = createTheme({
       light: '#F7C84A',
       dark: '#C47D10',
     },
-    success: {
-      main: '#2ECC71',
-    },
-    error: {
-      main: '#E74C3C',
-    },
-    warning: {
-      main: '#F39C12',
-    },
-    info: {
-      main: '#3498DB',
-    },
-    background: {
-      default: '#F0F4F8',
-      paper: '#FFFFFF',
-    },
-    text: {
-      primary: '#1A2A3A',
-      secondary: '#5A6A7A',
-    },
+    success: { main: '#2ECC71' },
+    error: { main: '#E74C3C' },
+    warning: { main: '#F39C12' },
+    info: { main: '#3498DB' },
+    background: { default: '#F0F4F8', paper: '#FFFFFF' },
+    text: { primary: '#1A2A3A', secondary: '#5A6A7A' },
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h1: { fontWeight: 700, fontSize: '2.5rem' },
-    h2: { fontWeight: 600, fontSize: '2rem' },
-    h3: { fontWeight: 600, fontSize: '1.75rem' },
-    h4: { fontWeight: 600, fontSize: '1.5rem' },
-    h5: { fontWeight: 600, fontSize: '1.25rem' },
-    h6: { fontWeight: 600, fontSize: '1rem' },
   },
   shape: { borderRadius: 12 },
   components: {
@@ -78,14 +58,6 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 16,
-        },
-      },
-    },
-    MuiDrawer: {
-      styleOverrides: {
-        paper: {
-          border: 'none',
-          boxShadow: '2px 0 20px rgba(0,0,0,0.05)',
         },
       },
     },

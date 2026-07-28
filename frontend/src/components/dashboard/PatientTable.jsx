@@ -1,16 +1,7 @@
 import React from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Button,
-  Avatar,
-  Box,
-  Typography,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Chip, Button, Avatar, Box, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
 
 const getRiskColor = (score) => {
@@ -19,71 +10,72 @@ const getRiskColor = (score) => {
   return 'success';
 };
 
-const getRiskLabel = (score) => {
-  if (score > 0.7) return 'High';
-  if (score > 0.4) return 'Medium';
-  return 'Low';
-};
-
 const PatientTable = ({ patients }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   if (!patients || patients.length === 0) {
     return (
       <Box textAlign="center" py={4}>
-        <Typography variant="body2" color="textSecondary">
-          No patient data available
-        </Typography>
+        <Typography variant="body2" color="textSecondary">No patient data available</Typography>
       </Box>
     );
   }
 
   return (
     <TableContainer>
-      <Table size="medium">
+      <Table size={isMobile ? 'small' : 'medium'}>
         <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
           <TableRow>
             <TableCell>Patient</TableCell>
-            <TableCell>Age</TableCell>
+            {!isMobile && <TableCell>Age</TableCell>}
             <TableCell>Risk Score</TableCell>
             <TableCell>Risk Level</TableCell>
-            <TableCell>Last Admission</TableCell>
+            {!isMobile && <TableCell>Last Admission</TableCell>}
             <TableCell align="right">Action</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {patients.map((patient) => (
-            <TableRow key={patient.id} hover>
+            <TableRow key={patient.id || patient.patient_id} hover>
               <TableCell>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar sx={{ bgcolor: '#0A6E5E', width: 32, height: 32 }}>
-                    {patient.name.charAt(0)}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Avatar sx={{ bgcolor: '#0A6E5E', width: 28, height: 28, fontSize: 12 }}>
+                    {patient.name?.charAt(0) || 'P'}
                   </Avatar>
                   <Box>
-                    <Typography variant="body2" fontWeight={500}>
-                      {patient.name}
+                    <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: 100 }}>
+                      {patient.name || 'Unknown'}
                     </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      ID: {patient.id}
-                    </Typography>
+                    {isMobile && (
+                      <Typography variant="caption" color="textSecondary">
+                        {patient.age || 'N/A'} yrs
+                      </Typography>
+                    )}
                   </Box>
                 </Box>
               </TableCell>
-              <TableCell>{patient.age}</TableCell>
-              <TableCell>{(patient.risk_score * 100).toFixed(1)}%</TableCell>
+              {!isMobile && <TableCell>{patient.age || 'N/A'}</TableCell>}
+              <TableCell>
+                {patient.risk_score ? `${(patient.risk_score * 100).toFixed(1)}%` : 'N/A'}
+              </TableCell>
               <TableCell>
                 <Chip
-                  label={getRiskLabel(patient.risk_score)}
-                  color={getRiskColor(patient.risk_score)}
+                  label={patient.risk_level || patient.risk_category || 'Unknown'}
+                  color={getRiskColor(patient.risk_score || 0)}
                   size="small"
-                  sx={{ fontWeight: 500 }}
+                  sx={{ fontWeight: 500, height: 24, fontSize: '0.7rem' }}
                 />
               </TableCell>
-              <TableCell>{patient.last_admission}</TableCell>
+              {!isMobile && <TableCell>
+                {patient.last_admission ? new Date(patient.last_admission).toLocaleDateString() : 'N/A'}
+              </TableCell>}
               <TableCell align="right">
                 <Button
                   size="small"
                   variant="outlined"
                   color="primary"
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 2, fontSize: '0.7rem', py: 0.5 }}
                 >
                   View
                 </Button>
