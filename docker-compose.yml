@@ -1,0 +1,62 @@
+services:
+
+  postgres:
+    image: postgres:16
+
+    container_name: healthforecast-postgres
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: healthforecast
+      POSTGRES_USER: healthforecast
+      POSTGRES_PASSWORD: healthforecast
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U healthforecast -d healthforecast"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  mongodb:
+    image: mongo:7
+
+    container_name: healthforecast-mongodb
+
+    restart: unless-stopped
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongo_data:/data/db
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--eval",
+          "db.adminCommand('ping')"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+
+  postgres_data:
+
+  mongo_data:
