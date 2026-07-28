@@ -1,0 +1,489 @@
+/* ===========================================
+   HealthForecastAI — Signal Login UI (Blue)
+=========================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap");
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+html, body, #root{
+  width:100%;
+  height:100%;
+}
+
+body{
+  font-family:"IBM Plex Sans", sans-serif;
+  background:#f5f7fa;
+}
+
+.auth-screen{
+  width:100%;
+  height:100dvh;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:1.15fr 0.85fr;
+}
+
+/* ================= SIGNAL PANEL (LEFT) ================= */
+
+.signal-panel{
+  position:relative;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:clamp(24px, 4vh, 56px) clamp(30px, 4.4vw, 68px);
+  background:linear-gradient(160deg, #0f172a 0%, #1d4ed8 55%, #2563eb 100%);
+  color:#eef2f8;
+  overflow:hidden;
+}
+
+.signal-panel::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(255,255,255,.16), transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(255,255,255,.08), transparent 45%);
+  pointer-events:none;
+}
+
+.signal-brand{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.signal-mark{
+  width:clamp(42px, 5.4vh, 52px);
+  height:clamp(42px, 5.4vh, 52px);
+  border-radius:13px;
+  background:#fff;
+  color:#2563eb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:clamp(18px, 2.4vh, 22px);
+  flex-shrink:0;
+  box-shadow:0 6px 16px rgba(0,0,0,.18);
+}
+
+.signal-brand-text{
+  display:flex;
+  flex-direction:column;
+  line-height:1.35;
+}
+
+.signal-brand-text strong{
+  font-family:"Space Grotesk", sans-serif;
+  font-size:clamp(16px, 2.2vh, 20px);
+  font-weight:700;
+  letter-spacing:.2px;
+  color:#fff;
+}
+
+.signal-brand-text small{
+  color:#dbeafe;
+  font-size:clamp(11.5px, 1.5vh, 13px);
+  letter-spacing:.3px;
+}
+
+.signal-hero{
+  position:relative;
+  z-index:2;
+  max-width:600px;
+  display:flex;
+  flex-direction:column;
+  gap:clamp(14px, 2.2vh, 22px);
+}
+
+.signal-eyebrow{
+  display:inline-block;
+  width:fit-content;
+  font-family:"IBM Plex Mono", monospace;
+  font-size:clamp(11.5px, 1.5vh, 13px);
+  letter-spacing:1.4px;
+  text-transform:uppercase;
+  color:#bfdbfe;
+  border:1px solid rgba(191,219,254,.4);
+  border-radius:6px;
+  padding:7px 14px;
+}
+
+.signal-hero h1{
+  font-family:"Space Grotesk", sans-serif;
+  font-weight:700;
+  font-size:clamp(32px, 5.6vh, 54px);
+  line-height:1.1;
+  letter-spacing:-.6px;
+  color:#fff;
+}
+
+.signal-hero p{
+  font-size:clamp(15px, 1.9vh, 18px);
+  line-height:1.7;
+  color:#dbeafe;
+  max-width:520px;
+}
+
+.signal-stats{
+  display:flex;
+  gap:clamp(20px, 3vw, 36px);
+  flex-wrap:wrap;
+  margin-top:clamp(4px, 1vh, 10px);
+}
+
+.signal-stat{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  padding-left:16px;
+  border-left:2px solid rgba(191,219,254,.5);
+}
+
+.signal-stat strong{
+  font-family:"IBM Plex Mono", monospace;
+  font-size:clamp(18px, 2.8vh, 24px);
+  color:#fff;
+  font-weight:500;
+}
+
+.signal-stat span{
+  font-size:clamp(12px, 1.5vh, 13.5px);
+  color:#dbeafe;
+}
+
+/* ---- signature element: risk trace ---- */
+
+.signal-trace{
+  position:relative;
+  z-index:2;
+  width:100%;
+}
+
+.trace-label{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font-family:"IBM Plex Mono", monospace;
+  font-size:clamp(12px, 1.5vh, 13.5px);
+  color:#dbeafe;
+  margin-bottom:9px;
+  letter-spacing:.3px;
+}
+
+.trace-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#93c5fd;
+  animation:pulse-dot 1.8s ease-out infinite;
+}
+
+@keyframes pulse-dot{
+  0%{ box-shadow:0 0 0 0 rgba(147,197,253,.55); }
+  70%{ box-shadow:0 0 0 8px rgba(147,197,253,0); }
+  100%{ box-shadow:0 0 0 0 rgba(147,197,253,0); }
+}
+
+.trace-svg{
+  width:100%;
+  height:clamp(36px, 6vh, 60px);
+  display:block;
+}
+
+.trace-line{
+  fill:none;
+  stroke-width:2;
+  vector-effect:non-scaling-stroke;
+}
+
+.trace-line--ghost{
+  stroke:rgba(191,219,254,.25);
+}
+
+.trace-line--active{
+  stroke:#93c5fd;
+  stroke-dasharray:140 460;
+  stroke-dashoffset:0;
+  animation:trace-run 3.2s linear infinite;
+}
+
+@keyframes trace-run{
+  to{ stroke-dashoffset:-600; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .trace-line--active, .trace-dot{
+    animation:none;
+  }
+}
+
+/* ================= ACCESS PANEL (RIGHT) ================= */
+
+.access-panel{
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#eef2f9;
+  padding:clamp(12px, 2.4vh, 32px);
+  overflow:hidden;
+}
+
+.access-card{
+  width:100%;
+  max-width:420px;
+  max-height:96dvh;
+  background:#ffffff;
+  border:1px solid #e6ebf2;
+  border-radius:20px;
+  padding:clamp(16px, 2.6vh, 32px);
+  display:flex;
+  flex-direction:column;
+  gap:clamp(10px, 1.5vh, 16px);
+  box-shadow:0 24px 60px -20px rgba(15,23,42,.18);
+  overflow-y:auto;
+}
+
+.access-head{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.role-toggle{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:5px;
+  padding:4px;
+  background:#f1f5f9;
+  border-radius:12px;
+}
+
+.role-option{
+  height:clamp(32px, 4.4vh, 40px);
+  border:none;
+  border-radius:8px;
+  background:transparent;
+  color:#64748b;
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+  padding:0 6px;
+  line-height:1.2;
+}
+
+.role-option.is-active{
+  background:#fff;
+  color:#0f172a;
+  box-shadow:0 4px 12px rgba(15,23,42,.08);
+}
+
+.access-kicker{
+  font-family:"IBM Plex Mono", monospace;
+  font-size:11.5px;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  color:#2563eb;
+  font-weight:600;
+}
+
+.access-head h2{
+  font-family:"Space Grotesk", sans-serif;
+  font-size:clamp(19px, 3vh, 28px);
+  font-weight:700;
+  color:#0f172a;
+}
+
+.access-form{
+  display:flex;
+  flex-direction:column;
+  gap:clamp(9px, 1.4vh, 14px);
+}
+
+.access-error{
+  padding:9px 12px;
+  border-radius:10px;
+  background:#fef2f2;
+  border:1px solid #fecaca;
+  color:#b91c1c;
+  font-size:12.5px;
+  font-weight:500;
+}
+
+.access-field span{
+  display:block;
+  margin-bottom:4px;
+  font-size:13px;
+  font-weight:600;
+  color:#334155;
+}
+
+.field-shell{
+  height:clamp(38px, 5vh, 48px);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 14px;
+  border:1px solid #dde3ec;
+  border-radius:11px;
+  background:#f8fafc;
+  transition:.2s;
+}
+
+.field-shell:focus-within{
+  border-color:#2563eb;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(37,99,235,.14);
+}
+
+.field-icon{
+  color:#2563eb;
+  font-size:14.5px;
+  flex-shrink:0;
+}
+
+.field-shell input{
+  flex:1;
+  min-width:0;
+  border:none;
+  outline:none;
+  background:transparent;
+  font-size:14.5px;
+  color:#0f172a;
+  font-family:"IBM Plex Sans", sans-serif;
+}
+
+.field-shell input::placeholder{
+  color:#97a3b3;
+}
+
+.field-toggle{
+  border:none;
+  background:none;
+  cursor:pointer;
+  color:#64748b;
+  font-size:14.5px;
+  display:flex;
+}
+
+.field-toggle:hover{
+  color:#2563eb;
+}
+
+.access-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:13px;
+}
+
+.access-remember{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:#475569;
+  cursor:pointer;
+}
+
+.access-remember input{
+  width:15px;
+  height:15px;
+  accent-color:#2563eb;
+  cursor:pointer;
+}
+
+.access-link{
+  color:#2563eb;
+  font-weight:600;
+  text-decoration:none;
+}
+
+.access-link:hover{
+  text-decoration:underline;
+}
+
+.access-submit{
+  height:clamp(38px, 5vh, 48px);
+  border:none;
+  border-radius:11px;
+  background:linear-gradient(135deg, #1d4ed8, #2563eb);
+  color:#fff;
+  font-size:14.5px;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  cursor:pointer;
+  transition:.2s;
+  margin-top:0;
+  flex-shrink:0;
+}
+
+.access-submit:hover:not(:disabled){
+  background:linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform:translateY(-1px);
+  box-shadow:0 12px 24px rgba(37,99,235,.28);
+}
+
+.access-submit:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+}
+
+.access-footer{
+  text-align:center;
+  font-size:13.5px;
+  color:#64748b;
+}
+
+.access-trust{
+  text-align:center;
+  font-size:11.5px;
+  color:#97a3b3;
+  letter-spacing:.2px;
+}
+
+/* ================= FOCUS ACCESSIBILITY ================= */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible{
+  outline:2px solid #2563eb;
+  outline-offset:2px;
+}
+
+/* ================= RESPONSIVE — still no scroll ================= */
+
+@media (max-width:900px){
+  .auth-screen{
+    grid-template-columns:1fr;
+  }
+
+  .signal-panel{
+    display:none;
+  }
+
+  .access-panel{
+    height:100dvh;
+  }
+}
+
+@media (max-height:560px){
+  .signal-hero p{
+    font-size:13px;
+  }
+
+  .signal-stat strong{
+    font-size:16px;
+  }
+}
