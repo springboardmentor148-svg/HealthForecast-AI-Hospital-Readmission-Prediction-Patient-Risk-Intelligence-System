@@ -1,0 +1,90 @@
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  background: #f4f7fc;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+}
+
+.add-patient-container {
+  max-width: 700px;
+  margin: auto;
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.add-patient-container h1 {
+  text-align: center;
+  color: #1f3c88;
+  margin-bottom: 25px;
+}
+
+.patient-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.patient-form input,
+.patient-form select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d0d7e2;
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  transition: 0.3s;
+  box-sizing: border-box;
+}
+
+.patient-form input:focus,
+.patient-form select:focus {
+  border-color: #1f3c88;
+  box-shadow: 0 0 5px rgba(31, 60, 136, 0.3);
+}
+
+.save-btn {
+  width: 100%;
+  padding: 14px;
+  background: #1f3c88;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.save-btn:hover {
+  background: #16316d;
+}
+
+.save-btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 15px;
+  }
+
+  .add-patient-container {
+    padding: 20px;
+  }
+
+  .add-patient-container h1 {
+    font-size: 24px;
+  }
+
+  .patient-form input,
+  .patient-form select,
+  .save-btn {
+    font-size: 15px;
+  }
+}

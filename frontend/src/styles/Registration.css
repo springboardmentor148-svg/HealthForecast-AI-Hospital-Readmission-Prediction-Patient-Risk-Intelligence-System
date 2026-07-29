@@ -1,0 +1,121 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+.register-container{
+    width:100%;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#0F172A,#1E3A8A,#06B6D4);
+    position:relative;
+}
+
+.register-container::before{
+    content:"";
+    position:absolute;
+    width:500px;
+    height:500px;
+    background:rgba(255,255,255,.08);
+    border-radius:50%;
+    top:-150px;
+    left:-150px;
+}
+
+.register-container::after{
+    content:"";
+    position:absolute;
+    width:450px;
+    height:450px;
+    background:rgba(255,255,255,.05);
+    border-radius:50%;
+    bottom:-150px;
+    right:-120px;
+}
+
+.register-card{
+    width:450px;
+    background:white;
+    border-radius:20px;
+    padding:35px;
+    text-align:center;
+    box-shadow:0 15px 35px rgba(0,0,0,.25);
+    z-index:1;
+}
+
+.logo{
+    width:90px;
+    height:90px;
+    object-fit:contain;
+    margin-bottom:15px;
+}
+
+.title{
+    color:#1E3A8A;
+    font-size:32px;
+    font-weight:800;
+}
+
+.subtitle{
+    margin-top:8px;
+    margin-bottom:20px;
+    color:#64748B;
+    font-size:14px;
+    line-height:22px;
+}
+
+.register-card h2{
+    margin-bottom:20px;
+    color:#0F172A;
+}
+
+.register-card input,
+.register-card select{
+    width:100%;
+    padding:14px;
+    margin:12px 0;
+    border:1px solid #CBD5E1;
+    border-radius:10px;
+    font-size:15px;
+}
+
+.register-card input:focus,
+.register-card select:focus{
+    outline:none;
+    border:2px solid #2563EB;
+    box-shadow:0 0 10px rgba(37,99,235,.25);
+}
+
+.register-card button{
+    width:100%;
+    padding:14px;
+    margin-top:15px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(90deg,#2563EB,#06B6D4);
+    color:white;
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.register-card button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 20px rgba(37,99,235,.35);
+}
+
+.login-text{
+    margin-top:18px;
+    color:#475569;
+}
+
+.login-text a{
+    text-decoration:none;
+    color:#2563EB;
+    font-weight:bold;
+}
