@@ -1,0 +1,10 @@
+{
+    "model_name": "Weighted Stacking Ensemble",
+    "problem_type": "Binary Classification",
+    "threshold": 0.15,
+    "accuracy": 0.761,
+    "precision": 0.2174,
+    "recall": 0.4347,
+    "f1_score": 0.2899,
+    "roc_auc": 0.6834
+}

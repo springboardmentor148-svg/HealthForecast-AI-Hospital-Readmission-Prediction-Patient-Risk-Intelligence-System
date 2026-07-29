@@ -1,3 +1,16 @@
 .DS_Store
 dataset/
 pre-processed dataset/
+venv/
+.venv/
+.env
+.env.*
+!.env.example
+instance/
+logs/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+node_modules/
+dist/

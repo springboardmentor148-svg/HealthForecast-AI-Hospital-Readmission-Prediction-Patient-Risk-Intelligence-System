@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  /* Color Palette overrides / extensions */
+  --color-bg-app: #F4F6FB;
+  --color-surface: #FFFFFF;
+  --color-sidebar-bg: #FAFAF7;
+  
+  --color-sidebar-active-bg: #E7F2A8;
+  --color-sidebar-active-text: #1F2A1A;
+  
+  --color-txt-primary: #101828;
+  --color-txt-muted: #667085;
+  
+  --color-danger: #F97066;
+  --color-danger-bg: #FEE4E2;
+  
+  --color-warning: #F79009;
+  --color-warning-bg: #FEF0C7;
+  
+  --color-success: #12B76A;
+  --color-success-bg: #D1FADF;
+  
+  --color-info: #7A5AF8;
+  --color-info-bg: #EDE9FE;
+  
+  --color-secondary-brand: #F670C7;
+  --color-secondary-brand-bg: #FCE7F6;
+  
+  --color-borderColor: #EAECF0;
+  
+  /* Font Family definitions */
+  --font-sans: "Inter", "Manrope", sans-serif;
+  
+  /* Shadow specs */
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+/* Custom Base / Global overrides */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-app);
+  color: var(--color-txt-primary);
+  margin: 0;
+  padding: 0;
+}
+
+/* Scrollbar styles */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
