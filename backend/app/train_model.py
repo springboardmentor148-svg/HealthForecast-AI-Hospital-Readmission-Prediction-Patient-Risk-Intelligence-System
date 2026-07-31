@@ -1,4 +1,5 @@
 """Train and version the 30-day readmission classifier using the supplied CSV."""
+from datetime import UTC, datetime
 from pathlib import Path
 
 import joblib
@@ -8,7 +9,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OrdinalEncoder
@@ -43,14 +44,22 @@ def build_preprocessor(categorical: list[str], numeric: list[str]) -> ColumnTran
     )
 
 
-def metrics(y_true, scores) -> dict[str, float]:
+def metrics(y_true, scores) -> dict:
     predicted = (scores >= 0.5).astype(int)
+    true_negative, false_positive, false_negative, true_positive = confusion_matrix(y_true, predicted, labels=[0, 1]).ravel()
     return {
         "accuracy": round(float(accuracy_score(y_true, predicted)), 4),
         "precision": round(float(precision_score(y_true, predicted, zero_division=0)), 4),
         "recall": round(float(recall_score(y_true, predicted, zero_division=0)), 4),
         "f1_score": round(float(f1_score(y_true, predicted, zero_division=0)), 4),
         "roc_auc": round(float(roc_auc_score(y_true, scores)), 4),
+        "specificity": round(float(true_negative / max(true_negative + false_positive, 1)), 4),
+        "confusion_matrix": {
+            "true_negative": int(true_negative),
+            "false_positive": int(false_positive),
+            "false_negative": int(false_negative),
+            "true_positive": int(true_positive),
+        },
     }
 
 
@@ -76,7 +85,7 @@ def main():
     }
     if XGBClassifier is not None:
         candidates["XGBoost"] = XGBClassifier(n_estimators=150, max_depth=5, learning_rate=0.08, subsample=0.8, colsample_bytree=0.8, scale_pos_weight=float((y_train == 0).sum() / max((y_train == 1).sum(), 1)), n_jobs=2, random_state=42, eval_metric="logloss")
-    results: dict[str, dict[str, float]] = {}
+    results: dict[str, dict] = {}
     fitted: dict[str, Pipeline] = {}
     for name, classifier in candidates.items():
         pipeline = Pipeline([("preprocessor", build_preprocessor(categorical, numeric)), ("classifier", classifier)])
@@ -86,7 +95,16 @@ def main():
         print(f"{name}: {results[name]}")
 
     selected_name = max(results, key=lambda name: results[name]["roc_auc"])
-    artifact = {"pipeline": fitted[selected_name], "model_name": selected_name, "metrics": results[selected_name], "all_results": results, "feature_columns": feature_columns}
+    evaluation = {
+        "trained_at": datetime.now(UTC).isoformat(),
+        "train_samples": int(len(y_train)),
+        "test_samples": int(len(y_test)),
+        "test_positive_cases": int(y_test.sum()),
+        "test_negative_cases": int((y_test == 0).sum()),
+        "prediction_threshold": 0.5,
+        "feature_count": len(feature_columns),
+    }
+    artifact = {"pipeline": fitted[selected_name], "model_name": selected_name, "metrics": results[selected_name], "all_results": results, "evaluation": evaluation, "feature_columns": feature_columns}
     destination = Path(settings.model_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(artifact, destination)
@@ -94,7 +112,7 @@ def main():
     with SessionLocal() as db:
         for row in db.query(ModelVersion).all():
             row.is_active = False
-        db.add(ModelVersion(name=selected_name, metrics={**results[selected_name], "comparison": results}, is_active=True))
+        db.add(ModelVersion(name=selected_name, metrics={**results[selected_name], "comparison": results, "evaluation": evaluation}, is_active=True))
         db.commit()
     print(f"Saved {selected_name} to {destination}")
 

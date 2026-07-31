@@ -190,13 +190,18 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
     total = scoped.count()
     under_30 = scoped.filter(Encounter.readmitted == "<30").count()
     high_risk = scoped.filter(high_risk_filter()).with_entities(Encounter.patient_id).distinct().count()
+    artifact = load_model()
     return {
         "role": user.role,
         "total_encounters": total,
         "unique_patients": scoped.with_entities(Encounter.patient_id).distinct().count(),
         "readmission_rate": round(under_30 / total * 100, 2) if total else 0,
         "high_risk_patients": high_risk,
-        "model_status": "Trained" if load_model() else "Baseline - train model to activate ML",
+        "model_status": "Trained" if artifact else "Baseline - train model to activate ML",
+        "model_name": artifact.get("model_name") if artifact else "Rule-based demo baseline",
+        "model_metrics": artifact.get("metrics", {}) if artifact else {},
+        "model_comparison": artifact.get("all_results", {}) if artifact else {},
+        "model_evaluation": artifact.get("evaluation", {}) if artifact else {},
     }
 
 
