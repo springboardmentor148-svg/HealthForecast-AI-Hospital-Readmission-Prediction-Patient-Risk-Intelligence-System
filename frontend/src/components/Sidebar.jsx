@@ -1,12 +1,10 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
     FiHome,
     FiActivity,
     FiClock,
     FiUsers,
     FiClipboard,
-    FiUser,
-    FiLogOut,
     FiTrendingUp,
     FiFileText,
     FiBarChart2,
@@ -14,15 +12,6 @@ import {
 import { MdMedicalServices, MdLocalHospital } from "react-icons/md";
 
 function Sidebar() {
-    const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user"));
-
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/");
-    };
-
     const linkClass = ({ isActive }) =>
         `nav-link sidebar-link d-flex align-items-center gap-2 text-white px-3 py-2 rounded ${
             isActive ? "bg-primary" : "text-white-50"
@@ -42,7 +31,7 @@ function Sidebar() {
         >
             <h5 className="text-white mb-1">HealthForecast AI</h5>
             <p className="text-white-50 small mb-4">
-                {user?.full_name || "Doctor"} · {user?.role || "Doctor"}
+                Doctor Panel
             </p>
 
             <nav className="nav flex-column gap-1 flex-grow-1">
@@ -76,17 +65,22 @@ function Sidebar() {
                 <NavLink to="/patient-report" className={linkClass}>
                     <FiFileText size={18} /> Patient Reports
                 </NavLink>
-                <NavLink to="/profile" className={linkClass}>
-                    <FiUser size={18} /> Profile
-                </NavLink>
             </nav>
 
-            <button
-                className="btn btn-outline-light mt-3 d-flex align-items-center justify-content-center gap-2"
-                onClick={handleLogout}
-            >
-                <FiLogOut size={16} /> Logout
-            </button>
+            {/* Fills the previously-empty bottom space now that
+                Profile/Logout moved to the top navbar */}
+            <div className="border-top border-secondary border-opacity-25 pt-3 mt-3">
+                <div className="d-flex align-items-center gap-2 mb-2">
+                    <span
+                        className="rounded-circle bg-success"
+                        style={{ width: "8px", height: "8px" }}
+                    ></span>
+                    <span className="text-white-50 small">All systems operational</span>
+                </div>
+                <p className="text-white-50 mb-0" style={{ fontSize: "0.7rem" }}>
+                    HealthForecast AI · v1.0
+                </p>
+            </div>
         </div>
     );
 }

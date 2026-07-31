@@ -111,3 +111,17 @@ def predict_readmission(patient_data):
         "model": model_info["model_name"],
         "accuracy": model_info["accuracy"]
     }
+
+
+# Return the model's full static performance metrics.
+# Uses .get() with a fallback since not every metric may have been
+# saved into model_info.pkl during training.
+def get_model_info():
+    return {
+        "model_name": model_info.get("model_name", "Unknown"),
+        "accuracy": model_info.get("accuracy", "Not available"),
+        "precision": model_info.get("precision", "Not available"),
+        "recall": model_info.get("recall", "Not available"),
+        "f1_score": model_info.get("f1_score", "Not available"),
+        "roc_auc": model_info.get("roc_auc", "Not available"),
+    }

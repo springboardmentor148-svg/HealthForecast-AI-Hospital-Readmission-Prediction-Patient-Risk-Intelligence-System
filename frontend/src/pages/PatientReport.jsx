@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FiPrinter, FiFileText } from "react-icons/fi";
 import { getPatients } from "../services/patientService";
 import { getMedicalHistoryByPatient } from "../services/medicalHistoryService";
@@ -8,6 +9,7 @@ import { getPredictionHistory } from "../services/predictionService";
 import Spinner from "../components/Spinner";
 
 function PatientReport() {
+    const [searchParams] = useSearchParams();
     const [patients, setPatients] = useState([]);
     const [selectedPatientId, setSelectedPatientId] = useState("");
     const [patient, setPatient] = useState(null);
@@ -25,9 +27,17 @@ function PatientReport() {
             try {
                 const data = await getPatients();
                 setPatients(data);
+
+                // If navigated here with ?patientId=..., auto-select that
+                // patient (e.g. from the navbar search results)
+                const patientIdFromUrl = searchParams.get("patientId");
+                if (patientIdFromUrl) {
+                    setSelectedPatientId(patientIdFromUrl);
+                }
             } catch (err) {
                 setError("Failed to load patients.");
             }
+
         };
         fetchPatients();
     }, []);

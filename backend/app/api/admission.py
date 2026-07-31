@@ -137,4 +137,4 @@ async def delete_admission(
     # Success response
     return {
         "message": "Admission deleted successfully"
-    }
+    } 

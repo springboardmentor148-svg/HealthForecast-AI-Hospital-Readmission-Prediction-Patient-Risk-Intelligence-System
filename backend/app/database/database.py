@@ -1,6 +1,4 @@
-# ============================================================
 # MongoDB Database Connection
-# ============================================================
 
 # Import Async MongoDB Client
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -11,29 +9,21 @@ from dotenv import load_dotenv
 # Import os to read environment variables
 import os
 
-# ============================================================
-# Load Environment Variables
-# ============================================================
 
+# Load Environment Variables
 load_dotenv()
 
-# ============================================================
-# Read MongoDB Configuration
-# ============================================================
 
+# Read MongoDB Configuration
 MONGODB_URL = os.getenv("MONGODB_URL")
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 
-# ============================================================
-# Create MongoDB Client
-# ============================================================
 
+# Create MongoDB Client
 client = AsyncIOMotorClient(MONGODB_URL)
 
-# ============================================================
-# Connect to Database
-# ============================================================
 
+# Connect to Database
 database = client[DATABASE_NAME]
 
 
