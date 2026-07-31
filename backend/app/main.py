@@ -105,7 +105,14 @@ def risk_signals(encounter: Encounter) -> list[str]:
 @lru_cache(maxsize=1)
 def load_model():
     path = Path(settings.model_path)
-    return joblib.load(path) if path.exists() else None
+    if not path.exists():
+        return None
+    try:
+        return joblib.load(path)
+    except Exception:
+        # An XGBoost artifact can require an OpenMP runtime unavailable outside Docker.
+        # The application remains usable with the rule-based educational baseline.
+        return None
 
 
 def calculate_probability(encounter: Encounter) -> tuple[float, str]:

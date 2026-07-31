@@ -89,8 +89,11 @@ def seed_model_record(db):
     if not db.query(ModelVersion).first():
         artifact_path = Path(settings.model_path)
         if artifact_path.exists():
-            artifact = joblib.load(artifact_path)
-            db.add(ModelVersion(name=artifact["model_name"], metrics=artifact["metrics"], is_active=True))
+            try:
+                artifact = joblib.load(artifact_path)
+                db.add(ModelVersion(name=artifact["model_name"], metrics=artifact["metrics"], is_active=True))
+            except Exception:
+                db.add(ModelVersion(name="Readmission baseline", metrics={"status": "Model artifact is unavailable in this runtime; Docker loads the trained model."}, is_active=True))
         else:
             db.add(ModelVersion(name="Readmission baseline", metrics={"status": "Run python -m app.train_model to train the model."}, is_active=True))
         db.commit()

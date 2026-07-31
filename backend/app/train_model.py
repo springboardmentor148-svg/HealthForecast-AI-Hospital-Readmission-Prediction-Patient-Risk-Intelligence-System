@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import StandardScaler
 try:
     from xgboost import XGBClassifier
 except Exception:  # Local macOS installations can lack the OpenMP runtime required by XGBoost.
@@ -27,7 +28,7 @@ DROP_COLUMNS = {"encounter_id", "patient_nbr", "readmitted", "weight", "payer_co
 def build_preprocessor(categorical: list[str], numeric: list[str]) -> ColumnTransformer:
     return ColumnTransformer(
         [
-            ("numeric", Pipeline([("imputer", SimpleImputer(strategy="median"))]), numeric),
+            ("numeric", Pipeline([("imputer", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), numeric),
             (
                 "categorical",
                 Pipeline(
@@ -70,7 +71,7 @@ def main():
     y_train, y_test = target.iloc[train_indices], target.iloc[test_indices]
 
     candidates = {
-        "Logistic Regression": LogisticRegression(max_iter=300, class_weight="balanced", solver="lbfgs"),
+        "Logistic Regression": LogisticRegression(max_iter=1000, class_weight="balanced", solver="liblinear", random_state=42),
         "Random Forest": RandomForestClassifier(n_estimators=120, max_depth=14, min_samples_leaf=4, class_weight="balanced_subsample", n_jobs=-1, random_state=42),
     }
     if XGBClassifier is not None:
