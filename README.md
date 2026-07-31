@@ -4,6 +4,12 @@
 
 ---
 
+## 🔗 Quick Links
+
+- 🎥 **Demo Video:** https://drive.google.com/file/d/1X2wa2hXByU6Q67fbrbJE0rDJfu1-FI2_/view?usp=drivesdk
+
+---
+
 ## ✨ Features
 
 - **🔐 Role‑Based Access Control** – Doctor, Admin, Researcher, SysAdmin with specific permissions.
