@@ -1,0 +1,13 @@
+.DS_Store
+.env
+*.py[cod]
+__pycache__/
+.pytest_cache/
+.next/
+node_modules/
+.pnpm-store/
+postgres-data/
+data/*.csv
+!data/.gitkeep
+models/*.joblib
+!models/.gitkeep

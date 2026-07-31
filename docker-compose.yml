@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: healthforecast
+      POSTGRES_USER: healthforecast
+      POSTGRES_PASSWORD: healthforecast
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthforecast -d healthforecast"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://healthforecast:healthforecast@db:5432/healthforecast
+      DATA_PATH: /app/data/diabetic_data.csv
+      MODEL_PATH: /app/models/readmission_model.joblib
+      SECRET_KEY: ${SECRET_KEY:-healthforecast-demo-secret-change-me}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+      - ./models:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data:
