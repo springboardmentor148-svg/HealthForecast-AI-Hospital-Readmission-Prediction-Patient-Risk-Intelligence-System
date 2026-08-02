@@ -1,6 +1,7 @@
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
-const BASE_URL = "http://127.0.0.1:8000/admissions";
+const BASE_URL = `${API_BASE_URL}/admissions`;
 
 const authHeaders = () => {
     const token = localStorage.getItem("token");
@@ -9,6 +10,13 @@ const authHeaders = () => {
 
 export const getAdmissionsByPatient = async (patientId) => {
     const response = await axios.get(`${BASE_URL}/patient/${patientId}`, {
+        headers: authHeaders(),
+    });
+    return response.data;
+};
+
+export const getAllAdmissions = async () => {
+    const response = await axios.get(`${BASE_URL}/`, {
         headers: authHeaders(),
     });
     return response.data;

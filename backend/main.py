@@ -25,9 +25,14 @@ app = FastAPI(
 # CORS Configuration
 # ============================================================
 
-origins = [
-    "http://localhost:5173",
-]
+import os
+
+# Default origins cover local dev (Vite) and the Docker/nginx frontend.
+# In production, set CORS_ORIGINS as a comma-separated env var to your
+# real deployed frontend URL (e.g. https://yourapp.azurewebsites.net) —
+# never leave this wide open ("*") once real user data is involved.
+default_origins = "http://localhost:5173,http://localhost:80,http://localhost"
+origins = os.getenv("CORS_ORIGINS", default_origins).split(",")
 
 app.add_middleware(
     CORSMiddleware,

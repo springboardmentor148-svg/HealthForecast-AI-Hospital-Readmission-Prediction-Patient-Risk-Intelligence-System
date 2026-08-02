@@ -1,19 +1,25 @@
-# Python
+# ===== Backend (Python) =====
 backend/venv/
-__pycache__/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.env
 *.pyc
 
-# Environment
-backend/.env
+# Docker Compose secrets file — NEVER commit this. Copy .env.example
+# to .env and fill in real values locally / on the server instead.
+.env
 
-# Node.js
+# Model files live at project root (models/), not inside backend/ —
+# uncomment if you don't want to track them in Git (they're currently
+# small enough — ~712KB — that tracking them is fine)
+# models/*.pkl
+
+# ===== Frontend (Node/React) =====
 frontend/node_modules/
-
-# Build
 frontend/dist/
+frontend/.vite/
 
-# VS Code
-.vscode/
-
-# Logs
+# ===== General =====
+.DS_Store
 *.log
+.vscode/

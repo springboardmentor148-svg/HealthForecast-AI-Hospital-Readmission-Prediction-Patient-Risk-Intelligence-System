@@ -1,12 +1,13 @@
 // Import axios library to make HTTP requests
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 // Create one axios instance
 // This saves us from writing the backend URL every time.
 const API = axios.create({
 
     // FastAPI Backend URL
-    baseURL: "http://127.0.0.1:8000"
+    baseURL: API_BASE_URL
 
 });
 

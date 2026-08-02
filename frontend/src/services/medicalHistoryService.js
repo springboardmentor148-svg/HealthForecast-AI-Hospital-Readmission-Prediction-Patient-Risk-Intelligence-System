@@ -1,6 +1,7 @@
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
-const BASE_URL = "http://127.0.0.1:8000/medical-history";
+const BASE_URL = `${API_BASE_URL}/medical-history`;
 
 const authHeaders = () => {
     const token = localStorage.getItem("token");

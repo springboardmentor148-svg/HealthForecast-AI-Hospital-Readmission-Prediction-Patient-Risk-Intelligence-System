@@ -1,0 +1,51 @@
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: healthforecast-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+    container_name: healthforecast-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # "mongodb" here refers to the mongodb SERVICE above, not localhost —
+      # Docker Compose gives each service a DNS name matching its name
+      MONGODB_URL: mongodb://mongodb:27017
+      DATABASE_NAME: healthforecast_ai
+      CORS_ORIGINS: http://localhost:80,http://localhost
+      # These come from a local .env file (NOT committed to git) —
+      # docker-compose automatically loads a file named ".env" sitting
+      # next to this file. See .env.example for the format.
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+    depends_on:
+      - mongodb
+    volumes:
+      # Your prediction_service.py resolves MODEL_DIR to the PROJECT
+      # ROOT's models/ folder (one level above backend/), not inside
+      # backend/ — this mount matches that exactly
+      - ./models:/models
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Browser calls THIS from outside Docker, so it must be
+        # "localhost", not the internal service name "backend"
+        VITE_API_BASE_URL: http://localhost:8000
+    container_name: healthforecast-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
