@@ -1,0 +1,26 @@
+services:
+  # FastAPI Backend Service
+  backend:
+    build: ./backend
+    container_name: diabetes_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SENDER_EMAIL=${SENDER_EMAIL:-}
+      - SENDER_PASSWORD=${SENDER_PASSWORD:-}
+      - ALERT_DOCTOR_EMAIL=${ALERT_DOCTOR_EMAIL:-}
+    restart: always
+
+  # React Frontend Service
+  frontend:
+    build: ./frontend
+    container_name: diabetes_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always

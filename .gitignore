@@ -1,0 +1,25 @@
+# Python / Virtual Environment
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# SQLite Local Database
+*.db
+*.sqlite3
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.local
+*.pem
+
+# Node / React
+node_modules/
+frontend/node_modules/
+build/
+dist/
+
+# IDE / OS Files
+.vscode/
+.DS_Store
