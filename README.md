@@ -1,13 +1,13 @@
 # 🏥 Prognexa AI – Hospital Readmission Prediction & Patient Risk Intelligence System
 
-**Prognexa AI** is an end‑to‑end healthcare analytics platform that uses machine learning (XGBoost) to predict hospital readmission risk. It provides role‑based dashboards for **Doctors**, **Hospital Administrators**, **Healthcare Researchers**, and **System Administrators** – with features for patient management, risk prediction, analytics, and report generation.
-
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Database-green)
 ![XGBoost](https://img.shields.io/badge/XGBoost-ML-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
+
+**Prognexa AI** is an end‑to‑end healthcare analytics platform that uses machine learning (XGBoost) to predict hospital readmission risk. It provides role‑based dashboards for **Doctors**, **Hospital Administrators**, **Healthcare Researchers**, and **System Administrators** – with features for patient management, risk prediction, analytics, and report generation.
 
 ---
 
@@ -20,7 +20,7 @@
 ## ✨ Features
 
 - 🔐 **Role‑Based Access Control** – Doctor, Admin, Researcher, SysAdmin with specific permissions
-- 🧠 **AI‑Powered Prediction** – XGBoost model with 65.2% accuracy and 0.715 ROC-AUC
+- 🧠 AI-Powered Prediction – XGBoost model for hospital readmission risk prediction
 - 📋 **Patient Management** – Create, view, assign, and delete patient records
 - 📊 **Real‑Time Analytics** – Risk distribution charts, monthly trends, and summary stats
 - 📑 **Report Generation** – Generate and view reports with patient risk levels
@@ -29,9 +29,9 @@
 - 📄 **Research Summaries** – Researchers can post and view research findings
 - 🏥 **Hospital Population Dashboard** – View occupancy and high‑risk patient priority lists
 - 🔧 **Settings** – Change password securely
-- 🗄️ **MongoDB Storage** – All data persisted locally
+- 🗄️ **MongoDB Storage** – Persistent storage for users, patients, reports, notes, appointments, tasks, and research data.
 - 📊 **Chart.js Visualizations** – Interactive charts for risk distribution and trends
-- 🐳 **Dockerized** – One-command deployment with Docker Compose
+- 🐳 **Dockerized** – Containerized deployment using Docker and Docker Compose.
 
 ---
 
@@ -42,11 +42,21 @@
 | **Backend** | FastAPI (Python) |
 | **Database** | MongoDB |
 | **Frontend** | HTML, CSS, JavaScript (Chart.js) |
-| **ML Model** | XGBoost, scikit‑learn, pandas, numpy |
+| **ML Pipeline** | Databricks, PySpark, MLflow |
+| **ML Model** | XGBoost, scikit-learn, pandas, numpy |
 | **Auth** | JWT (python‑jose) + passlib (pbkdf2_sha256) |
 | **Server** | Uvicorn (ASGI) |
 | **Containerization** | Docker, Docker Compose |
 | **Styling** | Glassmorphism UI with Inter font |
+
+---
+
+
+## 🏗️ System Architecture
+
+Prognexa AI follows a modular architecture combining frontend visualization, secure backend APIs, machine learning inference, and persistent database storage.
+
+![Architecture](assets/architecture.png)
 
 ---
 
@@ -62,8 +72,9 @@ Prognexa-AI/
 │   ├── predict.py             # Prediction logic
 │   ├── preprocessor.py        # Data preprocessing
 │   ├── schemas.py             # Pydantic models
-│   └── requirements.txt       # Python dependencies
-|── model/
+│   ├── seed.py                # Predefined dataset
+│   └── requirements.txt       # Python dependencies     
+├── model/ 
 │       ├── readmission_model.json
 │       ├── feature_columns.json
 │       └── label_encoders.pkl
@@ -74,10 +85,10 @@ Prognexa-AI/
 │   ├── docker-entrypoint.sh   # Entrypoint script
 │   └── pic.jpg                # Background image
 ├── assets/
+│   ├── architecture.png
 │   ├── docker-deployment.png
 │   └── confusion_matrix.png
 ├── docker-compose.yml
-├── .env
 └── README.md
 ```
 
@@ -89,24 +100,17 @@ Prognexa-AI/
 - Docker Desktop (with WSL 2 on Windows)
 - Docker Compose
 
-### Quick Start
-```bash
-git clone https://github.com/yourusername/Prognexa-AI.git
-cd Prognexa-AI
-docker-compose up --build -d
-```
-
 ### Services
 | Service | URL |
 |---------|-----|
 | Frontend | http://localhost:80 |
 | Backend API | http://localhost:8000 |
 | Swagger UI | http://localhost:8000/docs |
-| MongoDB | mongodb://localhost:27017 |
+| MongoDB | Internal Docker Network (mongodb://mongo:27017) |
 
 ### Commands
 ```bash
-docker-compose up -d          # Start in background
+docker-compose up --build -d  # Start in background
 docker-compose logs -f        # View logs
 docker-compose down           # Stop containers
 docker-compose down -v        # Remove volumes (clean database)
@@ -121,6 +125,7 @@ DB_NAME=prognexa
 JWT_SECRET_KEY=your-secret-key-change-in-production
 API_URL=http://localhost:8000
 ```
+> ⚠️ Never commit the `.env` file to GitHub. Add it to `.gitignore`.
 
 ---
 
@@ -128,8 +133,8 @@ API_URL=http://localhost:8000
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/your-username/Prognexa-AI.git
-cd Prognexa-AI
+git clone https://github.com/<your-github-username>/<your-repository-name>.git
+cd <your-repository-name>
 ```
 
 ### 2. Create Virtual Environment
@@ -145,6 +150,7 @@ source venv/bin/activate
 
 ### 3. Install Dependencies
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
@@ -158,10 +164,6 @@ brew services start mongodb-community
 
 # Linux
 sudo systemctl start mongod
-
-# Or manually (any OS)
-mongod --dbpath C:\data\db  # Windows
-mongod --dbpath /data/db    # Linux/macOS
 ```
 
 ### 5. Seed Database (Optional)
@@ -229,10 +231,61 @@ Once the backend is running, visit `http://localhost:8000/docs` for Swagger UI.
 
 ---
 
+## 🤖 Machine Learning Model Performance
+
+### Dataset
+- Diabetes 130-US Hospitals Dataset
+
+### Model
+- Algorithm: XGBoost Classifier
+- Frameworks:
+  - Scikit-learn
+  - PySpark
+  - MLflow
+
+### Feature Engineering
+- SeniorCitizen indicator
+- LongStay indicator
+- FrequentVisitor indicator
+- Categorical feature encoding
+
+### Evaluation Metrics
+
+| Metric | Score |
+|--------|-------|
+| Accuracy | ~65% |
+| Precision | ~65% |
+| Recall | ~52% |
+| F1 Score | ~58% |
+| ROC-AUC | ~71% |
+
+The trained model is stored as an optimized XGBoost JSON model and loaded during API inference.
+
+---
+
+## 🔮 Future Enhancements
+
+- SHAP-based explainable AI for patient risk factors
+- Cloud deployment using AWS/Azure
+- Automated ML model retraining pipeline
+- Doctor recommendation system
+- Real-time hospital data integration
+
+---
+
+## 📸 Assets
+
+### 🐳 Docker Deployment
+
+![Docker Deployment](assets/docker-deployment.png)
+
+### 📊 Model Performance
+
+![Confusion Matrix](assets/confusion_matrix.png)
+
+---
+
 ## 📄 License
 
 MIT License – see [LICENSE](LICENSE) file for details.
 
----
-
-**Prognexa AI** – *Intelligent healthcare, powered by AI.* 🚀
