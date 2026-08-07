@@ -1,0 +1,25 @@
+# --- Web framework ---
+fastapi
+uvicorn[standard]
+
+# --- Database ---
+sqlalchemy
+psycopg2-binary        # only needed if DATABASE_URL points at Postgres (see backend/database.py)
+
+# --- Auth ---
+python-jose[cryptography]
+passlib
+bcrypt==4.0.1            # pinned: newer bcrypt (>=4.1) breaks passlib's version probe
+python-multipart          # required by FastAPI's OAuth2PasswordRequestForm (form-encoded login)
+email-validator            # required by pydantic's EmailStr (used in schemas.py)
+
+# --- ML / data ---
+pandas
+numpy
+scikit-learn
+xgboost
+joblib
+
+# --- Testing ---
+pytest
+httpx

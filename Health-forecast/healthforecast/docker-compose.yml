@@ -1,0 +1,52 @@
+# Default stack (SQLite, zero config): docker compose up --build
+# Postgres stack (matches the spec's tech stack, Section 7):
+#   docker compose --profile postgres up --build
+# and set HF_DATABASE_URL on the backend service (see the postgres block
+# below) — SQLite is used unless that env var is set.
+
+services:
+  backend:
+    build:
+      context: ..                     # project root, so requirements.txt is reachable
+      dockerfile: healthforecast/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - HF_JWT_SECRET=change-me-in-production
+      # Uncomment to point at the postgres service below instead of SQLite:
+      # - HF_DATABASE_URL=postgresql+psycopg2://healthforecast:healthforecast@postgres:5432/healthforecast
+    volumes:
+      - hf_db:/app/backend
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["postgres"]            # only starts with `--profile postgres`
+    environment:
+      - POSTGRES_USER=healthforecast
+      - POSTGRES_PASSWORD=healthforecast
+      - POSTGRES_DB=healthforecast
+    ports:
+      - "5432:5432"
+    volumes:
+      - hf_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthforecast"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hf_db:
+  hf_postgres_data:
