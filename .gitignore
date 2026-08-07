@@ -3,15 +3,15 @@ __pycache__/
 *.pyc
 .venv/
 venv/
- 
+
 # Backend runtime artifacts
 backend/healthforecast.db
 backend/*.db
- 
+
 # OS junk
 .DS_Store
 Thumbs.db
- 
+
 # Editor
 .vscode/
 .idea/
