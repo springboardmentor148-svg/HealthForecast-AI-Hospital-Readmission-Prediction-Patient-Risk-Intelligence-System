@@ -95,3 +95,42 @@ class PredictionResponse(BaseModel):
 
 class PredictionList(BaseModel):
     predictions: List[PredictionResponse]
+
+
+from typing import Optional
+
+class PatientCreate(BaseModel):
+
+    patient_name: str
+    age: int
+    gender: str
+    race: str
+    admission_type: int
+    discharge_disposition: int
+    admission_source: int
+
+
+class PatientResponse(BaseModel):
+
+    patient_id: int
+    patient_name: str
+    age: int
+    gender: str
+    race: str
+    admission_type: int
+    discharge_disposition: int
+    admission_source: int
+
+    class Config:
+        from_attributes = True
+
+
+class PatientUpdate(BaseModel):
+
+    patient_name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    race: Optional[str] = None
+    admission_type: Optional[int] = None
+    discharge_disposition: Optional[int] = None
+    admission_source: Optional[int] = None
