@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   FaFlask,
   FaChartLine,
@@ -13,30 +14,35 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-
-const analysisStats = [
-  { label: "Treatments Analyzed", value: "12", icon: FaFlask },
-  { label: "Avg. Effectiveness", value: "82.1%", icon: FaChartLine },
-  { label: "Improving Trend", value: "+4.3%", icon: FaArrowTrendUp },
-  { label: "Medications Tracked", value: "9", icon: FaPills },
-];
-
-const effectivenessTrend = [
-  { treatment: "Metformin", effectiveness: 88 },
-  { treatment: "Insulin Adj.", effectiveness: 79 },
-  { treatment: "Combined Tx", effectiveness: 84 },
-  { treatment: "Lifestyle Prog.", effectiveness: 71 },
-  { treatment: "GLP-1 Therapy", effectiveness: 90 },
-];
-
-const readmissionTrends = [
-  { treatment: "Metformin regimen", cohortSize: "1,204", readmissionRate: "9.2%", trend: "1.1%", direction: "down" },
-  { treatment: "Insulin adjustment", cohortSize: "876", readmissionRate: "14.6%", trend: "0.6%", direction: "up" },
-  { treatment: "Combined therapy", cohortSize: "542", readmissionRate: "11.8%", trend: "2.4%", direction: "down" },
-  { treatment: "Lifestyle program", cohortSize: "398", readmissionRate: "17.3%", trend: "1.2%", direction: "up" },
-];
+import { fetchTreatmentAnalysis } from "../services/researchApi";
 
 export function ResearcherTreatmentAnalysisPage() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetchTreatmentAnalysis()
+      .then(setData)
+      .catch(() => setError("Could not load treatment analysis data."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p style={{ padding: "24px" }}>Loading treatment analysis...</p>;
+  if (error) return <p style={{ padding: "24px", color: "crimson" }}>{error}</p>;
+
+  const improvingCount = data.readmissionTrends.filter((r) => r.direction === "down").length;
+  const improvingShare = data.readmissionTrends.length
+    ? ((improvingCount / data.readmissionTrends.length) * 100).toFixed(1)
+    : "0.0";
+
+  const analysisStats = [
+    { label: "Treatments Analyzed", value: data.treatmentsAnalyzed, icon: FaFlask },
+    { label: "Avg. Effectiveness", value: data.avgEffectiveness, icon: FaChartLine },
+    { label: "Improving Cohorts", value: `${improvingShare}%`, icon: FaArrowTrendUp },
+    { label: "Medications Tracked", value: data.medicationsTracked, icon: FaPills },
+  ];
+
   return (
     <>
       <div className="dashboard-page-header">
@@ -71,17 +77,21 @@ export function ResearcherTreatmentAnalysisPage() {
             </div>
           </div>
 
-          <div style={{ width: "100%", height: 280 }}>
-            <ResponsiveContainer>
-              <BarChart data={effectivenessTrend}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="treatment" tick={{ fontSize: 12 }} />
-                <YAxis unit="%" tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="effectiveness" fill="#2563eb" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {data.effectivenessByTreatment.length === 0 ? (
+            <p style={{ padding: "16px" }}>No treatment records logged yet.</p>
+          ) : (
+            <div style={{ width: "100%", height: 280 }}>
+              <ResponsiveContainer>
+                <BarChart data={data.effectivenessByTreatment}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis dataKey="treatment" tick={{ fontSize: 12 }} />
+                  <YAxis unit="%" tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="effectiveness" fill="#2563eb" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </article>
 
         <aside className="dashboard-side-stack">
@@ -115,14 +125,19 @@ export function ResearcherTreatmentAnalysisPage() {
                 </tr>
               </thead>
               <tbody>
-                {readmissionTrends.map((row) => (
+                {data.readmissionTrends.length === 0 && (
+                  <tr>
+                    <td colSpan={4}>No treatment records logged yet.</td>
+                  </tr>
+                )}
+                {data.readmissionTrends.map((row) => (
                   <tr key={row.treatment}>
                     <td>{row.treatment}</td>
                     <td>{row.cohortSize}</td>
                     <td>{row.readmissionRate}</td>
                     <td>
                       <span className={`risk-pill ${row.direction === "down" ? "low" : "high"}`}>
-                        {row.direction === "down" ? "▼" : "▲"} {row.trend}
+                        {row.direction === "down" ? "▼" : "▲"}
                       </span>
                     </td>
                   </tr>

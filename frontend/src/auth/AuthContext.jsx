@@ -18,6 +18,13 @@ export function AuthProvider({ children }) {
         clearAuthUser()
         setUser(null)
       },
+      updateUser: (updates) => {
+        setUser((prev) => {
+          const nextUser = { ...prev, ...updates }
+          writeAuthUser(nextUser)
+          return nextUser
+        })
+      },
     }),
     [user]
   )

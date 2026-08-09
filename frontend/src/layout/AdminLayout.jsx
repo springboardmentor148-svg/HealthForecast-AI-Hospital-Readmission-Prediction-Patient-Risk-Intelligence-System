@@ -11,5 +11,5 @@ const sidebarItems = [
 ];
 
 export default function AdminLayout() {
-  return <RoleShell sidebarItems={sidebarItems} />;
+  return <RoleShell sidebarItems={sidebarItems} profilePath="/app/admin/settings" />;
 }

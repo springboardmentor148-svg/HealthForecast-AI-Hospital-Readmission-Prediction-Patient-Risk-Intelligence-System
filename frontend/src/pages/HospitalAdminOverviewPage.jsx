@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   FaHospital,
@@ -7,31 +8,39 @@ import {
   FaCircleCheck,
   FaTriangleExclamation,
 } from "react-icons/fa6";
-
-const hospitalStats = [
-  { label: "Total Patients", value: "2,184", icon: FaUserGroup },
-  { label: "Readmission Rate", value: "8.4%", icon: FaChartLine },
-  { label: "Bed Occupancy", value: "76%", icon: FaBedPulse },
-  { label: "Departments Monitored", value: "12", icon: FaHospital },
-];
-
-const departmentReports = [
-  { name: "Cardiology", readmission: "6.2%", outcome: "Good", status: "Low" },
-  { name: "Endocrinology", readmission: "11.8%", outcome: "Needs review", status: "High" },
-  { name: "General Surgery", readmission: "7.1%", outcome: "Good", status: "Low" },
-];
-
-const alerts = [
-  { icon: FaTriangleExclamation, tone: "warning", text: "Endocrinology readmission rate above target threshold.", time: "1 hr ago" },
-  { icon: FaCircleCheck, tone: "info", text: "Weekly hospital performance report generated.", time: "3 hr ago" },
-];
+import { fetchHospitalOverview } from "../services/hospitalAdminApi.js";
 
 export function HospitalAdminOverviewPage() {
   const { user } = useOutletContext();
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadOverview() {
+      try {
+        setLoading(true);
+        const data = await fetchHospitalOverview();
+        setOverview(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadOverview();
+  }, []);
 
   const handleExportDepartmentReport = () => {
+    if (!overview) return;
+
     const headers = ["Department", "Readmission Rate", "Outcome", "Status"];
-    const rows = departmentReports.map((r) => [r.name, r.readmission, r.outcome, r.status]);
+    const rows = overview.departmentPerformance.map((r) => [
+      r.name,
+      r.readmissionRate,
+      r.outcome,
+      r.status,
+    ]);
 
     const csvContent = [headers, ...rows]
       .map((row) => row.map((cell) => `"${cell}"`).join(","))
@@ -47,6 +56,30 @@ export function HospitalAdminOverviewPage() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  if (loading) {
+    return (
+      <section className="dashboard-page-header">
+        <h1>Loading overview...</h1>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="dashboard-page-header">
+        <h1>Overview</h1>
+        <p style={{ color: "red" }}>{error}</p>
+      </section>
+    );
+  }
+
+  const hospitalStats = [
+    { label: "Total Patients", value: overview.totalPatients, icon: FaUserGroup },
+    { label: "Readmission Rate", value: overview.readmissionRate, icon: FaChartLine },
+    { label: "Bed Occupancy", value: overview.bedOccupancy, icon: FaBedPulse },
+    { label: "Departments Monitored", value: overview.departmentsMonitored, icon: FaHospital },
+  ];
 
   return (
     <>
@@ -108,18 +141,24 @@ export function HospitalAdminOverviewPage() {
               </thead>
 
               <tbody>
-                {departmentReports.map((row) => (
-                  <tr key={row.name}>
-                    <td>{row.name}</td>
-                    <td>{row.readmission}</td>
-                    <td>{row.outcome}</td>
-                    <td>
-                      <span className={`risk-pill ${row.status === "Low" ? "low" : "high"}`}>
-                        {row.status}
-                      </span>
-                    </td>
+                {overview.departmentPerformance.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>No departments added yet.</td>
                   </tr>
-                ))}
+                ) : (
+                  overview.departmentPerformance.map((row) => (
+                    <tr key={row.name}>
+                      <td>{row.name}</td>
+                      <td>{row.readmissionRate}</td>
+                      <td>{row.outcome}</td>
+                      <td>
+                        <span className={`risk-pill ${row.status === "Low" ? "low" : "high"}`}>
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -130,20 +169,16 @@ export function HospitalAdminOverviewPage() {
             <h2>Alerts</h2>
 
             <ul className="notification-list">
-              {alerts.map((entry, index) => {
-                const Icon = entry.icon;
-                return (
-                  <li key={index} className="notification-item">
-                    <span className={`notification-icon tone-${entry.tone}`}>
-                      <Icon />
-                    </span>
-                    <div className="notification-body">
-                      <p>{entry.text}</p>
-                      <span className="notification-time">{entry.time}</span>
-                    </div>
-                  </li>
-                );
-              })}
+              {overview.alerts.map((entry, index) => (
+                <li key={index} className="notification-item">
+                  <span className={`notification-icon tone-${entry.tone}`}>
+                    {entry.tone === "warning" ? <FaTriangleExclamation /> : <FaCircleCheck />}
+                  </span>
+                  <div className="notification-body">
+                    <p>{entry.text}</p>
+                  </div>
+                </li>
+              ))}
             </ul>
           </article>
         </aside>

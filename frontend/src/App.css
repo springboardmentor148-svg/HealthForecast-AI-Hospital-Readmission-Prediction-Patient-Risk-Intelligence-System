@@ -836,3 +836,66 @@ main{
   color:var(--primary);
   flex-shrink:0;
 }
+
+/* ---------- NAV AUTH BUTTONS (Login / Get Started) ---------- */
+
+.nav-auth-buttons{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-left:8px;
+}
+
+.nav-login-button{
+  height:40px;
+  padding:0 20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--text-strong);
+  font-size:13.5px;
+  font-weight:700;
+  white-space:nowrap;
+  transition:.2s;
+}
+
+.nav-login-button:hover{
+  border-color:var(--primary);
+  color:var(--primary);
+  background:#eff6ff;
+}
+
+.nav-register-button{
+  height:40px;
+  padding:0 20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  background:linear-gradient(135deg, #2563eb, #1d4ed8);
+  color:#fff;
+  font-size:13.5px;
+  font-weight:700;
+  white-space:nowrap;
+  transition:.2s;
+}
+
+.nav-register-button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 20px rgba(37,99,235,.25);
+}
+
+@media(max-width:600px){
+  .nav-auth-buttons{
+    width:100%;
+    margin-left:0;
+    margin-top:10px;
+  }
+  .nav-login-button,
+  .nav-register-button{
+    flex:1;
+  }
+}

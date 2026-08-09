@@ -1,30 +1,53 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaFlask } from "react-icons/fa6";
+import { fetchTreatmentEffectiveness } from "../services/hospitalAdminApi.js";
 
-// Dummy data — department-wise treatment effectiveness (baad me API se aayega)
-const effectivenessSummary = [
-  { label: "Treatments Evaluated", value: "1,842", tone: "low" },
-  { label: "Good Response Rate", value: "78%", tone: "low" },
-  { label: "Needs Review", value: "156", tone: "high" },
-];
-
-const departmentEffectiveness = [
-  { department: "Cardiology", treatmentsReviewed: 486, goodResponse: "82%", avgAdherence: "88%", status: "Good" },
-  { department: "Endocrinology", treatmentsReviewed: 398, goodResponse: "68%", avgAdherence: "74%", status: "Needs Review" },
-  { department: "General Surgery", treatmentsReviewed: 512, goodResponse: "85%", avgAdherence: "91%", status: "Good" },
-  { department: "Neurology", treatmentsReviewed: 274, goodResponse: "71%", avgAdherence: "79%", status: "Moderate" },
-  { department: "Emergency Medicine", treatmentsReviewed: 172, goodResponse: "76%", avgAdherence: "80%", status: "Good" },
-];
-
-const statusTone = { Good: "low", Moderate: "moderate", "Needs Review": "high" };
+const statusTone = { Good: "low", Moderate: "moderate", "Needs Review": "high", "No Data": "moderate" };
 
 export function HospitalAdminTreatmentEffectivenessPage() {
+  const [effectivenessData, setEffectivenessData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("All");
+
+  useEffect(() => {
+    async function loadEffectiveness() {
+      try {
+        setLoading(true);
+        const data = await fetchTreatmentEffectiveness();
+        setEffectivenessData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadEffectiveness();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="dashboard-page-header">
+        <h1>Loading treatment effectiveness...</h1>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="dashboard-page-header">
+        <h1>Treatment Effectiveness</h1>
+        <p style={{ color: "red" }}>{error}</p>
+      </section>
+    );
+  }
 
   const filteredRows =
     departmentFilter === "All"
-      ? departmentEffectiveness
-      : departmentEffectiveness.filter((r) => r.department === departmentFilter);
+      ? effectivenessData.departmentEffectiveness
+      : effectivenessData.departmentEffectiveness.filter(
+          (r) => r.department === departmentFilter
+        );
 
   return (
     <>
@@ -34,7 +57,7 @@ export function HospitalAdminTreatmentEffectivenessPage() {
       </section>
 
       <section className="dashboard-card-grid">
-        {effectivenessSummary.map((card) => (
+        {effectivenessData.summary.map((card) => (
           <article key={card.label} className="dashboard-metric-card">
             <div className="metric-icon">
               <FaFlask />
@@ -55,7 +78,7 @@ export function HospitalAdminTreatmentEffectivenessPage() {
           <div className="dashboard-toolbar">
             <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
               <option>All</option>
-              {departmentEffectiveness.map((d) => (
+              {effectivenessData.departmentEffectiveness.map((d) => (
                 <option key={d.department}>{d.department}</option>
               ))}
             </select>
@@ -74,17 +97,23 @@ export function HospitalAdminTreatmentEffectivenessPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row) => (
-                <tr key={row.department}>
-                  <td>{row.department}</td>
-                  <td>{row.treatmentsReviewed}</td>
-                  <td>{row.goodResponse}</td>
-                  <td>{row.avgAdherence}</td>
-                  <td>
-                    <span className={`risk-pill ${statusTone[row.status]}`}>{row.status}</span>
-                  </td>
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>No departments added yet.</td>
                 </tr>
-              ))}
+              ) : (
+                filteredRows.map((row) => (
+                  <tr key={row.department}>
+                    <td>{row.department}</td>
+                    <td>{row.treatmentsReviewed}</td>
+                    <td>{row.goodResponse}</td>
+                    <td>{row.avgAdherence}</td>
+                    <td>
+                      <span className={`risk-pill ${statusTone[row.status]}`}>{row.status}</span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,60 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaMagnifyingGlass, FaFlask } from "react-icons/fa6";
-
-// Dummy data — apne assigned patients ke treatment outcomes (baad me API se aayega)
-const treatmentRecords = [
-  {
-    id: "PT-1001",
-    name: "A. Johnson",
-    treatment: "Metformin + Insulin Therapy",
-    startDate: "10 Jun 2026",
-    effectiveness: "Good",
-    recoveryTrend: "Improving",
-    adherence: "92%",
-  },
-  {
-    id: "PT-1002",
-    name: "M. Patel",
-    treatment: "ACE Inhibitors",
-    startDate: "02 Jul 2026",
-    effectiveness: "Good",
-    recoveryTrend: "Stable",
-    adherence: "88%",
-  },
-  {
-    id: "PT-1003",
-    name: "S. Williams",
-    treatment: "Beta Blockers + Diuretics",
-    startDate: "15 May 2026",
-    effectiveness: "Moderate",
-    recoveryTrend: "Slow Improvement",
-    adherence: "74%",
-  },
-  {
-    id: "PT-1004",
-    name: "R. Gomez",
-    treatment: "Metformin",
-    startDate: "20 Jun 2026",
-    effectiveness: "Good",
-    recoveryTrend: "Improving",
-    adherence: "95%",
-  },
-  {
-    id: "PT-1005",
-    name: "L. Chen",
-    treatment: "Bronchodilator Therapy",
-    startDate: "05 Jul 2026",
-    effectiveness: "Poor",
-    recoveryTrend: "Declining",
-    adherence: "58%",
-  },
-];
-
-const effectivenessSummary = [
-  { label: "Total Evaluated", value: "5", tone: "low" },
-  { label: "Good Response", value: "3", tone: "low" },
-  { label: "Needs Review", value: "2", tone: "high" },
-];
+import { fetchTreatments, fetchTreatmentSummary } from "../services/treatmentsApi.js";
 
 const effectivenessTone = {
   Good: "low",
@@ -65,15 +11,57 @@ const effectivenessTone = {
 export function DoctorTreatmentEffectivenessPage() {
   const [query, setQuery] = useState("");
   const [effectivenessFilter, setEffectivenessFilter] = useState("All");
+  const [treatmentRecords, setTreatmentRecords] = useState([]);
+  const [summary, setSummary] = useState({ totalEvaluated: 0, goodResponse: 0, needsReview: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [records, summaryData] = await Promise.all([
+          fetchTreatments(),
+          fetchTreatmentSummary(),
+        ]);
+        if (isMounted) {
+          setTreatmentRecords(records);
+          setSummary(summaryData);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to load treatment data.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const effectivenessSummary = [
+    { label: "Total Evaluated", value: String(summary.totalEvaluated), tone: "low" },
+    { label: "Good Response", value: String(summary.goodResponse), tone: "low" },
+    { label: "Needs Review", value: String(summary.needsReview), tone: "high" },
+  ];
 
   const filteredRecords = useMemo(() => {
     return treatmentRecords.filter((r) => {
-      const matchesQuery = `${r.id} ${r.name}`.toLowerCase().includes(query.toLowerCase());
+      const matchesQuery = `${r.patientId} ${r.name}`.toLowerCase().includes(query.toLowerCase());
       const matchesFilter =
         effectivenessFilter === "All" || r.effectiveness === effectivenessFilter;
       return matchesQuery && matchesFilter;
     });
-  }, [query, effectivenessFilter]);
+  }, [query, effectivenessFilter, treatmentRecords]);
 
   return (
     <>
@@ -120,46 +108,56 @@ export function DoctorTreatmentEffectivenessPage() {
           </div>
         </div>
 
-        <div className="dashboard-table-wrap">
-          <table className="dashboard-table">
-            <thead>
-              <tr>
-                <th>Patient ID</th>
-                <th>Name</th>
-                <th>Treatment Plan</th>
-                <th>Start Date</th>
-                <th>Effectiveness</th>
-                <th>Recovery Trend</th>
-                <th>Medication Adherence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRecords.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.id}</td>
-                  <td>{r.name}</td>
-                  <td>{r.treatment}</td>
-                  <td>{r.startDate}</td>
-                  <td>
-                    <span className={`risk-pill ${effectivenessTone[r.effectiveness]}`}>
-                      {r.effectiveness}
-                    </span>
-                  </td>
-                  <td>{r.recoveryTrend}</td>
-                  <td>{r.adherence}</td>
-                </tr>
-              ))}
+        {isLoading && <p>Loading treatment records...</p>}
 
-              {filteredRecords.length === 0 && (
+        {!isLoading && error && (
+          <p className="access-error" role="alert">
+            {error}
+          </p>
+        )}
+
+        {!isLoading && !error && (
+          <div className="dashboard-table-wrap">
+            <table className="dashboard-table">
+              <thead>
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>
-                    No treatment records match your search.
-                  </td>
+                  <th>Patient ID</th>
+                  <th>Name</th>
+                  <th>Treatment Plan</th>
+                  <th>Start Date</th>
+                  <th>Effectiveness</th>
+                  <th>Recovery Trend</th>
+                  <th>Medication Adherence</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredRecords.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.patientId}</td>
+                    <td>{r.name}</td>
+                    <td>{r.treatment}</td>
+                    <td>{r.startDate}</td>
+                    <td>
+                      <span className={`risk-pill ${effectivenessTone[r.effectiveness]}`}>
+                        {r.effectiveness}
+                      </span>
+                    </td>
+                    <td>{r.recoveryTrend}</td>
+                    <td>{r.adherence}</td>
+                  </tr>
+                ))}
+
+                {filteredRecords.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>
+                      No treatment records match your search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </>
   );

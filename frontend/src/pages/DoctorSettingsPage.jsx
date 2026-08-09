@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext.jsx";
 import {
   FaUser,
   FaLock,
@@ -9,7 +10,16 @@ import {
   FaFloppyDisk,
   FaEye,
   FaEyeSlash,
+  FaHospital,
 } from "react-icons/fa6";
+import {
+  updateMyProfile,
+  changeMyPassword,
+  updateMyTwoFactor,
+  updateMyNotificationPreferences,
+  updateMyAppearancePreferences,
+  fetchAllMyPreferences,
+} from "../services/userApi.js";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: FaUser },
@@ -19,16 +29,53 @@ const tabs = [
   { id: "appearance", label: "Appearance", icon: FaPalette },
 ];
 
+const hospitalTypes = [
+  'General Hospital',
+  'Multi-Specialty Hospital',
+  'Super-Specialty Hospital',
+  'Teaching / University Hospital',
+  'Specialty Clinic / Hospital',
+  'Community Hospital',
+  'District / Regional Hospital',
+  'Rehabilitation Hospital',
+  'Psychiatric Hospital',
+  'Critical Access Hospital',
+];
+
+const ownershipTypes = [
+  'Government / Public Hospital',
+  'Private Hospital',
+  'Trust / Charitable Hospital',
+  'Corporate Chain Hospital',
+];
+
 export function DoctorSettingsPage() {
   const { user } = useOutletContext();
+  const { updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [savedMessage, setSavedMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Profile
-  const [fullName, setFullName] = useState(user?.fullName || "Dr. Ananya Sharma");
-  const [email, setEmail] = useState(user?.email || "ananya.sharma@healthforecastai.com");
-  const [phone, setPhone] = useState("+91 98765 43210");
-  const [specialty, setSpecialty] = useState("Cardiology");
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [activeTab]);
+
+  // Profile — personal
+  const [fullName, setFullName] = useState(user?.fullName || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState(user?.mobileNumber || "");
+  const [specialty, setSpecialty] = useState(user?.department || "");
+
+  // Profile — hospital info
+  const [hospitalName, setHospitalName] = useState(user?.hospitalName || user?.hospital || "");
+  const [hospitalType, setHospitalType] = useState(user?.hospitalType || "");
+  const [ownershipType, setOwnershipType] = useState(user?.ownershipType || "");
+  const [hospitalContact, setHospitalContact] = useState(user?.hospitalContact || "");
+  const [hospitalAddress, setHospitalAddress] = useState(user?.hospitalAddress || "");
 
   // Security / Password
   const [currentPassword, setCurrentPassword] = useState("");
@@ -48,17 +95,84 @@ export function DoctorSettingsPage() {
   const [defaultTheme, setDefaultTheme] = useState("light");
   const [compactLayout, setCompactLayout] = useState(false);
 
+  // Saare saved preferences ek baar page load hote hi le aao
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPreferences() {
+      try {
+        const prefs = await fetchAllMyPreferences();
+        if (!isMounted) return;
+
+        if (prefs.twoFactor?.enabled !== undefined) {
+          setTwoFactorEnabled(prefs.twoFactor.enabled);
+        }
+        if (prefs.notifications) {
+          setNotifyHighRisk(prefs.notifications.notifyHighRisk ?? true);
+          setNotifyPredictionReady(prefs.notifications.notifyPredictionReady ?? true);
+          setNotifyFollowUp(prefs.notifications.notifyFollowUp ?? true);
+          setNotifyWeeklySummary(prefs.notifications.notifyWeeklySummary ?? false);
+        }
+        if (prefs.appearance) {
+          setDefaultTheme(prefs.appearance.defaultTheme ?? "light");
+          setCompactLayout(prefs.appearance.compactLayout ?? false);
+        }
+      } catch (err) {
+        console.error("Failed to load saved preferences:", err);
+      }
+    }
+
+    loadPreferences();
+    return () => { isMounted = false; };
+  }, []);
+
   const flashSaved = (message = "Settings saved successfully.") => {
     setSavedMessage(message);
+    setErrorMessage("");
     setTimeout(() => setSavedMessage(""), 2500);
   };
 
-  const handleSaveProfile = (event) => {
-    event.preventDefault();
-    flashSaved("Profile updated successfully.");
+  const flashError = (message) => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(""), 3500);
   };
 
-  const handleChangePassword = (event) => {
+  const handleSaveProfile = async (event) => {
+    event.preventDefault();
+
+    try {
+      const updated = await updateMyProfile({
+        fullName,
+        email,
+        mobileNumber: phone,
+        department: specialty,
+        hospitalName,
+        hospitalType,
+        ownershipType,
+        hospitalContact,
+        hospitalAddress,
+      });
+
+      updateUser({
+        fullName: updated.fullName,
+        email: updated.email,
+        mobileNumber: updated.mobileNumber,
+        department: updated.department,
+        hospitalName: updated.hospitalName,
+        hospital: updated.hospitalName,
+        hospitalType: updated.hospitalType,
+        ownershipType: updated.ownershipType,
+        hospitalContact: updated.hospitalContact,
+        hospitalAddress: updated.hospitalAddress,
+      });
+
+      flashSaved("Profile updated successfully.");
+    } catch (err) {
+      flashError(err?.message || "Failed to update profile.");
+    }
+  };
+
+  const handleChangePassword = async (event) => {
     event.preventDefault();
     setPasswordError("");
 
@@ -75,10 +189,49 @@ export function DoctorSettingsPage() {
       return;
     }
 
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    flashSaved("Password changed successfully.");
+    try {
+      await changeMyPassword({ currentPassword, newPassword });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      flashSaved("Password changed successfully.");
+    } catch (err) {
+      setPasswordError(err?.message || "Failed to change password.");
+    }
+  };
+
+  const handleToggleTwoFactor = async (checked) => {
+    setTwoFactorEnabled(checked);
+    try {
+      await updateMyTwoFactor(checked);
+    } catch (err) {
+      flashError(err?.message || "Failed to update two-factor setting.");
+    }
+  };
+
+  const handleSaveNotifications = async (event) => {
+    event.preventDefault();
+    try {
+      await updateMyNotificationPreferences({
+        notifyHighRisk,
+        notifyPredictionReady,
+        notifyFollowUp,
+        notifyWeeklySummary,
+      });
+      flashSaved("Notification preferences updated.");
+    } catch (err) {
+      flashError(err?.message || "Failed to update notification preferences.");
+    }
+  };
+
+  const handleSaveAppearance = async (event) => {
+    event.preventDefault();
+    try {
+      await updateMyAppearancePreferences({ defaultTheme, compactLayout });
+      flashSaved("Appearance settings updated.");
+    } catch (err) {
+      flashError(err?.message || "Failed to update appearance settings.");
+    }
   };
 
   return (
@@ -106,8 +259,9 @@ export function DoctorSettingsPage() {
           })}
         </nav>
 
-        <div className="settings-content">
+        <div className="settings-content" ref={contentRef}>
           {savedMessage && <div className="settings-saved-banner">{savedMessage}</div>}
+          {errorMessage && <div className="settings-error-banner">{errorMessage}</div>}
 
           {/* PROFILE */}
           {activeTab === "profile" && (
@@ -136,13 +290,57 @@ export function DoctorSettingsPage() {
                 </label>
 
                 <label className="form-field">
-                  <span>Specialty</span>
+                  <span>Specialty / Department</span>
                   <input type="text" value={specialty} onChange={(e) => setSpecialty(e.target.value)} />
                 </label>
 
                 <label className="form-field">
                   <span>Role</span>
                   <input type="text" value="Doctor" disabled />
+                </label>
+              </div>
+
+              <div className="panel-header-row" style={{ marginTop: "24px" }}>
+                <div>
+                  <h2><FaHospital /> Hospital Information</h2>
+                  <p>Details you provided during registration</p>
+                </div>
+              </div>
+
+              <div className="form-grid">
+                <label className="form-field">
+                  <span>Hospital Name</span>
+                  <input type="text" value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} />
+                </label>
+
+                <label className="form-field">
+                  <span>Hospital Type</span>
+                  <select value={hospitalType} onChange={(e) => setHospitalType(e.target.value)}>
+                    <option value="">Select Hospital Type</option>
+                    {hospitalTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="form-field">
+                  <span>Ownership Type</span>
+                  <select value={ownershipType} onChange={(e) => setOwnershipType(e.target.value)}>
+                    <option value="">Select Ownership Type</option>
+                    {ownershipTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="form-field">
+                  <span>Hospital Contact Number</span>
+                  <input type="tel" value={hospitalContact} onChange={(e) => setHospitalContact(e.target.value)} />
+                </label>
+
+                <label className="form-field auth-field-full">
+                  <span>Hospital Address</span>
+                  <input type="text" value={hospitalAddress} onChange={(e) => setHospitalAddress(e.target.value)} />
                 </label>
               </div>
 
@@ -176,6 +374,14 @@ export function DoctorSettingsPage() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
 
@@ -187,6 +393,14 @@ export function DoctorSettingsPage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
 
@@ -198,18 +412,17 @@ export function DoctorSettingsPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
                 </div>
-
-                <button
-                  type="button"
-                  className="secondary-button settings-show-password-btn"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  {showPassword ? "Hide Passwords" : "Show Passwords"}
-                </button>
 
                 <div className="dashboard-inline-actions">
                   <button type="submit" className="primary-button">
@@ -230,7 +443,7 @@ export function DoctorSettingsPage() {
                   <input
                     type="checkbox"
                     checked={twoFactorEnabled}
-                    onChange={(e) => setTwoFactorEnabled(e.target.checked)}
+                    onChange={(e) => handleToggleTwoFactor(e.target.checked)}
                   />
                   <span>Require a verification code at login</span>
                 </label>
@@ -240,13 +453,7 @@ export function DoctorSettingsPage() {
 
           {/* NOTIFICATIONS */}
           {activeTab === "notifications" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Notification preferences updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveNotifications}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaBell /> Notification Preferences</h2>
@@ -297,7 +504,7 @@ export function DoctorSettingsPage() {
             </form>
           )}
 
-          {/* DATA ACCESS - read only, doctor apni permissions dekh sakta hai, change nahi kar sakta */}
+          {/* DATA ACCESS - read only */}
           {activeTab === "access" && (
             <article className="dashboard-panel">
               <div className="panel-header-row">
@@ -316,42 +523,15 @@ export function DoctorSettingsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>Patient Records</td>
-                      <td>Assigned Patients Only</td>
-                    </tr>
-                    <tr>
-                      <td>Medical History</td>
-                      <td>Assigned Patients Only</td>
-                    </tr>
-                    <tr>
-                      <td>Risk Prediction Reports</td>
-                      <td>Full Access</td>
-                    </tr>
-                    <tr>
-                      <td>Readmission Forecasts</td>
-                      <td>Full Access</td>
-                    </tr>
-                    <tr>
-                      <td>Treatment Effectiveness Reports</td>
-                      <td>Full Access</td>
-                    </tr>
-                    <tr>
-                      <td>Care Recommendations</td>
-                      <td>Full Access</td>
-                    </tr>
-                    <tr>
-                      <td>Hospital Analytics Dashboard</td>
-                      <td>Limited</td>
-                    </tr>
-                    <tr>
-                      <td>User Management</td>
-                      <td>No Access</td>
-                    </tr>
-                    <tr>
-                      <td>AI Model Management</td>
-                      <td>No Access</td>
-                    </tr>
+                    <tr><td>Patient Records</td><td>Assigned Patients Only</td></tr>
+                    <tr><td>Medical History</td><td>Assigned Patients Only</td></tr>
+                    <tr><td>Risk Prediction Reports</td><td>Full Access</td></tr>
+                    <tr><td>Readmission Forecasts</td><td>Full Access</td></tr>
+                    <tr><td>Treatment Effectiveness Reports</td><td>Full Access</td></tr>
+                    <tr><td>Care Recommendations</td><td>Full Access</td></tr>
+                    <tr><td>Hospital Analytics Dashboard</td><td>Limited</td></tr>
+                    <tr><td>User Management</td><td>No Access</td></tr>
+                    <tr><td>AI Model Management</td><td>No Access</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -365,13 +545,7 @@ export function DoctorSettingsPage() {
 
           {/* APPEARANCE */}
           {activeTab === "appearance" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Appearance settings updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveAppearance}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaPalette /> Appearance</h2>

@@ -1,0 +1,8 @@
+{
+  "accuracy": 65.39,
+  "precision": 66.21,
+  "recall": 73.12,
+  "f1Score": 69.49,
+  "rocAuc": 71.17,
+  "testSamples": 20354
+}

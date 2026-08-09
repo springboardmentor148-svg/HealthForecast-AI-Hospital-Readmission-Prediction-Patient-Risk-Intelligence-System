@@ -8,21 +8,56 @@ import {
 export function ResultPanel({ result, onReset }) {
   const riskProfile = getRiskProfile(result)
   const confidenceValue = Number.parseFloat(result.confidence) || 0
-  const progressWidth = `${Math.min(100, Math.max(0, confidenceValue))}%`
+  const confidencePercent = Math.min(100, Math.max(0, confidenceValue))
+  const confidenceDisplay = `${confidencePercent.toFixed(1)}%`
+
+  const radius = 50
+  const circumference = 2 * Math.PI * radius
+  const dashOffset = circumference * (1 - confidencePercent / 100)
 
   return (
     <div className="result-panel">
       <div className="result-header">
         <h2>Prediction Complete</h2>
+        {result.patientName && (
+          <p className="result-patient-name">Patient: {result.patientName}</p>
+        )}
         <p className="result-timestamp">Generated: {result.timestamp}</p>
       </div>
 
       <div className="result-score-container">
         <div className="result-score-card" style={{ borderLeftColor: riskProfile.color }}>
-          <div className="result-score-main">
-            <div className="score-icon" style={{ color: riskProfile.color }}>
-              {riskProfile.icon}
+          <div className="result-score-top">
+            <div className="score-ring-wrap">
+              <svg className="score-ring-svg" viewBox="0 0 120 120">
+                <circle
+                  className="score-ring-track"
+                  cx="60"
+                  cy="60"
+                  r={radius}
+                  strokeWidth="10"
+                  fill="none"
+                />
+                <circle
+                  className="score-ring-progress"
+                  cx="60"
+                  cy="60"
+                  r={radius}
+                  strokeWidth="10"
+                  fill="none"
+                  stroke={riskProfile.color}
+                  strokeDasharray={circumference}
+                  strokeDashoffset={dashOffset}
+                  strokeLinecap="round"
+                  transform="rotate(-90 60 60)"
+                />
+              </svg>
+              <div className="score-ring-center">
+                <strong style={{ color: riskProfile.color }}>{confidenceDisplay}</strong>
+                <span>Confidence</span>
+              </div>
             </div>
+
             <div className="score-content">
               <div className="result-badges">
                 <span className="result-badge" style={{ background: riskProfile.tint, color: riskProfile.color }}>
@@ -32,9 +67,6 @@ export function ResultPanel({ result, onReset }) {
               </div>
               <p className="score-label">Prediction</p>
               <p className="score-value" style={{ color: riskProfile.color }}>
-                {result.prediction}
-              </p>
-              <p className="score-level" style={{ color: riskProfile.color }}>
                 {result.result}
               </p>
             </div>
@@ -42,22 +74,12 @@ export function ResultPanel({ result, onReset }) {
 
           <div className="result-metric-grid">
             <div className="result-metric">
-              <span>Confidence</span>
-              <strong>{result.confidence}</strong>
+              <span>Raw Prediction</span>
+              <strong>{result.prediction}</strong>
             </div>
             <div className="result-metric">
               <span>Risk level</span>
               <strong>{result.riskLevel}</strong>
-            </div>
-          </div>
-
-          <div className="result-progress-block">
-            <div className="result-progress-labels">
-              <span>Confidence progress</span>
-              <strong>{result.confidence}</strong>
-            </div>
-            <div className="result-progress" aria-hidden="true">
-              <div className="result-progress-bar" style={{ width: progressWidth, background: riskProfile.color }} />
             </div>
           </div>
 

@@ -1,29 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaChartLine, FaTriangleExclamation, FaArrowTrendUp, FaArrowTrendDown } from "react-icons/fa6";
-
-// Dummy data — aggregated risk/readmission trend, researcher ke liye
-// individual patient identifiable info nahi, sirf hospital-wide aggregated numbers
-const riskSummary = [
-  { label: "Records Scored (Aggregated)", value: "18,940", icon: FaChartLine },
-  { label: "High Risk Share", value: "14.3%", icon: FaTriangleExclamation },
-  { label: "Avg. Readmission Probability", value: "8.7%", icon: FaChartLine },
-  { label: "Model Confidence (Avg.)", value: "89.2%", icon: FaChartLine },
-];
-
-const monthlyTrend = [
-  { month: "Feb 2026", avgRisk: "7.9%", highRiskShare: "12.8%", trend: "down" },
-  { month: "Mar 2026", avgRisk: "8.1%", highRiskShare: "13.1%", trend: "up" },
-  { month: "Apr 2026", avgRisk: "8.4%", highRiskShare: "13.6%", trend: "up" },
-  { month: "May 2026", avgRisk: "8.2%", highRiskShare: "13.4%", trend: "down" },
-  { month: "Jun 2026", avgRisk: "8.6%", highRiskShare: "14.0%", trend: "up" },
-  { month: "Jul 2026", avgRisk: "8.7%", highRiskShare: "14.3%", trend: "up" },
-];
+import { fetchRiskTrends } from "../services/researchApi";
 
 const trendIcon = { up: FaArrowTrendUp, down: FaArrowTrendDown };
 const trendTone = { up: "high", down: "low" };
 
 export function ResearcherRiskTrendsPage() {
-  const [rangeFilter, setRangeFilter] = useState("Last 6 Months");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetchRiskTrends()
+      .then(setData)
+      .catch(() => setError("Could not load risk trend data."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p style={{ padding: "24px" }}>Loading risk trend data...</p>;
+  if (error) return <p style={{ padding: "24px", color: "crimson" }}>{error}</p>;
+
+  const riskSummary = [
+    { label: "Records Scored (Aggregated)", value: data.recordsScored, icon: FaChartLine },
+    { label: "High Risk Share", value: data.highRiskShare, icon: FaTriangleExclamation },
+    { label: "Avg. Readmission Probability", value: data.avgReadmissionProbability, icon: FaChartLine },
+    { label: "Model Confidence (Avg.)", value: data.avgModelConfidence, icon: FaChartLine },
+  ];
 
   return (
     <>
@@ -53,14 +55,6 @@ export function ResearcherRiskTrendsPage() {
             <h2>Monthly Readmission Risk Trend</h2>
             <p>Aggregated model output, no individual patient data included</p>
           </div>
-
-          <div className="dashboard-toolbar">
-            <select value={rangeFilter} onChange={(e) => setRangeFilter(e.target.value)}>
-              <option>Last 6 Months</option>
-              <option>Last 12 Months</option>
-              <option>Year to Date</option>
-            </select>
-          </div>
         </div>
 
         <div className="dashboard-table-wrap">
@@ -74,7 +68,12 @@ export function ResearcherRiskTrendsPage() {
               </tr>
             </thead>
             <tbody>
-              {monthlyTrend.map((row) => {
+              {data.monthlyTrend.length === 0 && (
+                <tr>
+                  <td colSpan={4}>No prediction data yet for this hospital.</td>
+                </tr>
+              )}
+              {data.monthlyTrend.map((row) => {
                 const TrendIcon = trendIcon[row.trend];
                 return (
                   <tr key={row.month}>

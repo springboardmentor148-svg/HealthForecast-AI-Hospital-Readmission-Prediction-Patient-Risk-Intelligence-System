@@ -43,13 +43,15 @@ def predict():
         probability = model.predict_proba(features)[0]
 
         confidence = round(max(probability) * 100, 2)
+        readmission_probability = round(probability[1] * 100, 2)  # index 1 = "Readmission" class ka chance
 
         result = "Readmission" if prediction == 1 else "No Readmission"
 
         return jsonify({
             "prediction": int(prediction),
             "result": result,
-            "confidence": f"{confidence}%"
+            "confidence": f"{confidence}%",
+            "readmissionProbability": f"{readmission_probability}%"
         })
 
     except Exception as e:

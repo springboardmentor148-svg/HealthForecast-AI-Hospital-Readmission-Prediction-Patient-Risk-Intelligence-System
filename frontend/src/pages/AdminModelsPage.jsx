@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaMicrochip,
   FaChartLine,
@@ -7,44 +7,68 @@ import {
   FaRotate,
   FaCircleCheck,
 } from "react-icons/fa6";
+import { fetchModels, retrainModel } from "../services/adminApi.js";
 
-const modelMetrics = [
-  { label: "Prediction Accuracy", value: "92.4%", icon: FaBullseye },
-  { label: "Precision", value: "89.1%", icon: FaChartLine },
-  { label: "Recall", value: "87.6%", icon: FaGaugeHigh },
-  { label: "ROC-AUC Score", value: "0.94", icon: FaMicrochip },
-];
-
-const modelVersions = [
-  {
-    version: "v3.2.0",
-    trainedOn: "Diabetes 130-US Hospitals Dataset",
-    accuracy: "92.4%",
-    status: "Deployed",
-    date: "2 days ago",
-  },
-  {
-    version: "v3.1.0",
-    trainedOn: "Readmission Training Set v3",
-    accuracy: "90.8%",
-    status: "Archived",
-    date: "3 weeks ago",
-  },
-  {
-    version: "v3.0.0",
-    trainedOn: "Diabetes 130-US Hospitals Dataset",
-    accuracy: "88.2%",
-    status: "Archived",
-    date: "2 months ago",
-  },
-];
+function formatTimeAgo(isoString) {
+  if (!isoString) return "—";
+  const then = new Date(isoString);
+  const diffMs = Date.now() - then.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months > 1 ? "s" : ""} ago`;
+}
 
 export function AdminModelsPage() {
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [isRetraining, setIsRetraining] = useState(false);
+  const [retrainError, setRetrainError] = useState("");
 
-  const handleRetrain = () => {
+  async function loadModels() {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchModels();
+      setOverview(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadModels();
+  }, []);
+
+  const modelMetrics = [
+    { label: "Prediction Accuracy", value: overview ? overview.latestAccuracy : "—", icon: FaBullseye },
+    { label: "Precision", value: overview ? overview.latestPrecision : "—", icon: FaChartLine },
+    { label: "Recall", value: overview ? overview.latestRecall : "—", icon: FaGaugeHigh },
+    { label: "ROC-AUC Score", value: overview ? overview.latestRocAuc : "—", icon: FaMicrochip },
+  ];
+
+  const modelVersions = overview ? overview.versions : [];
+
+  const handleRetrain = async () => {
     setIsRetraining(true);
-    setTimeout(() => setIsRetraining(false), 2000);
+    setRetrainError("");
+    try {
+      await retrainModel();
+      await loadModels();
+    } catch (err) {
+      setRetrainError(err.message);
+    } finally {
+      setIsRetraining(false);
+    }
   };
 
   return (
@@ -63,7 +87,7 @@ export function AdminModelsPage() {
                 <Icon />
               </div>
               <span>{card.label}</span>
-              <strong>{card.value}</strong>
+              <strong>{loading ? "…" : card.value}</strong>
             </article>
           );
         })}
@@ -91,8 +115,20 @@ export function AdminModelsPage() {
               </thead>
 
               <tbody>
-                {modelVersions.map((model) => (
-                  <tr key={model.version}>
+                {loading && (
+                  <tr>
+                    <td colSpan={5} className="dashboard-table-empty">Loading...</td>
+                  </tr>
+                )}
+
+                {!loading && error && (
+                  <tr>
+                    <td colSpan={5} className="dashboard-table-empty">{error}</td>
+                  </tr>
+                )}
+
+                {!loading && !error && modelVersions.map((model) => (
+                  <tr key={model.id}>
                     <td>{model.version}</td>
                     <td>{model.trainedOn}</td>
                     <td>{model.accuracy}</td>
@@ -101,9 +137,15 @@ export function AdminModelsPage() {
                         {model.status}
                       </span>
                     </td>
-                    <td>{model.date}</td>
+                    <td>{formatTimeAgo(model.date)}</td>
                   </tr>
                 ))}
+
+                {!loading && !error && modelVersions.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="dashboard-table-empty">No model versions yet. Trigger a retrain to get started.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -121,16 +163,23 @@ export function AdminModelsPage() {
                 onClick={handleRetrain}
                 disabled={isRetraining}
               >
-                <FaRotate /> {isRetraining ? "Training..." : "Retrain Model"}
+                <FaRotate /> {isRetraining ? "Training... (may take a while)" : "Retrain Model"}
               </button>
             </div>
+
+            {retrainError && (
+              <p className="dashboard-table-empty" style={{ wordBreak: "break-word", whiteSpace: "normal" }}>
+                {retrainError}
+              </p>
+            )}
           </article>
 
           <article className="dashboard-panel">
             <h2><FaCircleCheck /> Deployment Status</h2>
             <p>
-              Model v3.2.0 is currently live and serving predictions with 92.4%
-              accuracy on the latest validation set.
+              {overview && overview.deployedVersion !== "—"
+                ? `Model ${overview.deployedVersion} is currently live and serving predictions with ${overview.latestAccuracy} accuracy on the latest validation set.`
+                : "No model has been trained yet."}
             </p>
           </article>
         </aside>

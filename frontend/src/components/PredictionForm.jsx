@@ -101,6 +101,17 @@ export function PredictionForm({ onSubmit, isLoading, error }) {
     <form className="prediction-form" onSubmit={handleSubmit}>
       {error && <div className="form-error-banner">{error}</div>}
 
+      <div className="form-row" style={{ gridTemplateColumns: '1fr' }}>
+        <TextInput
+          label="Patient Name (optional)"
+          name="patientName"
+          value={formData.patientName}
+          onChange={handleChange}
+          placeholder="e.g., Rahul Sharma"
+          helpText="For your reference only — not used by the prediction model"
+        />
+      </div>
+
       <FormSection title="Patient Information" description="Basic demographics">
         <div className="form-row">
           <SelectInput
@@ -448,6 +459,7 @@ export function PredictionForm({ onSubmit, isLoading, error }) {
 
 function getInitialFormData() {
   return {
+    patientName: '',
     race: '',
     gender: '',
     age: '',

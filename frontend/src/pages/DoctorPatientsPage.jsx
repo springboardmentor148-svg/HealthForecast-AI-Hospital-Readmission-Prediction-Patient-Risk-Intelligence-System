@@ -1,113 +1,140 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaMagnifyingGlass, FaEye } from "react-icons/fa6";
-
-// Step 1: Dummy assigned-patients data (baad me API se aayega)
-const assignedPatients = [
-  { id: "PT-1001", name: "A. Johnson", age: 64, condition: "Type 2 Diabetes", lastVisit: "24 Jul 2026", riskLevel: "High" },
-  { id: "PT-1002", name: "M. Patel", age: 58, condition: "Hypertension", lastVisit: "22 Jul 2026", riskLevel: "Low" },
-  { id: "PT-1003", name: "S. Williams", age: 71, condition: "Heart Failure", lastVisit: "20 Jul 2026", riskLevel: "High" },
-  { id: "PT-1004", name: "R. Gomez", age: 49, condition: "Type 2 Diabetes", lastVisit: "18 Jul 2026", riskLevel: "Low" },
-  { id: "PT-1005", name: "L. Chen", age: 66, condition: "COPD", lastVisit: "15 Jul 2026", riskLevel: "High" },
-  { id: "PT-1006", name: "K. Brown", age: 54, condition: "Hypertension", lastVisit: "12 Jul 2026", riskLevel: "Low" },
-];
+import { FaMagnifyingGlass, FaUserInjured } from "react-icons/fa6";
+import { fetchPatients } from "../services/patientsApi.js";
 
 export function DoctorPatientsPage() {
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [patients, setPatients] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Step 2: Search + filter state
-  const [query, setQuery] = useState("");
-  const [riskFilter, setRiskFilter] = useState("All");
+  useEffect(() => {
+    let isMounted = true;
 
-  // Step 3: Filtering logic — search by name/ID, filter by risk level
-  const filteredPatients = useMemo(() => {
-    return assignedPatients.filter((p) => {
-      const matchesQuery = `${p.id} ${p.name}`.toLowerCase().includes(query.toLowerCase());
-      const matchesRisk = riskFilter === "All" || p.riskLevel === riskFilter;
-      return matchesQuery && matchesRisk;
-    });
-  }, [query, riskFilter]);
+    async function loadPatients() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = await fetchPatients();
+        if (isMounted) {
+          setPatients(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to load patients.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadPatients();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredPatients = patients.filter((patient) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      patient.name.toLowerCase().includes(term) ||
+      patient.condition.toLowerCase().includes(term) ||
+      patient.patientId.toLowerCase().includes(term)
+    );
+  });
 
   return (
     <>
-      <section className="dashboard-page-header">
-        <h1>My Patients</h1>
-        <p>Patients currently assigned to your care. You cannot access records outside this scope.</p>
+      <section className="dashboard-hero-card">
+        <div>
+          <span className="dashboard-eyebrow">My Patients</span>
+          <h1>Assigned Patients</h1>
+          <p>{patients.length} patients currently under your care</p>
+        </div>
       </section>
 
       <section className="dashboard-panel dashboard-panel-wide">
         <div className="panel-header-row">
           <div>
-            <h2>Assigned Patient List</h2>
-            <p>{filteredPatients.length} patient(s) found</p>
+            <h2>Patient Directory</h2>
+            <p>Search and open a patient's full record</p>
           </div>
-
           <div className="dashboard-toolbar">
-            <div className="search-input-wrap">
-              <FaMagnifyingGlass />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name or patient ID"
-              />
-            </div>
-
-            <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)}>
-              <option>All</option>
-              <option>High</option>
-              <option>Low</option>
-            </select>
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by name, condition, or patient ID..."
+            />
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => navigate("/app/doctor/patients/new")}
+            >
+              + Add Patient
+            </button>
           </div>
         </div>
 
-        <div className="dashboard-table-wrap">
-          <table className="dashboard-table">
-            <thead>
-              <tr>
-                <th>Patient ID</th>
-                <th>Name</th>
-                <th>Age</th>
-                <th>Condition</th>
-                <th>Last Visit</th>
-                <th>Risk Level</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPatients.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.id}</td>
-                  <td>{p.name}</td>
-                  <td>{p.age}</td>
-                  <td>{p.condition}</td>
-                  <td>{p.lastVisit}</td>
-                  <td>
-                    <span className={`risk-pill ${p.riskLevel === "High" ? "high" : "low"}`}>
-                      {p.riskLevel}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => navigate(`/app/doctor/patients/${p.id}`)}
-                    >
-                      <FaEye /> View
-                    </button>
-                  </td>
-                </tr>
-              ))}
+        {isLoading && <p>Loading patients...</p>}
 
-              {filteredPatients.length === 0 && (
+        {!isLoading && error && (
+          <p className="access-error" role="alert">
+            {error}
+          </p>
+        )}
+
+        {!isLoading && !error && (
+          <div className="dashboard-table-wrap">
+            <table className="dashboard-table">
+              <thead>
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>
-                    No patients match your search.
-                  </td>
+                  <th>Patient</th>
+                  <th>Age / Gender</th>
+                  <th>Condition</th>
+                  <th>Risk Level</th>
+                  <th>Readmission Prob.</th>
+                  <th>Last Visit</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredPatients.length === 0 && (
+                  <tr>
+                    <td colSpan={6}>No patients found.</td>
+                  </tr>
+                )}
+                {filteredPatients.map((patient) => (
+                  <tr
+                    key={patient.patientId}
+                    onClick={() => navigate(`/app/doctor/patients/${patient.patientId}`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <td>
+                      <FaUserInjured style={{ marginRight: "6px" }} />
+                      {patient.name} <span style={{ opacity: 0.6 }}>({patient.patientId})</span>
+                    </td>
+                    <td>
+                      {patient.age} / {patient.gender}
+                    </td>
+                    <td>{patient.condition}</td>
+                    <td>
+                      <span className={`risk-pill ${patient.riskLevel === "High" ? "high" : "low"}`}>
+                        {patient.riskLevel}
+                      </span>
+                    </td>
+                    <td>{patient.readmissionProbability}</td>
+                    <td>{patient.lastVisit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </>
   );

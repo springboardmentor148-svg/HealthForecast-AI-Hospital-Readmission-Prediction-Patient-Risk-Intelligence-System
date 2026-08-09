@@ -1,59 +1,6 @@
-import { useOutletContext } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { FaHospitalUser, FaArrowTrendUp, FaArrowTrendDown, FaMinus } from "react-icons/fa6";
-
-const outcomeSummary = [
-  { label: "Improved", value: "1,542", tone: "low" },
-  { label: "Stable", value: "486", tone: "low" },
-  { label: "Declined", value: "156", tone: "high" },
-];
-
-const patientOutcomes = [
-  {
-    id: "PT-10245",
-    name: "Rohan Malhotra",
-    department: "Cardiology",
-    admitted: "12 Jul 2026",
-    outcome: "Improved",
-    trend: "up",
-    readmissionRisk: "Low",
-  },
-  {
-    id: "PT-10312",
-    name: "Sunita Deshmukh",
-    department: "Endocrinology",
-    admitted: "15 Jul 2026",
-    outcome: "Declined",
-    trend: "down",
-    readmissionRisk: "High",
-  },
-  {
-    id: "PT-10398",
-    name: "Arjun Verma",
-    department: "General Surgery",
-    admitted: "18 Jul 2026",
-    outcome: "Stable",
-    trend: "flat",
-    readmissionRisk: "Moderate",
-  },
-  {
-    id: "PT-10401",
-    name: "Kavita Rao",
-    department: "Cardiology",
-    admitted: "20 Jul 2026",
-    outcome: "Improved",
-    trend: "up",
-    readmissionRisk: "Low",
-  },
-  {
-    id: "PT-10455",
-    name: "Farhan Sheikh",
-    department: "Endocrinology",
-    admitted: "22 Jul 2026",
-    outcome: "Stable",
-    trend: "flat",
-    readmissionRisk: "Moderate",
-  },
-];
+import { fetchHospitalOutcomes } from "../services/hospitalAdminApi.js";
 
 const trendIcon = {
   up: FaArrowTrendUp,
@@ -68,17 +15,34 @@ const trendTone = {
 };
 
 export function HospitalAdminOutcomesPage() {
-  const { user } = useOutletContext();
+  const [outcomesData, setOutcomesData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadOutcomes() {
+      try {
+        setLoading(true);
+        const data = await fetchHospitalOutcomes();
+        setOutcomesData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadOutcomes();
+  }, []);
 
   const handleExport = () => {
-    console.log("Export clicked");
+    if (!outcomesData) return;
 
     const headers = ["Patient ID", "Name", "Department", "Admitted", "Outcome", "Readmission Risk"];
-    const rows = patientOutcomes.map((r) => [
-      r.id,
+    const rows = outcomesData.patients.map((r) => [
+      r.patientId,
       r.name,
-      r.department,
-      r.admitted,
+      r.department || "",
+      r.admitted || "",
       r.outcome,
       r.readmissionRisk,
     ]);
@@ -98,6 +62,23 @@ export function HospitalAdminOutcomesPage() {
     URL.revokeObjectURL(url);
   };
 
+  if (loading) {
+    return (
+      <section className="dashboard-page-header">
+        <h1>Loading outcomes...</h1>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="dashboard-page-header">
+        <h1>Patient Outcomes</h1>
+        <p style={{ color: "red" }}>{error}</p>
+      </section>
+    );
+  }
+
   return (
     <>
       <section className="dashboard-page-header">
@@ -109,7 +90,7 @@ export function HospitalAdminOutcomesPage() {
       </section>
 
       <section className="dashboard-card-grid">
-        {outcomeSummary.map((card) => (
+        {outcomesData.summary.map((card) => (
           <article key={card.label} className="dashboard-metric-card">
             <div className="metric-icon">
               <FaHospitalUser />
@@ -150,36 +131,42 @@ export function HospitalAdminOutcomesPage() {
               </thead>
 
               <tbody>
-                {patientOutcomes.map((row) => {
-                  const TrendIcon = trendIcon[row.trend];
-                  return (
-                    <tr key={row.id}>
-                      <td>{row.id}</td>
-                      <td>{row.name}</td>
-                      <td>{row.department}</td>
-                      <td>{row.admitted}</td>
-                      <td>{row.outcome}</td>
-                      <td>
-                        <span className={`risk-pill ${trendTone[row.trend]}`}>
-                          <TrendIcon />
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={`risk-pill ${
-                            row.readmissionRisk === "Low"
-                              ? "low"
-                              : row.readmissionRisk === "High"
-                              ? "high"
-                              : "moderate"
-                          }`}
-                        >
-                          {row.readmissionRisk}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {outcomesData.patients.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>No patients found yet.</td>
+                  </tr>
+                ) : (
+                  outcomesData.patients.map((row) => {
+                    const TrendIcon = trendIcon[row.trend];
+                    return (
+                      <tr key={row.patientId}>
+                        <td>{row.patientId}</td>
+                        <td>{row.name}</td>
+                        <td>{row.department || "—"}</td>
+                        <td>{row.admitted || "—"}</td>
+                        <td>{row.outcome}</td>
+                        <td>
+                          <span className={`risk-pill ${trendTone[row.trend]}`}>
+                            <TrendIcon />
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`risk-pill ${
+                              row.readmissionRisk === "Low"
+                                ? "low"
+                                : row.readmissionRisk === "High"
+                                ? "high"
+                                : "moderate"
+                            }`}
+                          >
+                            {row.readmissionRisk}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

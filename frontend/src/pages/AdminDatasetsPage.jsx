@@ -1,79 +1,120 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaDatabase,
   FaCloudArrowUp,
   FaCircleCheck,
-  FaTriangleExclamation,
   FaTrash,
   FaDownload,
 } from "react-icons/fa6";
+import {
+  fetchDatasets,
+  uploadDataset,
+  downloadDataset,
+  removeDataset,
+} from "../services/adminApi.js";
 
-const datasets = [
-  {
-    id: 1,
-    name: "Diabetes 130-US Hospitals Dataset",
-    records: "101,766",
-    size: "18.4 MB",
-    status: "Active",
-    lastUpdated: "2 days ago",
-  },
-  {
-    id: 2,
-    name: "Readmission Training Set v3",
-    records: "84,220",
-    size: "14.1 MB",
-    status: "Active",
-    lastUpdated: "1 week ago",
-  },
-  {
-    id: 3,
-    name: "Treatment Effectiveness Cohort",
-    records: "18,940",
-    size: "3.2 MB",
-    status: "Processing",
-    lastUpdated: "10 min ago",
-  },
-  {
-    id: 4,
-    name: "Legacy Patient Records (2019-2021)",
-    records: "42,510",
-    size: "7.8 MB",
-    status: "Archived",
-    lastUpdated: "3 months ago",
-  },
-];
+function formatTimeAgo(isoString) {
+  if (!isoString) return "—";
+  const then = new Date(isoString);
+  const diffMs = Date.now() - then.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months > 1 ? "s" : ""} ago`;
+}
 
-const storageStats = [
-  { label: "Total Datasets", value: "4", icon: FaDatabase },
-  { label: "Total Storage Used", value: "43.5 MB", icon: FaCloudArrowUp },
-  { label: "Active Datasets", value: "2", icon: FaCircleCheck },
-];
+function formatStorage(bytes) {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${bytes} B`;
+}
 
 export function AdminDatasetsPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [datasetList, setDatasetList] = useState(datasets);
+  const [datasetList, setDatasetList] = useState([]);
+  const [totals, setTotals] = useState({ totalDatasets: 0, totalStorageBytes: 0, activeDatasets: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const handleDownload = (dataset) => {
-    const content = `Dataset: ${dataset.name}
-Records: ${dataset.records}
-Size: ${dataset.size}
-Status: ${dataset.status}
-Last Updated: ${dataset.lastUpdated}
-`;
+  const [uploadName, setUploadName] = useState("");
+  const [uploadNotes, setUploadNotes] = useState("");
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadError, setUploadError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${dataset.name.replace(/\s+/g, "-").toLowerCase()}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  async function loadDatasets() {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchDatasets();
+      setDatasetList(data.datasets);
+      setTotals({
+        totalDatasets: data.totalDatasets,
+        totalStorageBytes: data.totalStorageBytes,
+        activeDatasets: data.activeDatasets,
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDatasets();
+  }, []);
+
+  const storageStats = [
+    { label: "Total Datasets", value: String(totals.totalDatasets), icon: FaDatabase },
+    { label: "Total Storage Used", value: formatStorage(totals.totalStorageBytes), icon: FaCloudArrowUp },
+    { label: "Active Datasets", value: String(totals.activeDatasets), icon: FaCircleCheck },
+  ];
+
+  const handleDownload = async (dataset) => {
+    try {
+      await downloadDataset(dataset.id, dataset.name);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
-  const handleRemove = (id) => {
-    setDatasetList((prev) => prev.filter((d) => d.id !== id));
+  const handleRemove = async (id) => {
+    try {
+      await removeDataset(id);
+      loadDatasets();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!uploadName.trim() || !uploadFile) {
+      setUploadError("Please provide a name and choose a file.");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError("");
+
+    try {
+      await uploadDataset({ name: uploadName, notes: uploadNotes, file: uploadFile });
+      setUploadName("");
+      setUploadNotes("");
+      setUploadFile(null);
+      setShowUploadModal(false);
+      loadDatasets();
+    } catch (err) {
+      setUploadError(err.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -92,7 +133,7 @@ Last Updated: ${dataset.lastUpdated}
                 <Icon />
               </div>
               <span>{card.label}</span>
-              <strong>{card.value}</strong>
+              <strong>{loading ? "…" : card.value}</strong>
             </article>
           );
         })}
@@ -130,11 +171,23 @@ Last Updated: ${dataset.lastUpdated}
             </thead>
 
             <tbody>
-              {datasetList.map((dataset) => (
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="dashboard-table-empty">Loading datasets...</td>
+                </tr>
+              )}
+
+              {!loading && error && (
+                <tr>
+                  <td colSpan={6} className="dashboard-table-empty">{error}</td>
+                </tr>
+              )}
+
+              {!loading && !error && datasetList.map((dataset) => (
                 <tr key={dataset.id}>
                   <td>{dataset.name}</td>
-                  <td>{dataset.records}</td>
-                  <td>{dataset.size}</td>
+                  <td>{dataset.records.toLocaleString()}</td>
+                  <td>{dataset.sizeLabel}</td>
                   <td>
                     <span
                       className={`risk-pill ${
@@ -148,7 +201,7 @@ Last Updated: ${dataset.lastUpdated}
                       {dataset.status}
                     </span>
                   </td>
-                  <td>{dataset.lastUpdated}</td>
+                  <td>{formatTimeAgo(dataset.lastUpdated)}</td>
                   <td>
                     <div className="dashboard-inline-actions">
                       <button
@@ -172,7 +225,7 @@ Last Updated: ${dataset.lastUpdated}
                 </tr>
               ))}
 
-              {datasetList.length === 0 && (
+              {!loading && !error && datasetList.length === 0 && (
                 <tr>
                   <td colSpan={6} className="dashboard-table-empty">
                     No datasets available.
@@ -185,33 +238,51 @@ Last Updated: ${dataset.lastUpdated}
       </article>
 
       {showUploadModal && (
-        <div className="modal-backdrop">
-          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="upload-title">
+        <div className="modal-backdrop" onClick={() => setShowUploadModal(false)}>
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header-row">
               <h3 id="upload-title">Upload Dataset</h3>
             </div>
 
-            <form
-              className="modal-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setShowUploadModal(false);
-              }}
-            >
+            <form className="modal-form" onSubmit={handleUploadSubmit}>
               <label className="modal-field">
                 <span>Dataset Name</span>
-                <input type="text" placeholder="e.g. Readmission Training Set v4" required />
+                <input
+                  type="text"
+                  value={uploadName}
+                  onChange={(e) => setUploadName(e.target.value)}
+                  placeholder="e.g. Readmission Training Set v4"
+                  required
+                />
               </label>
 
               <label className="modal-field">
                 <span>File</span>
-                <input type="file" accept=".csv,.json" required />
+                <input
+                  type="file"
+                  accept=".csv,.json"
+                  onChange={(e) => setUploadFile(e.target.files[0])}
+                  required
+                />
               </label>
 
               <label className="modal-field">
                 <span>Notes</span>
-                <input type="text" placeholder="Optional description" />
+                <input
+                  type="text"
+                  value={uploadNotes}
+                  onChange={(e) => setUploadNotes(e.target.value)}
+                  placeholder="Optional description"
+                />
               </label>
+
+              {uploadError && <p className="dashboard-table-empty">{uploadError}</p>}
 
               <div className="modal-actions">
                 <button
@@ -221,8 +292,8 @@ Last Updated: ${dataset.lastUpdated}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="primary-button">
-                  <FaCloudArrowUp /> Upload
+                <button type="submit" className="primary-button" disabled={isUploading}>
+                  <FaCloudArrowUp /> {isUploading ? "Uploading..." : "Upload"}
                 </button>
               </div>
             </form>

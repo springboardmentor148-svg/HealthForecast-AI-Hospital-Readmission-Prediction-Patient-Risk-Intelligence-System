@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   FaUser,
@@ -13,6 +13,27 @@ import {
   FaEye,
   FaEyeSlash,
 } from "react-icons/fa6";
+import {
+  editAdminUser,
+  changePassword,
+  fetchTwoFactor,
+  updateTwoFactor,
+  fetchPlatformConfig,
+  updatePlatformConfig,
+  fetchRolePermissions,
+  updateRolePermissions,
+  fetchAlertThresholds,
+  updateAlertThresholds,
+  fetchNotificationPrefs,
+  updateNotificationPrefs,
+  fetchAuditConfig,
+  updateAuditConfig,
+  exportAuditLogsNow,
+  fetchPrivacyConfig,
+  updatePrivacyConfig,
+  fetchAppearanceConfig,
+  updateAppearanceConfig,
+} from "../services/adminApi.js";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: FaUser },
@@ -35,9 +56,9 @@ export function AdminSettingsPage() {
   const [savedMessage, setSavedMessage] = useState("");
 
   // Profile
-  const [fullName, setFullName] = useState(user?.fullName || "Alex Carter");
-  const [email, setEmail] = useState(user?.email || "alex.carter@healthforecastai.com");
-  const [phone, setPhone] = useState("+91 98765 43210");
+  const [fullName, setFullName] = useState(user?.fullName || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState(user?.mobileNumber || "");
 
   // Security / Password
   const [currentPassword, setCurrentPassword] = useState("");
@@ -93,17 +114,68 @@ export function AdminSettingsPage() {
   const [defaultTheme, setDefaultTheme] = useState("light");
   const [compactLayout, setCompactLayout] = useState(false);
 
+  // Load everything from backend on mount
+  useEffect(() => {
+    fetchTwoFactor().then(setTwoFactorEnabled).catch(() => {});
+
+    fetchPlatformConfig().then((d) => {
+      setPlatformName(d.platformName);
+      setSupportEmail(d.supportEmail);
+      setEnvironment(d.environment);
+      setMaintenanceMode(d.maintenanceMode);
+      setApiRateLimit(d.apiRateLimit);
+    }).catch(() => {});
+
+    fetchRolePermissions().then(setPermissions).catch(() => {});
+
+    fetchAlertThresholds().then((d) => {
+      setUptimeThreshold(d.uptimeThreshold);
+      setFailedLoginThreshold(d.failedLoginThreshold);
+      setErrorRateThreshold(d.errorRateThreshold);
+      setCriticalAlertEmail(d.criticalAlertEmail);
+    }).catch(() => {});
+
+    fetchNotificationPrefs().then((d) => {
+      setNotifyNewUser(d.notifyNewUser);
+      setNotifySecurityEvent(d.notifySecurityEvent);
+      setNotifySystemHealth(d.notifySystemHealth);
+      setNotifyWeeklyDigest(d.notifyWeeklyDigest);
+    }).catch(() => {});
+
+    fetchAuditConfig().then((d) => {
+      setAuditExportFormat(d.auditExportFormat);
+      setAuditRetention(d.auditRetention);
+      setAutoExportMonthly(d.autoExportMonthly);
+    }).catch(() => {});
+
+    fetchPrivacyConfig().then((d) => {
+      setDataRetention(d.dataRetention);
+      setAllowDataExportRequests(d.allowDataExportRequests);
+    }).catch(() => {});
+
+    fetchAppearanceConfig().then((d) => {
+      setDefaultTheme(d.defaultTheme);
+      setCompactLayout(d.compactLayout);
+    }).catch(() => {});
+  }, []);
+
   const flashSaved = (message = "Settings saved successfully.") => {
     setSavedMessage(message);
     setTimeout(() => setSavedMessage(""), 2500);
   };
 
-  const handleSaveProfile = (event) => {
+  const handleSaveProfile = async (event) => {
     event.preventDefault();
-    flashSaved("Profile updated successfully.");
+    if (!user?.id) return;
+    try {
+      await editAdminUser(user.id, { fullName, email, mobileNumber: phone });
+      flashSaved("Profile updated successfully.");
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
-  const handleChangePassword = (event) => {
+  const handleChangePassword = async (event) => {
     event.preventDefault();
     setPasswordError("");
 
@@ -120,10 +192,118 @@ export function AdminSettingsPage() {
       return;
     }
 
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    flashSaved("Password changed successfully.");
+    try {
+      await changePassword(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      flashSaved("Password changed successfully.");
+    } catch (err) {
+      setPasswordError(err.message);
+    }
+  };
+
+  const handleToggleTwoFactor = async (checked) => {
+    setTwoFactorEnabled(checked);
+    try {
+      await updateTwoFactor(checked);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSavePlatform = async (event) => {
+    event.preventDefault();
+    try {
+      await updatePlatformConfig({
+        platformName,
+        supportEmail,
+        environment,
+        maintenanceMode,
+        apiRateLimit: Number(apiRateLimit),
+      });
+      flashSaved("Platform configuration updated.");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSavePermissions = async () => {
+    try {
+      const updated = await updateRolePermissions(permissions);
+      setPermissions(updated);
+      flashSaved("Role permissions updated.");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSaveAlerts = async (event) => {
+    event.preventDefault();
+    try {
+      await updateAlertThresholds({
+        uptimeThreshold: Number(uptimeThreshold),
+        failedLoginThreshold: Number(failedLoginThreshold),
+        errorRateThreshold: Number(errorRateThreshold),
+        criticalAlertEmail,
+      });
+      flashSaved("System alert thresholds updated.");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSaveNotifications = async (event) => {
+    event.preventDefault();
+    try {
+      await updateNotificationPrefs({
+        notifyNewUser,
+        notifySecurityEvent,
+        notifySystemHealth,
+        notifyWeeklyDigest,
+      });
+      flashSaved("Notification preferences updated.");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSaveAuditConfig = async (event) => {
+    event.preventDefault();
+    try {
+      await updateAuditConfig({ auditExportFormat, auditRetention, autoExportMonthly });
+      flashSaved("Audit and report preferences updated.");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleExportNow = async () => {
+    try {
+      await exportAuditLogsNow();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSavePrivacy = async (event) => {
+    event.preventDefault();
+    try {
+      await updatePrivacyConfig({ dataRetention, allowDataExportRequests });
+      flashSaved("Data & privacy settings updated.");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSaveAppearance = async (event) => {
+    event.preventDefault();
+    try {
+      await updateAppearanceConfig({ defaultTheme, compactLayout });
+      flashSaved("Appearance settings updated.");
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (
@@ -270,7 +450,7 @@ export function AdminSettingsPage() {
                   <input
                     type="checkbox"
                     checked={twoFactorEnabled}
-                    onChange={(e) => setTwoFactorEnabled(e.target.checked)}
+                    onChange={(e) => handleToggleTwoFactor(e.target.checked)}
                   />
                   <span>Require a verification code at login</span>
                 </label>
@@ -280,13 +460,7 @@ export function AdminSettingsPage() {
 
           {/* PLATFORM CONFIGURATION */}
           {activeTab === "platform" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Platform configuration updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSavePlatform}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaServer /> Platform Configuration</h2>
@@ -370,11 +544,11 @@ export function AdminSettingsPage() {
                           <td key={col}>
                             <button
                               type="button"
-                              className={`risk-pill ${permissions[role][col] ? "low" : "high"}`}
+                              className={`risk-pill ${permissions[role]?.[col] ? "low" : "high"}`}
                               style={{ border: "none", cursor: "pointer" }}
                               onClick={() => togglePermission(role, col)}
                             >
-                              {permissions[role][col] ? "Allowed" : "Blocked"}
+                              {permissions[role]?.[col] ? "Allowed" : "Blocked"}
                             </button>
                           </td>
                         ))}
@@ -385,7 +559,7 @@ export function AdminSettingsPage() {
               </div>
 
               <div className="dashboard-inline-actions" style={{ marginTop: "20px" }}>
-                <button type="button" className="primary-button" onClick={() => flashSaved("Role permissions updated.")}>
+                <button type="button" className="primary-button" onClick={handleSavePermissions}>
                   <FaFloppyDisk /> Save Permissions
                 </button>
               </div>
@@ -394,13 +568,7 @@ export function AdminSettingsPage() {
 
           {/* SYSTEM ALERTS */}
           {activeTab === "alerts" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("System alert thresholds updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveAlerts}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaShieldHalved /> System Alerts</h2>
@@ -461,13 +629,7 @@ export function AdminSettingsPage() {
 
           {/* NOTIFICATIONS */}
           {activeTab === "notifications" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Notification preferences updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveNotifications}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaBell /> Notification Preferences</h2>
@@ -504,13 +666,7 @@ export function AdminSettingsPage() {
 
           {/* AUDIT & REPORTS */}
           {activeTab === "audit" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Audit and report preferences updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveAuditConfig}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaClipboardList /> Audit &amp; Reports</h2>
@@ -548,7 +704,7 @@ export function AdminSettingsPage() {
               </label>
 
               <div className="dashboard-inline-actions">
-                <button type="button" className="secondary-button">
+                <button type="button" className="secondary-button" onClick={handleExportNow}>
                   Export Audit Logs Now
                 </button>
                 <button type="submit" className="primary-button">
@@ -560,13 +716,7 @@ export function AdminSettingsPage() {
 
           {/* DATA & PRIVACY */}
           {activeTab === "privacy" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Data & privacy settings updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSavePrivacy}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaShieldHalved /> Data &amp; Privacy</h2>
@@ -605,13 +755,7 @@ export function AdminSettingsPage() {
 
           {/* APPEARANCE */}
           {activeTab === "appearance" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Appearance settings updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveAppearance}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaPalette /> Appearance</h2>

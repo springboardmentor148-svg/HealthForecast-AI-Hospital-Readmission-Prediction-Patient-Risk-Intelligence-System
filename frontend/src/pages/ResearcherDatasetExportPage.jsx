@@ -1,52 +1,69 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaDatabase,
   FaFileExport,
   FaClockRotateLeft,
   FaCircleCheck,
 } from "react-icons/fa6";
-
-// Step 1: Upar ke 4 stat cards ka data (dummy hai, baad me API se aayega)
-const exportStats = [
-  { label: "Available Datasets", value: "6", icon: FaDatabase },
-  { label: "Exports This Month", value: "24", icon: FaFileExport },
-  { label: "Last Export", value: "2 days ago", icon: FaClockRotateLeft },
-  { label: "Successful Exports", value: "100%", icon: FaCircleCheck },
-];
-
-// Step 2: Available datasets ki list (jo export ki ja sakti hain)
-const availableDatasets = [
-  { id: "ds1", name: "Anonymized Patient Demographics", records: "18,940", format: "CSV" },
-  { id: "ds2", name: "Readmission Trend Data", records: "8,210", format: "CSV" },
-  { id: "ds3", name: "Treatment Effectiveness Aggregates", records: "3,102", format: "Excel" },
-  { id: "ds4", name: "Population Health Statistics", records: "18,940", format: "PDF" },
-];
-
-// Step 3: Pehle ke export history ki dummy list
-const exportHistory = [
-  { dataset: "Readmission Trend Data", date: "24 Jul 2026", format: "CSV", status: "Completed" },
-  { dataset: "Treatment Effectiveness Aggregates", date: "20 Jul 2026", format: "Excel", status: "Completed" },
-  { dataset: "Anonymized Patient Demographics", date: "15 Jul 2026", format: "CSV", status: "Completed" },
-];
+import { fetchDatasets, fetchExportHistory, exportDataset } from "../services/researchApi";
 
 export function ResearcherDatasetExportPage() {
-  // Step 4: State — track karega konsa dataset abhi "exporting" ho raha hai
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [stats, setStats] = useState(null);
+  const [availableDatasets, setAvailableDatasets] = useState([]);
+  const [exportHistory, setExportHistory] = useState([]);
+
   const [exportingId, setExportingId] = useState(null);
 
-  // Step 5: Export button click hone pe ye function chalega
-  const handleExport = (datasetId) => {
-    setExportingId(datasetId);
-
-    // Abhi ke liye sirf 1.5 second ka fake loading dikhate hain.
-    // Baad me yahan actual API call (backend export request) aayegi.
-    setTimeout(() => {
-      setExportingId(null);
-    }, 1500);
+  const loadData = () => {
+    setLoading(true);
+    setError("");
+    Promise.all([fetchDatasets(), fetchExportHistory()])
+      .then(([datasetsRes, historyRes]) => {
+        setStats(datasetsRes.stats);
+        setAvailableDatasets(datasetsRes.datasets);
+        setExportHistory(historyRes);
+      })
+      .catch(() => setError("Could not load dataset export data."))
+      .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleExport = async (dataset) => {
+    setExportingId(dataset.id);
+    try {
+      await exportDataset(dataset.id, `${dataset.id}.csv`);
+      // Export ho gaya — history refresh karo taaki nayi entry dikhe
+      const updatedHistory = await fetchExportHistory();
+      setExportHistory(updatedHistory);
+    } catch (err) {
+      setError("Export failed. Please try again.");
+    } finally {
+      setExportingId(null);
+    }
+  };
+
+  if (loading) {
+    return <p style={{ padding: "24px" }}>Loading dataset export data...</p>;
+  }
+
+  const exportStats = stats
+    ? [
+        { label: "Available Datasets", value: String(stats.availableDatasets), icon: FaDatabase },
+        { label: "Exports This Month", value: String(stats.exportsThisMonth), icon: FaFileExport },
+        { label: "Last Export", value: stats.lastExport, icon: FaClockRotateLeft },
+        { label: "Successful Exports", value: stats.successfulExports, icon: FaCircleCheck },
+      ]
+    : [];
 
   return (
     <>
-      {/* PAGE HEADER - page ka title aur intro (plain, hero-card sirf Overview pe) */}
+      {/* PAGE HEADER */}
       <div className="dashboard-page-header">
         <h1>Dataset Export</h1>
         <p>
@@ -55,7 +72,9 @@ export function ResearcherDatasetExportPage() {
         </p>
       </div>
 
-      {/* STAT CARDS - upar ke 4 number cards */}
+      {error && <p style={{ padding: "0 0 16px", color: "crimson" }}>{error}</p>}
+
+      {/* STAT CARDS */}
       <section className="dashboard-card-grid">
         {exportStats.map((card) => {
           const Icon = card.icon;
@@ -92,6 +111,11 @@ export function ResearcherDatasetExportPage() {
                 </tr>
               </thead>
               <tbody>
+                {availableDatasets.length === 0 && (
+                  <tr>
+                    <td colSpan={4}>No datasets available.</td>
+                  </tr>
+                )}
                 {availableDatasets.map((ds) => (
                   <tr key={ds.id}>
                     <td>{ds.name}</td>
@@ -102,7 +126,7 @@ export function ResearcherDatasetExportPage() {
                         type="button"
                         className="secondary-button"
                         disabled={exportingId === ds.id}
-                        onClick={() => handleExport(ds.id)}
+                        onClick={() => handleExport(ds)}
                       >
                         {exportingId === ds.id ? "Exporting..." : "Export"}
                       </button>
@@ -126,7 +150,7 @@ export function ResearcherDatasetExportPage() {
         </aside>
       </section>
 
-      {/* EXPORT HISTORY - neeche ek aur table, purani exports ki */}
+      {/* EXPORT HISTORY */}
       <section className="dashboard-content-grid">
         <article className="dashboard-panel dashboard-table-panel">
           <div className="panel-header-row">
@@ -147,6 +171,11 @@ export function ResearcherDatasetExportPage() {
                 </tr>
               </thead>
               <tbody>
+                {exportHistory.length === 0 && (
+                  <tr>
+                    <td colSpan={4}>No exports yet.</td>
+                  </tr>
+                )}
                 {exportHistory.map((row, index) => (
                   <tr key={index}>
                     <td>{row.dataset}</td>

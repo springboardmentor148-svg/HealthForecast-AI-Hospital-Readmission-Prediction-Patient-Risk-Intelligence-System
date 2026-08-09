@@ -24,11 +24,22 @@ export function SelectInput({
       >
         <option value="">Select an option</option>
         {Array.isArray(options) &&
-          options.map((option) => (
-            <option key={option} value={option}>
-              {formatOptionLabel(option)}
-            </option>
-          ))}
+          options.map((option) => {
+            // Naya format: { value, label } object
+            if (typeof option === 'object' && option !== null) {
+              return (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              )
+            }
+            // Purana format: plain string/number (backward compatible)
+            return (
+              <option key={option} value={option}>
+                {formatOptionLabel(option)}
+              </option>
+            )
+          })}
       </select>
       {error && (
         <p id={`${name}-error`} className="form-error">

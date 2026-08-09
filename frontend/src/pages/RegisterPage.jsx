@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { registerUser } from "../services/authApi.js"
 import {
   FaArrowRight,
   FaArrowLeft,
@@ -24,8 +25,8 @@ import "../styles/RegisterPage.css";
 
 const roles = [
   { id: 'Doctor', label: 'Doctor', icon: FaUserDoctor },
-  { id: 'Hospital Admin', label: 'Hospital Admin', icon: FaHospital },
-  { id: 'Researcher', label: 'Researcher', icon: FaFlask },
+  { id: 'Hospital Administrator', label: 'Hospital Admin', icon: FaHospital },
+  { id: 'Healthcare Researcher', label: 'Researcher', icon: FaFlask },
   { id: 'System Administrator', label: 'System Admin', icon: FaUserGear },
 ]
 
@@ -161,24 +162,42 @@ export function RegisterPage() {
     setCurrentStep(stepId)
   }
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  const handleSubmit = async (event) => {
+  event.preventDefault()
 
-    if (!validateStep(4)) return
+  if (!validateStep(4)) return
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.')
-      return
-    }
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters.')
-      return
-    }
-
-    setError('')
-    navigate('/login')
+  if (formData.password !== formData.confirmPassword) {
+    setError('Passwords do not match.')
+    return
+  }
+  if (formData.password.length < 8) {
+    setError('Password must be at least 8 characters.')
+    return
   }
 
+  setError('')
+
+  try {
+    await registerUser({
+      fullName: formData.fullName,
+      email: formData.email,
+      mobileNumber: formData.mobileNumber,
+      hospitalName: formData.hospitalName,
+      hospitalType: formData.hospitalType,
+      ownershipType: formData.ownershipType,
+      hospitalContact: formData.hospitalContact,
+      hospitalAddress: formData.hospitalAddress,
+      department: formData.userRole === 'Doctor' ? formData.department : null,
+      userRole: formData.userRole,
+      password: formData.password,
+    })
+
+    navigate('/login')
+  } catch (err) {
+    setError(err.message)
+  }
+}
   return (
     <main className="auth-shell">
       <section className="auth-visual">

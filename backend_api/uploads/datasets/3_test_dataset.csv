@@ -1,0 +1,6 @@
+patient_id,age,gender,condition,risk_level
+1,45,Male,Diabetes,High
+2,62,Female,Hypertension,Moderate
+3,38,Male,Diabetes,Low
+4,55,Female,Heart Disease,High
+5,29,Male,Asthma,Low

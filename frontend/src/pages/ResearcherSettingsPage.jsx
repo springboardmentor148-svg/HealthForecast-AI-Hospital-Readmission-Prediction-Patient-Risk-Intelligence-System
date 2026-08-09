@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   FaUser,
@@ -10,6 +10,14 @@ import {
   FaEye,
   FaEyeSlash,
 } from "react-icons/fa6";
+import {
+  updateMyProfile,
+  changeMyPassword,
+  fetchAllMyPreferences,
+  updateMyTwoFactor,
+  updateMyNotificationPreferences,
+  updateMyAppearancePreferences,
+} from "../services/userApi";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: FaUser },
@@ -23,11 +31,15 @@ export function ResearcherSettingsPage() {
   const { user } = useOutletContext();
   const [activeTab, setActiveTab] = useState("profile");
   const [savedMessage, setSavedMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  // Profile
-  const [fullName, setFullName] = useState(user?.fullName || "Dr. Priya Nair");
-  const [email, setEmail] = useState(user?.email || "priya.nair@healthforecastai.com");
-  const [phone, setPhone] = useState("+91 98765 12345");
+  // Profile — seedha login ke waqt mile "user" context se aata hai,
+  // koi alag GET call ki zaroorat nahi (backend me GET /users/me hai nahi)
+  const [fullName, setFullName] = useState(user?.fullName || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [mobileNumber, setMobileNumber] = useState(user?.mobileNumber || "");
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Security / Password
   const [currentPassword, setCurrentPassword] = useState("");
@@ -36,28 +48,67 @@ export function ResearcherSettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
   const [passwordError, setPasswordError] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   // Notifications
   const [notifyNewDataset, setNotifyNewDataset] = useState(true);
   const [notifyExportComplete, setNotifyExportComplete] = useState(true);
   const [notifyStudyUpdate, setNotifyStudyUpdate] = useState(true);
   const [notifyWeeklyDigest, setNotifyWeeklyDigest] = useState(false);
+  const [savingNotifications, setSavingNotifications] = useState(false);
 
   // Appearance
   const [defaultTheme, setDefaultTheme] = useState("light");
   const [compactLayout, setCompactLayout] = useState(false);
+  const [savingAppearance, setSavingAppearance] = useState(false);
+
+  // Saare saved preferences (twoFactor, notifications, appearance) ek hi
+  // call me load karte hain — GET /users/me/all-preferences
+  useEffect(() => {
+    fetchAllMyPreferences()
+      .then((data) => {
+        if (data.twoFactor && typeof data.twoFactor.enabled === "boolean") {
+          setTwoFactorEnabled(data.twoFactor.enabled);
+        }
+
+        if (data.notifications) {
+          const n = data.notifications;
+          if (typeof n.newDataset === "boolean") setNotifyNewDataset(n.newDataset);
+          if (typeof n.exportComplete === "boolean") setNotifyExportComplete(n.exportComplete);
+          if (typeof n.studyUpdate === "boolean") setNotifyStudyUpdate(n.studyUpdate);
+          if (typeof n.weeklyDigest === "boolean") setNotifyWeeklyDigest(n.weeklyDigest);
+        }
+
+        if (data.appearance) {
+          if (data.appearance.theme) setDefaultTheme(data.appearance.theme);
+          if (typeof data.appearance.compactLayout === "boolean") {
+            setCompactLayout(data.appearance.compactLayout);
+          }
+        }
+      })
+      .catch(() => setLoadError("Could not load your saved preferences. Showing defaults."))
+      .finally(() => setLoading(false));
+  }, []);
 
   const flashSaved = (message = "Settings saved successfully.") => {
     setSavedMessage(message);
     setTimeout(() => setSavedMessage(""), 2500);
   };
 
-  const handleSaveProfile = (event) => {
+  const handleSaveProfile = async (event) => {
     event.preventDefault();
-    flashSaved("Profile updated successfully.");
+    setSavingProfile(true);
+    try {
+      await updateMyProfile({ fullName, email, mobileNumber });
+      flashSaved("Profile updated successfully.");
+    } catch (err) {
+      setLoadError(err.message || "Could not update profile. Please try again.");
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
-  const handleChangePassword = (event) => {
+  const handleChangePassword = async (event) => {
     event.preventDefault();
     setPasswordError("");
 
@@ -74,11 +125,67 @@ export function ResearcherSettingsPage() {
       return;
     }
 
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    flashSaved("Password changed successfully.");
+    setSavingPassword(true);
+    try {
+      await changeMyPassword({ currentPassword, newPassword });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      flashSaved("Password changed successfully.");
+    } catch (err) {
+      setPasswordError(err.message || "Could not change password.");
+    } finally {
+      setSavingPassword(false);
+    }
   };
+
+  const handleToggleTwoFactor = async (checked) => {
+    setTwoFactorEnabled(checked);
+    try {
+      await updateMyTwoFactor(checked);
+    } catch (err) {
+      setTwoFactorEnabled(!checked); // revert on failure
+      setLoadError(err.message || "Could not update two-factor setting.");
+    }
+  };
+
+  const handleSaveNotifications = async (event) => {
+    event.preventDefault();
+    setSavingNotifications(true);
+    try {
+      await updateMyNotificationPreferences({
+        newDataset: notifyNewDataset,
+        exportComplete: notifyExportComplete,
+        studyUpdate: notifyStudyUpdate,
+        weeklyDigest: notifyWeeklyDigest,
+      });
+      flashSaved("Notification preferences updated.");
+    } catch (err) {
+      setLoadError(err.message || "Could not save notification preferences.");
+    } finally {
+      setSavingNotifications(false);
+    }
+  };
+
+  const handleSaveAppearance = async (event) => {
+    event.preventDefault();
+    setSavingAppearance(true);
+    try {
+      await updateMyAppearancePreferences({
+        theme: defaultTheme,
+        compactLayout,
+      });
+      flashSaved("Appearance settings updated.");
+    } catch (err) {
+      setLoadError(err.message || "Could not save appearance settings.");
+    } finally {
+      setSavingAppearance(false);
+    }
+  };
+
+  if (loading) {
+    return <p style={{ padding: "24px" }}>Loading settings...</p>;
+  }
 
   return (
     <>
@@ -107,6 +214,7 @@ export function ResearcherSettingsPage() {
 
         <div className="settings-content">
           {savedMessage && <div className="settings-saved-banner">{savedMessage}</div>}
+          {loadError && <div className="settings-error-banner">{loadError}</div>}
 
           {/* PROFILE */}
           {activeTab === "profile" && (
@@ -131,7 +239,7 @@ export function ResearcherSettingsPage() {
 
                 <label className="form-field">
                   <span>Phone Number</span>
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <input type="tel" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} />
                 </label>
 
                 <label className="form-field">
@@ -141,8 +249,8 @@ export function ResearcherSettingsPage() {
               </div>
 
               <div className="dashboard-inline-actions">
-                <button type="submit" className="primary-button">
-                  <FaFloppyDisk /> Save Profile
+                <button type="submit" className="primary-button" disabled={savingProfile}>
+                  <FaFloppyDisk /> {savingProfile ? "Saving..." : "Save Profile"}
                 </button>
               </div>
             </form>
@@ -206,8 +314,8 @@ export function ResearcherSettingsPage() {
                 </button>
 
                 <div className="dashboard-inline-actions">
-                  <button type="submit" className="primary-button">
-                    <FaFloppyDisk /> Update Password
+                  <button type="submit" className="primary-button" disabled={savingPassword}>
+                    <FaFloppyDisk /> {savingPassword ? "Updating..." : "Update Password"}
                   </button>
                 </div>
               </form>
@@ -224,7 +332,7 @@ export function ResearcherSettingsPage() {
                   <input
                     type="checkbox"
                     checked={twoFactorEnabled}
-                    onChange={(e) => setTwoFactorEnabled(e.target.checked)}
+                    onChange={(e) => handleToggleTwoFactor(e.target.checked)}
                   />
                   <span>Require a verification code at login</span>
                 </label>
@@ -234,13 +342,7 @@ export function ResearcherSettingsPage() {
 
           {/* NOTIFICATIONS */}
           {activeTab === "notifications" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Notification preferences updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveNotifications}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaBell /> Notification Preferences</h2>
@@ -284,8 +386,8 @@ export function ResearcherSettingsPage() {
               </div>
 
               <div className="dashboard-inline-actions">
-                <button type="submit" className="primary-button">
-                  <FaFloppyDisk /> Save Preferences
+                <button type="submit" className="primary-button" disabled={savingNotifications}>
+                  <FaFloppyDisk /> {savingNotifications ? "Saving..." : "Save Preferences"}
                 </button>
               </div>
             </form>
@@ -347,13 +449,7 @@ export function ResearcherSettingsPage() {
 
           {/* APPEARANCE */}
           {activeTab === "appearance" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Appearance settings updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveAppearance}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaPalette /> Appearance</h2>
@@ -381,8 +477,8 @@ export function ResearcherSettingsPage() {
               </label>
 
               <div className="dashboard-inline-actions">
-                <button type="submit" className="primary-button">
-                  <FaFloppyDisk /> Save Appearance
+                <button type="submit" className="primary-button" disabled={savingAppearance}>
+                  <FaFloppyDisk /> {savingAppearance ? "Saving..." : "Save Appearance"}
                 </button>
               </div>
             </form>

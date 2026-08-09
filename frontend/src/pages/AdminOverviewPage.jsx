@@ -1,36 +1,60 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import {
   FaUsers,
   FaUserDoctor,
   FaClipboardList,
-  FaShieldHalved,
-  FaCircleCheck,
-  FaTriangleExclamation,
+  FaHospitalUser,
 } from "react-icons/fa6";
+import { fetchAdminOverview } from "../services/adminApi.js";
 
-const platformStats = [
-  { label: "Total Users", value: "42", icon: FaUsers },
-  { label: "Active Doctors", value: "31", icon: FaUserDoctor },
-  { label: "Predictions This Week", value: "612", icon: FaClipboardList },
-  { label: "System Uptime", value: "99.9%", icon: FaShieldHalved },
-];
-
-const recentUsers = [
-  { name: "Dr. Sarah Mitchell", role: "Doctor", status: "Active", lastActive: "2 min ago" },
-  { name: "Dr. James Cole", role: "Doctor", status: "Active", lastActive: "18 min ago" },
-  { name: "Dr. Priya Nair", role: "Doctor", status: "Inactive", lastActive: "3 days ago" },
-  { name: "Alex Carter", role: "Administrator", status: "Active", lastActive: "Just now" },
-];
-
-const auditLog = [
-  { icon: FaCircleCheck, tone: "info", text: "Alex Carter updated system settings.", time: "10 min ago" },
-  { icon: FaTriangleExclamation, tone: "warning", text: "Failed login attempt for dr.cole@hospital.org.", time: "1 hr ago" },
-  { icon: FaCircleCheck, tone: "neutral", text: "New doctor account created: Dr. Priya Nair.", time: "Yesterday" },
-];
+function formatJoined(isoString) {
+  if (!isoString) return "—";
+  const date = new Date(isoString);
+  return date.toLocaleDateString();
+}
 
 export function AdminOverviewPage() {
   const navigate = useNavigate();
   const { user } = useOutletContext();
+
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadOverview() {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await fetchAdminOverview();
+        setOverview(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadOverview();
+  }, []);
+
+  const platformStats = [
+    { label: "Total Users", value: overview ? String(overview.totalUsers) : "—", icon: FaUsers },
+    { label: "Active Doctors", value: overview ? String(overview.activeDoctors) : "—", icon: FaUserDoctor },
+    { label: "Predictions This Week", value: overview ? String(overview.predictionsThisWeek) : "—", icon: FaClipboardList },
+    { label: "Total Patients", value: overview ? String(overview.totalPatients) : "—", icon: FaHospitalUser },
+  ];
+
+  const recentUsers = overview
+    ? overview.recentUsers.map((u) => ({
+        name: u.fullName,
+        role: u.userRole,
+        status: u.isActive ? "Active" : "Inactive",
+        lastActive: formatJoined(u.createdAt),
+      }))
+    : [];
+
+  const recentPredictions = overview ? overview.recentPredictions : [];
 
   return (
     <>
@@ -61,7 +85,7 @@ export function AdminOverviewPage() {
                 <Icon />
               </div>
               <span>{card.label}</span>
-              <strong>{card.value}</strong>
+              <strong>{loading ? "…" : card.value}</strong>
             </article>
           );
         })}
@@ -93,12 +117,24 @@ export function AdminOverviewPage() {
                   <th>Name</th>
                   <th>Role</th>
                   <th>Status</th>
-                  <th>Last Active</th>
+                  <th>Joined</th>
                 </tr>
               </thead>
 
               <tbody>
-                {recentUsers.map((row) => (
+                {loading && (
+                  <tr>
+                    <td colSpan={4} className="dashboard-table-empty">Loading...</td>
+                  </tr>
+                )}
+
+                {!loading && error && (
+                  <tr>
+                    <td colSpan={4} className="dashboard-table-empty">{error}</td>
+                  </tr>
+                )}
+
+                {!loading && !error && recentUsers.map((row) => (
                   <tr key={row.name}>
                     <td>{row.name}</td>
                     <td>{row.role}</td>
@@ -114,6 +150,12 @@ export function AdminOverviewPage() {
                     <td>{row.lastActive}</td>
                   </tr>
                 ))}
+
+                {!loading && !error && recentUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="dashboard-table-empty">No users yet.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -121,23 +163,26 @@ export function AdminOverviewPage() {
 
         <aside className="dashboard-side-stack">
           <article className="dashboard-panel">
-            <h2>Audit Log</h2>
+            <h2>Recent Predictions</h2>
 
             <ul className="notification-list">
-              {auditLog.map((entry, index) => {
-                const Icon = entry.icon;
-                return (
-                  <li key={index} className="notification-item">
-                    <span className={`notification-icon tone-${entry.tone}`}>
-                      <Icon />
-                    </span>
-                    <div className="notification-body">
-                      <p>{entry.text}</p>
-                      <span className="notification-time">{entry.time}</span>
-                    </div>
-                  </li>
-                );
-              })}
+              {loading && <li className="dashboard-table-empty">Loading...</li>}
+
+              {!loading && !error && recentPredictions.map((p) => (
+                <li key={p.id} className="notification-item">
+                  <span className={`notification-icon tone-${p.riskLevel === "High" ? "warning" : "neutral"}`}>
+                    {p.riskLevel === "High" ? "!" : "✓"}
+                  </span>
+                  <div className="notification-body">
+                    <p>{p.patientName || "Unnamed patient"} — {p.result}</p>
+                    <span className="notification-time">Risk: {p.riskLevel}</span>
+                  </div>
+                </li>
+              ))}
+
+              {!loading && !error && recentPredictions.length === 0 && (
+                <li className="dashboard-table-empty">No predictions yet.</li>
+              )}
             </ul>
           </article>
         </aside>

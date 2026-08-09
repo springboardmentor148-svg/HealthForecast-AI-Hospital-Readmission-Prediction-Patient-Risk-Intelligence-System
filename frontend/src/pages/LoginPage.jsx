@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa6";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { loginUser } from "../services/authApi.js";
 import { ROLE_DEMO_USERS, getRoleHome } from "../auth/roleConfig.js";
 import "../styles/LoginPage.css";
 
@@ -33,28 +34,49 @@ export default function LoginPage() {
   });
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!formData.email || !formData.password) {
-      setError("Please enter email and password.");
+  if (!formData.email || !formData.password) {
+    setError("Please enter email and password.");
+    return;
+  }
+
+  setError("");
+  setIsSubmitting(true);
+
+  try {
+    const data = await loginUser({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    // Backend se aaya asli role — dropdown selection sirf UX safety check ke liye
+    if (data.user.userRole !== role) {
+      setError(
+        `This account is registered as "${data.user.userRole}". Please select that role above.`
+      );
+      setIsSubmitting(false);
       return;
     }
 
-    setError("");
-    setIsSubmitting(true);
-
     const sessionUser = {
-      ...ROLE_DEMO_USERS[role],
-      email: formData.email,
+      ...data.user,
+       role: data.user.userRole,
+       phone: data.user.mobileNumber,
+       hospital: data.user.hospitalName,
+       hospitalAddress: data.user.hospitalAddress,
+      accessToken: data.access_token,
     };
 
-    setTimeout(() => {
-      login(sessionUser);
-      navigate(getRoleHome(role));
-    }, 500);
-  };
-
+    login(sessionUser);
+    navigate(getRoleHome(data.user.userRole));
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   return (
     <main className="auth-screen">
       {/* LEFT — SIGNAL PANEL */}

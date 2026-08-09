@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   FaUser,
@@ -15,6 +15,19 @@ import {
   FaEye,
   FaEyeSlash,
 } from "react-icons/fa6";
+import {
+  fetchHospitalProfile,
+  updateHospitalProfile,
+  fetchDepartments,
+  fetchHospitalDoctors,
+  createDepartment,
+  updateDepartment,
+  removeDepartment,
+  updateMyProfile,
+  changeMyPassword,
+  getPreference,
+  setPreference,
+} from "../services/hospitalAdminApi.js";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: FaUser },
@@ -28,39 +41,7 @@ const tabs = [
   { id: "appearance", label: "Appearance", icon: FaPalette },
 ];
 
-export function HospitalAdminSettingsPage() {
-  const { user } = useOutletContext();
-  const [activeTab, setActiveTab] = useState("profile");
-  const [savedMessage, setSavedMessage] = useState("");
-
-  // Profile
-  const [fullName, setFullName] = useState(user?.fullName || "Michael Torres");
-  const [email, setEmail] = useState(user?.email || "michael.torres@healthforecastai.com");
-  const [phone, setPhone] = useState("+91 98765 43210");
-
-  // Security / Password
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [passwordError, setPasswordError] = useState("");
-
-  // Hospital Profile
-  const [hospitalName, setHospitalName] = useState("City Care General Hospital");
-  const [hospitalAddress, setHospitalAddress] = useState("221 MG Road, Mumbai, Maharashtra");
-  const [hospitalPhone, setHospitalPhone] = useState("+91 22 4567 8900");
-  const [hospitalType, setHospitalType] = useState("Multi-Specialty Hospital");
- const [ownershipType, setOwnershipType] = useState("Private Hospital");
-
-  // Departments
-  const [departments, setDepartments] = useState([
-    { id: 1, name: "Cardiology", head: "Dr. Priya Nair", active: true },
-    { id: 2, name: "Endocrinology", head: "Dr. Farhan Sheikh", active: true },
-    { id: 3, name: "General Surgery", head: "Dr. Arjun Verma", active: true },
-  ]);
-  const [newDeptName, setNewDeptName] = useState("");
-  const departmentOptions = [
+const departmentOptions = [
   "Cardiology",
   "Endocrinology",
   "General Surgery",
@@ -83,44 +64,197 @@ export function HospitalAdminSettingsPage() {
   "Pathology",
 ];
 
-  const [newDeptHead, setNewDeptHead] = useState("");
+// Default values jab tak backend se preference load na ho jaye
+const DEFAULT_ALERT_THRESHOLDS = { readmissionThreshold: 10, bedOccupancyThreshold: 85, criticalAlertEmail: true };
+const DEFAULT_NOTIFICATIONS = { notifyReadmission: true, notifyOccupancy: true, notifyWeeklyReport: true, notifyNewUser: false };
+const DEFAULT_REPORT_PREFS = { reportFormat: "PDF", autoGenerateWeekly: true, autoGenerateMonthly: true, reportRecipients: "" };
+const DEFAULT_PRIVACY = { dataRetention: "24", auditLogAccess: true };
+const DEFAULT_APPEARANCE = { defaultTheme: "light", compactLayout: false };
 
-  // Alert Thresholds
-  const [readmissionThreshold, setReadmissionThreshold] = useState(10);
-  const [bedOccupancyThreshold, setBedOccupancyThreshold] = useState(85);
-  const [criticalAlertEmail, setCriticalAlertEmail] = useState(true);
+export function HospitalAdminSettingsPage() {
+  const { user } = useOutletContext();
+  const [activeTab, setActiveTab] = useState("profile");
+  const [savedMessage, setSavedMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Notifications
-  const [notifyReadmission, setNotifyReadmission] = useState(true);
-  const [notifyOccupancy, setNotifyOccupancy] = useState(true);
-  const [notifyWeeklyReport, setNotifyWeeklyReport] = useState(true);
-  const [notifyNewUser, setNotifyNewUser] = useState(false);
+  // Profile — real backend se (PUT /users/me)
+  const [fullName, setFullName] = useState(user?.fullName || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState(user?.mobileNumber || "");
 
-  // Report Preferences
-  const [reportFormat, setReportFormat] = useState("PDF");
-  const [autoGenerateWeekly, setAutoGenerateWeekly] = useState(true);
-  const [autoGenerateMonthly, setAutoGenerateMonthly] = useState(true);
-  const [reportRecipients, setReportRecipients] = useState("michael.torres@healthforecastai.com");
+  // Security / Password
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
 
-  // Data & Privacy
-  const [dataRetention, setDataRetention] = useState("24");
-  const [auditLogAccess, setAuditLogAccess] = useState(true);
+  // Hospital Profile — real backend se
+  const [hospitalLoading, setHospitalLoading] = useState(true);
+  const [hospitalName, setHospitalName] = useState("");
+  const [hospitalAddress, setHospitalAddress] = useState("");
+  const [hospitalPhone, setHospitalPhone] = useState("");
+  const [hospitalType, setHospitalType] = useState("Multi-Specialty Hospital");
+  const [ownershipType, setOwnershipType] = useState("Private Hospital");
 
-  // Appearance
-  const [defaultTheme, setDefaultTheme] = useState("light");
-  const [compactLayout, setCompactLayout] = useState(false);
+  // Departments — real backend se
+  const [departments, setDepartments] = useState([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [doctorOptions, setDoctorOptions] = useState([]);
+  const [newDeptName, setNewDeptName] = useState("");
+  const [newDeptHeadId, setNewDeptHeadId] = useState("");
+
+  // Alert Thresholds — preferences se
+  const [readmissionThreshold, setReadmissionThreshold] = useState(DEFAULT_ALERT_THRESHOLDS.readmissionThreshold);
+  const [bedOccupancyThreshold, setBedOccupancyThreshold] = useState(DEFAULT_ALERT_THRESHOLDS.bedOccupancyThreshold);
+  const [criticalAlertEmail, setCriticalAlertEmail] = useState(DEFAULT_ALERT_THRESHOLDS.criticalAlertEmail);
+
+  // Notifications — preferences se
+  const [notifyReadmission, setNotifyReadmission] = useState(DEFAULT_NOTIFICATIONS.notifyReadmission);
+  const [notifyOccupancy, setNotifyOccupancy] = useState(DEFAULT_NOTIFICATIONS.notifyOccupancy);
+  const [notifyWeeklyReport, setNotifyWeeklyReport] = useState(DEFAULT_NOTIFICATIONS.notifyWeeklyReport);
+  const [notifyNewUser, setNotifyNewUser] = useState(DEFAULT_NOTIFICATIONS.notifyNewUser);
+
+  // Report Preferences — preferences se
+  const [reportFormat, setReportFormat] = useState(DEFAULT_REPORT_PREFS.reportFormat);
+  const [autoGenerateWeekly, setAutoGenerateWeekly] = useState(DEFAULT_REPORT_PREFS.autoGenerateWeekly);
+  const [autoGenerateMonthly, setAutoGenerateMonthly] = useState(DEFAULT_REPORT_PREFS.autoGenerateMonthly);
+  const [reportRecipients, setReportRecipients] = useState(user?.email || "");
+
+  // Data & Privacy — preferences se
+  const [dataRetention, setDataRetention] = useState(DEFAULT_PRIVACY.dataRetention);
+  const [auditLogAccess, setAuditLogAccess] = useState(DEFAULT_PRIVACY.auditLogAccess);
+
+  // Appearance — preferences se
+  const [defaultTheme, setDefaultTheme] = useState(DEFAULT_APPEARANCE.defaultTheme);
+  const [compactLayout, setCompactLayout] = useState(DEFAULT_APPEARANCE.compactLayout);
 
   const flashSaved = (message = "Settings saved successfully.") => {
     setSavedMessage(message);
     setTimeout(() => setSavedMessage(""), 2500);
   };
 
-  const handleSaveProfile = (event) => {
-    event.preventDefault();
-    flashSaved("Profile updated successfully.");
+  const flashError = (message = "Something went wrong.") => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(""), 3500);
   };
 
-  const handleChangePassword = (event) => {
+  // ---------- Load Hospital Profile ----------
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        setHospitalLoading(true);
+        const data = await fetchHospitalProfile();
+        setHospitalName(data.hospitalName);
+        setHospitalAddress(data.hospitalAddress);
+        setHospitalPhone(data.hospitalContact);
+        setHospitalType(data.hospitalType);
+        setOwnershipType(data.ownershipType);
+      } catch (err) {
+        flashError(err.message);
+      } finally {
+        setHospitalLoading(false);
+      }
+    }
+    loadProfile();
+  }, []);
+
+  // ---------- Load Departments + Doctors ----------
+  useEffect(() => {
+    async function loadDepartmentsData() {
+      try {
+        setDepartmentsLoading(true);
+        const [deptData, doctorData] = await Promise.all([
+          fetchDepartments(),
+          fetchHospitalDoctors(),
+        ]);
+        setDepartments(deptData);
+        setDoctorOptions(doctorData);
+      } catch (err) {
+        flashError(err.message);
+      } finally {
+        setDepartmentsLoading(false);
+      }
+    }
+    loadDepartmentsData();
+  }, []);
+
+  // ---------- Load all preference-backed tabs (Alerts, Notifications,
+  // Report Prefs, Privacy, Appearance, Two-Factor) in one go ----------
+  useEffect(() => {
+    async function loadPreferences() {
+      try {
+        const [
+          alertPrefs,
+          notifPrefs,
+          reportPrefs,
+          privacyPrefs,
+          appearancePrefs,
+          twoFactorPref,
+        ] = await Promise.all([
+          getPreference("hospitalAlertThresholds"),
+          getPreference("hospitalNotificationPrefs"),
+          getPreference("hospitalReportPrefs"),
+          getPreference("hospitalPrivacyPrefs"),
+          getPreference("hospitalAppearancePrefs"),
+          getPreference("twoFactorEnabled"),
+        ]);
+
+        if (alertPrefs) {
+          setReadmissionThreshold(alertPrefs.readmissionThreshold ?? DEFAULT_ALERT_THRESHOLDS.readmissionThreshold);
+          setBedOccupancyThreshold(alertPrefs.bedOccupancyThreshold ?? DEFAULT_ALERT_THRESHOLDS.bedOccupancyThreshold);
+          setCriticalAlertEmail(alertPrefs.criticalAlertEmail ?? DEFAULT_ALERT_THRESHOLDS.criticalAlertEmail);
+        }
+
+        if (notifPrefs) {
+          setNotifyReadmission(notifPrefs.notifyReadmission ?? DEFAULT_NOTIFICATIONS.notifyReadmission);
+          setNotifyOccupancy(notifPrefs.notifyOccupancy ?? DEFAULT_NOTIFICATIONS.notifyOccupancy);
+          setNotifyWeeklyReport(notifPrefs.notifyWeeklyReport ?? DEFAULT_NOTIFICATIONS.notifyWeeklyReport);
+          setNotifyNewUser(notifPrefs.notifyNewUser ?? DEFAULT_NOTIFICATIONS.notifyNewUser);
+        }
+
+        if (reportPrefs) {
+          setReportFormat(reportPrefs.reportFormat ?? DEFAULT_REPORT_PREFS.reportFormat);
+          setAutoGenerateWeekly(reportPrefs.autoGenerateWeekly ?? DEFAULT_REPORT_PREFS.autoGenerateWeekly);
+          setAutoGenerateMonthly(reportPrefs.autoGenerateMonthly ?? DEFAULT_REPORT_PREFS.autoGenerateMonthly);
+          setReportRecipients(reportPrefs.reportRecipients || user?.email || "");
+        }
+
+        if (privacyPrefs) {
+          setDataRetention(privacyPrefs.dataRetention ?? DEFAULT_PRIVACY.dataRetention);
+          setAuditLogAccess(privacyPrefs.auditLogAccess ?? DEFAULT_PRIVACY.auditLogAccess);
+        }
+
+        if (appearancePrefs) {
+          setDefaultTheme(appearancePrefs.defaultTheme ?? DEFAULT_APPEARANCE.defaultTheme);
+          setCompactLayout(appearancePrefs.compactLayout ?? DEFAULT_APPEARANCE.compactLayout);
+        }
+
+        if (twoFactorPref) {
+          setTwoFactorEnabled(twoFactorPref.enabled ?? false);
+        }
+      } catch (err) {
+        // Preferences load fail hone pe defaults hi use ho jayenge, error dikhana zaroori nahi
+        console.error("Failed to load preferences:", err);
+      }
+    }
+    loadPreferences();
+  }, []);
+
+  // ---------- PROFILE ----------
+  const handleSaveProfile = async (event) => {
+    event.preventDefault();
+    try {
+      await updateMyProfile({ fullName, email, mobileNumber: phone });
+      flashSaved("Profile updated successfully.");
+    } catch (err) {
+      flashError(err.message);
+    }
+  };
+
+  // ---------- PASSWORD ----------
+  const handleChangePassword = async (event) => {
     event.preventDefault();
     setPasswordError("");
 
@@ -137,32 +271,173 @@ export function HospitalAdminSettingsPage() {
       return;
     }
 
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    flashSaved("Password changed successfully.");
+    try {
+      await changeMyPassword(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      flashSaved("Password changed successfully.");
+    } catch (err) {
+      setPasswordError(err.message);
+    }
   };
 
-  const handleAddDepartment = (event) => {
+  const handleToggleTwoFactor = async (checked) => {
+    setTwoFactorEnabled(checked);
+    try {
+      await setPreference("twoFactorEnabled", { enabled: checked });
+    } catch (err) {
+      flashError(err.message);
+    }
+  };
+
+  // ---------- HOSPITAL PROFILE ----------
+  const handleSaveHospitalProfile = async (event) => {
+    event.preventDefault();
+    try {
+      await updateHospitalProfile({
+        hospitalName,
+        hospitalType,
+        ownershipType,
+        hospitalContact: hospitalPhone,
+        hospitalAddress,
+      });
+      flashSaved("Hospital profile updated.");
+    } catch (err) {
+      flashError(err.message);
+    }
+  };
+
+  // ---------- DEPARTMENTS ----------
+  const handleAddDepartment = async (event) => {
     event.preventDefault();
     if (!newDeptName.trim()) return;
 
-    setDepartments((prev) => [
-      ...prev,
-      { id: Date.now(), name: newDeptName.trim(), head: newDeptHead.trim() || "Unassigned", active: true },
-    ]);
-    setNewDeptName("");
-    setNewDeptHead("");
+    try {
+      const created = await createDepartment({
+        name: newDeptName.trim(),
+        head_doctor_id: newDeptHeadId ? Number(newDeptHeadId) : null,
+      });
+      setDepartments((prev) => [...prev, created]);
+      setNewDeptName("");
+      setNewDeptHeadId("");
+      flashSaved("Department added.");
+    } catch (err) {
+      flashError(err.message);
+    }
   };
 
-  const handleRemoveDepartment = (id) => {
-    setDepartments((prev) => prev.filter((dept) => dept.id !== id));
+  const handleRemoveDepartment = async (id) => {
+    try {
+      await removeDepartment(id);
+      setDepartments((prev) => prev.filter((dept) => dept.id !== id));
+      flashSaved("Department removed.");
+    } catch (err) {
+      flashError(err.message);
+    }
   };
 
-  const toggleDepartmentActive = (id) => {
-    setDepartments((prev) =>
-      prev.map((dept) => (dept.id === id ? { ...dept, active: !dept.active } : dept))
-    );
+  const toggleDepartmentActive = async (dept) => {
+    try {
+      const updated = await updateDepartment(dept.id, { is_active: !dept.isActive });
+      setDepartments((prev) => prev.map((d) => (d.id === dept.id ? updated : d)));
+    } catch (err) {
+      flashError(err.message);
+    }
+  };
+
+  // ---------- ALERT THRESHOLDS ----------
+  const handleSaveAlertThresholds = async (event) => {
+    event.preventDefault();
+    try {
+      await setPreference("hospitalAlertThresholds", {
+        readmissionThreshold: Number(readmissionThreshold),
+        bedOccupancyThreshold: Number(bedOccupancyThreshold),
+        criticalAlertEmail,
+      });
+      flashSaved("Alert thresholds updated.");
+    } catch (err) {
+      flashError(err.message);
+    }
+  };
+
+  // ---------- NOTIFICATIONS ----------
+  const handleSaveNotifications = async (event) => {
+    event.preventDefault();
+    try {
+      await setPreference("hospitalNotificationPrefs", {
+        notifyReadmission,
+        notifyOccupancy,
+        notifyWeeklyReport,
+        notifyNewUser,
+      });
+      flashSaved("Notification preferences updated.");
+    } catch (err) {
+      flashError(err.message);
+    }
+  };
+
+  // ---------- REPORT PREFERENCES ----------
+  const handleSaveReportPrefs = async (event) => {
+    event.preventDefault();
+    try {
+      await setPreference("hospitalReportPrefs", {
+        reportFormat,
+        autoGenerateWeekly,
+        autoGenerateMonthly,
+        reportRecipients,
+      });
+      flashSaved("Report preferences updated.");
+    } catch (err) {
+      flashError(err.message);
+    }
+  };
+
+  // ---------- DATA & PRIVACY ----------
+  const handleSavePrivacy = async (event) => {
+    event.preventDefault();
+    try {
+      await setPreference("hospitalPrivacyPrefs", { dataRetention, auditLogAccess });
+      flashSaved("Data & privacy settings updated.");
+    } catch (err) {
+      flashError(err.message);
+    }
+  };
+
+  const handleExportMyData = () => {
+    const exportPayload = {
+      profile: { fullName, email, phone },
+      hospital: { hospitalName, hospitalType, ownershipType, hospitalPhone, hospitalAddress },
+      preferences: {
+        alertThresholds: { readmissionThreshold, bedOccupancyThreshold, criticalAlertEmail },
+        notifications: { notifyReadmission, notifyOccupancy, notifyWeeklyReport, notifyNewUser },
+        reportPreferences: { reportFormat, autoGenerateWeekly, autoGenerateMonthly, reportRecipients },
+        privacy: { dataRetention, auditLogAccess },
+        appearance: { defaultTheme, compactLayout },
+      },
+      exportedAt: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "my-account-data.json";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // ---------- APPEARANCE ----------
+  const handleSaveAppearance = async (event) => {
+    event.preventDefault();
+    try {
+      await setPreference("hospitalAppearancePrefs", { defaultTheme, compactLayout });
+      flashSaved("Appearance settings updated.");
+    } catch (err) {
+      flashError(err.message);
+    }
   };
 
   return (
@@ -192,6 +467,7 @@ export function HospitalAdminSettingsPage() {
 
         <div className="settings-content">
           {savedMessage && <div className="settings-saved-banner">{savedMessage}</div>}
+          {errorMessage && <div className="settings-error-banner">{errorMessage}</div>}
 
           {/* PROFILE */}
           {activeTab === "profile" && (
@@ -309,7 +585,7 @@ export function HospitalAdminSettingsPage() {
                   <input
                     type="checkbox"
                     checked={twoFactorEnabled}
-                    onChange={(e) => setTwoFactorEnabled(e.target.checked)}
+                    onChange={(e) => handleToggleTwoFactor(e.target.checked)}
                   />
                   <span>Require a verification code at login</span>
                 </label>
@@ -319,13 +595,7 @@ export function HospitalAdminSettingsPage() {
 
           {/* HOSPITAL PROFILE */}
           {activeTab === "hospital" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Hospital profile updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveHospitalProfile}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaBuilding /> Hospital Profile</h2>
@@ -333,54 +603,60 @@ export function HospitalAdminSettingsPage() {
                 </div>
               </div>
 
-              <div className="form-grid">
-                <label className="form-field">
-                  <span>Hospital Name</span>
-                  <input type="text" value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} />
-                </label>
+              {hospitalLoading ? (
+                <p>Loading hospital profile...</p>
+              ) : (
+                <>
+                  <div className="form-grid">
+                    <label className="form-field">
+                      <span>Hospital Name</span>
+                      <input type="text" value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} />
+                    </label>
 
-                <label className="form-field">
-  <span>Hospital Type</span>
-  <select value={hospitalType} onChange={(e) => setHospitalType(e.target.value)}>
-    <option>General Hospital</option>
-    <option>Multi-Specialty Hospital</option>
-    <option>Super-Specialty Hospital</option>
-    <option>Teaching / University Hospital</option>
-    <option>Specialty Clinic / Hospital</option>
-    <option>Community Hospital</option>
-    <option>District / Regional Hospital</option>
-    <option>Rehabilitation Hospital</option>
-    <option>Psychiatric Hospital</option>
-    <option>Critical Access Hospital</option>
-  </select>
-</label>
+                    <label className="form-field">
+                      <span>Hospital Type</span>
+                      <select value={hospitalType} onChange={(e) => setHospitalType(e.target.value)}>
+                        <option>General Hospital</option>
+                        <option>Multi-Specialty Hospital</option>
+                        <option>Super-Specialty Hospital</option>
+                        <option>Teaching / University Hospital</option>
+                        <option>Specialty Clinic / Hospital</option>
+                        <option>Community Hospital</option>
+                        <option>District / Regional Hospital</option>
+                        <option>Rehabilitation Hospital</option>
+                        <option>Psychiatric Hospital</option>
+                        <option>Critical Access Hospital</option>
+                      </select>
+                    </label>
 
-<label className="form-field">
-  <span>Ownership Type</span>
-  <select value={ownershipType} onChange={(e) => setOwnershipType(e.target.value)}>
-    <option>Government / Public Hospital</option>
-    <option>Private Hospital</option>
-    <option>Trust / Charitable Hospital</option>
-    <option>Corporate Chain Hospital</option>
-  </select>
-</label>
+                    <label className="form-field">
+                      <span>Ownership Type</span>
+                      <select value={ownershipType} onChange={(e) => setOwnershipType(e.target.value)}>
+                        <option>Government / Public Hospital</option>
+                        <option>Private Hospital</option>
+                        <option>Trust / Charitable Hospital</option>
+                        <option>Corporate Chain Hospital</option>
+                      </select>
+                    </label>
 
-                <label className="form-field">
-                  <span>Contact Number</span>
-                  <input type="tel" value={hospitalPhone} onChange={(e) => setHospitalPhone(e.target.value)} />
-                </label>
+                    <label className="form-field">
+                      <span>Contact Number</span>
+                      <input type="tel" value={hospitalPhone} onChange={(e) => setHospitalPhone(e.target.value)} />
+                    </label>
 
-                <label className="form-field" style={{ gridColumn: "1 / -1" }}>
-                  <span>Address</span>
-                  <input type="text" value={hospitalAddress} onChange={(e) => setHospitalAddress(e.target.value)} />
-                </label>
-              </div>
+                    <label className="form-field" style={{ gridColumn: "1 / -1" }}>
+                      <span>Address</span>
+                      <input type="text" value={hospitalAddress} onChange={(e) => setHospitalAddress(e.target.value)} />
+                    </label>
+                  </div>
 
-              <div className="dashboard-inline-actions">
-                <button type="submit" className="primary-button">
-                  <FaFloppyDisk /> Save Hospital Info
-                </button>
-              </div>
+                  <div className="dashboard-inline-actions">
+                    <button type="submit" className="primary-button">
+                      <FaFloppyDisk /> Save Hospital Info
+                    </button>
+                  </div>
+                </>
+              )}
             </form>
           )}
 
@@ -394,89 +670,97 @@ export function HospitalAdminSettingsPage() {
                 </div>
               </div>
 
-              <div className="dashboard-table-wrap">
-                <table className="dashboard-table">
-                  <thead>
-                    <tr>
-                      <th>Department</th>
-                      <th>Head</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {departments.map((dept) => (
-                      <tr key={dept.id}>
-                        <td>{dept.name}</td>
-                        <td>{dept.head}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className={`risk-pill ${dept.active ? "low" : "high"}`}
-                            style={{ border: "none", cursor: "pointer" }}
-                            onClick={() => toggleDepartmentActive(dept.id)}
-                          >
-                            {dept.active ? "Active" : "Inactive"}
-                          </button>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => handleRemoveDepartment(dept.id)}
-                          >
-                            <FaTrash /> Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {departmentsLoading ? (
+                <p>Loading departments...</p>
+              ) : (
+                <>
+                  <div className="dashboard-table-wrap">
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Department</th>
+                          <th>Head</th>
+                          <th>Status</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {departments.length === 0 ? (
+                          <tr>
+                            <td colSpan={4}>No departments added yet.</td>
+                          </tr>
+                        ) : (
+                          departments.map((dept) => (
+                            <tr key={dept.id}>
+                              <td>{dept.name}</td>
+                              <td>{dept.headDoctorName || "Unassigned"}</td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className={`risk-pill ${dept.isActive ? "low" : "high"}`}
+                                  style={{ border: "none", cursor: "pointer" }}
+                                  onClick={() => toggleDepartmentActive(dept)}
+                                >
+                                  {dept.isActive ? "Active" : "Inactive"}
+                                </button>
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="secondary-button"
+                                  onClick={() => handleRemoveDepartment(dept.id)}
+                                >
+                                  <FaTrash /> Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-              <form className="form-grid settings-add-department" onSubmit={handleAddDepartment}>
-                <label className="form-field">
-                  <span>New Department Name</span>
-                   <select value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)}>
-          <option value="">Select Department</option>
-          {departmentOptions
-            .filter((name) => !departments.some((d) => d.name === name))
-            .map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-        </select>
-      </label>
+                  <form className="form-grid settings-add-department" onSubmit={handleAddDepartment}>
+                    <label className="form-field">
+                      <span>New Department Name</span>
+                      <select value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)}>
+                        <option value="">Select Department</option>
+                        {departmentOptions
+                          .filter((name) => !departments.some((d) => d.name === name))
+                          .map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
 
-                <label className="form-field">
-                  <span>Department Head</span>
-                  <input
-                    type="text"
-                    placeholder="e.g. Dr. Neha Kapoor"
-                    value={newDeptHead}
-                    onChange={(e) => setNewDeptHead(e.target.value)}
-                  />
-                </label>
+                    <label className="form-field">
+                      <span>Department Head</span>
+                      <select value={newDeptHeadId} onChange={(e) => setNewDeptHeadId(e.target.value)}>
+                        <option value="">Unassigned</option>
+                        {doctorOptions.map((doc) => (
+                          <option key={doc.id} value={doc.id}>
+                            {doc.fullName}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-                <div className="dashboard-inline-actions" style={{ alignItems: "flex-end" }}>
-                  <button type="submit" className="primary-button">
-                    <FaPlus /> Add Department
-                  </button>
-                </div>
-              </form>
+                    <div className="dashboard-inline-actions" style={{ alignItems: "flex-end" }}>
+                      <button type="submit" className="primary-button">
+                        <FaPlus /> Add Department
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
             </article>
           )}
 
           {/* ALERT THRESHOLDS */}
           {activeTab === "alerts" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Alert thresholds updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveAlertThresholds}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaShieldHalved /> Alert Thresholds</h2>
@@ -527,13 +811,7 @@ export function HospitalAdminSettingsPage() {
 
           {/* NOTIFICATIONS */}
           {activeTab === "notifications" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Notification preferences updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveNotifications}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaBell /> Notification Preferences</h2>
@@ -570,13 +848,7 @@ export function HospitalAdminSettingsPage() {
 
           {/* REPORT PREFERENCES */}
           {activeTab === "reports" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Report preferences updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveReportPrefs}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaFileWaveform /> Report Preferences</h2>
@@ -633,13 +905,7 @@ export function HospitalAdminSettingsPage() {
 
           {/* DATA & PRIVACY */}
           {activeTab === "privacy" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Data & privacy settings updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSavePrivacy}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaShieldHalved /> Data & Privacy</h2>
@@ -669,7 +935,7 @@ export function HospitalAdminSettingsPage() {
               </label>
 
               <div className="dashboard-inline-actions">
-                <button type="button" className="secondary-button">
+                <button type="button" className="secondary-button" onClick={handleExportMyData}>
                   Export My Data
                 </button>
                 <button type="submit" className="primary-button">
@@ -681,13 +947,7 @@ export function HospitalAdminSettingsPage() {
 
           {/* APPEARANCE */}
           {activeTab === "appearance" && (
-            <form
-              className="dashboard-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                flashSaved("Appearance settings updated.");
-              }}
-            >
+            <form className="dashboard-panel" onSubmit={handleSaveAppearance}>
               <div className="panel-header-row">
                 <div>
                   <h2><FaPalette /> Appearance</h2>

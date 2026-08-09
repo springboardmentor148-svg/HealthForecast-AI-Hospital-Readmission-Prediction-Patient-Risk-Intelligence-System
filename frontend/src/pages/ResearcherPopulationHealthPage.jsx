@@ -1,29 +1,48 @@
+import { useEffect, useState } from "react";
 import { FaUsers, FaHeartPulse, FaChartPie, FaFileExport } from "react-icons/fa6";
-
-// Dummy data — anonymized population-level trends (baad me API se aayega)
-const populationStats = [
-  { label: "Total Anonymized Records", value: "18,940", icon: FaUsers },
-  { label: "Chronic Condition Records", value: "8,102", icon: FaHeartPulse },
-  { label: "Avg. Age Group", value: "55-64 yrs", icon: FaChartPie },
-];
-
-const conditionBreakdown = [
-  { condition: "Type 2 Diabetes", records: "3,612", avgReadmission: "9.1%" },
-  { condition: "Hypertension", records: "2,984", avgReadmission: "6.4%" },
-  { condition: "Heart Failure", records: "1,742", avgReadmission: "13.2%" },
-  { condition: "COPD", records: "1,318", avgReadmission: "10.8%" },
-  { condition: "Chronic Kidney Disease", records: "986", avgReadmission: "12.5%" },
-];
-
-const ageGroupBreakdown = [
-  { ageGroup: "18-34", records: "1,204", readmissionRate: "4.2%" },
-  { ageGroup: "35-49", records: "3,486", readmissionRate: "6.8%" },
-  { ageGroup: "50-64", records: "6,912", readmissionRate: "9.4%" },
-  { ageGroup: "65-79", records: "5,208", readmissionRate: "11.6%" },
-  { ageGroup: "80+", records: "2,130", readmissionRate: "14.3%" },
-];
+import { fetchPopulationStats } from "../services/researchApi";
 
 export function ResearcherPopulationHealthPage() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetchPopulationStats()
+      .then(setData)
+      .catch(() => setError("Could not load population health data."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleExport = () => {
+    if (!data) return;
+    const headers = ["Condition", "Records", "Avg. Readmission Rate"];
+    const rows = data.conditionBreakdown.map((r) => [r.condition, r.records, r.avgReadmission]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "population-health-condition-breakdown.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  if (loading) return <p style={{ padding: "24px" }}>Loading population health data...</p>;
+  if (error) return <p style={{ padding: "24px", color: "crimson" }}>{error}</p>;
+
+  const populationStats = [
+    { label: "Total Anonymized Records", value: data.totalAnonymizedRecords, icon: FaUsers },
+    { label: "Chronic Condition Records", value: data.chronicConditionRecords, icon: FaHeartPulse },
+    { label: "Avg. Age Group", value: data.avgAgeGroup, icon: FaChartPie },
+  ];
+
   return (
     <>
       <section className="dashboard-page-header">
@@ -55,7 +74,7 @@ export function ResearcherPopulationHealthPage() {
             </div>
 
             <div className="dashboard-inline-actions">
-              <button type="button" className="secondary-button">
+              <button type="button" className="secondary-button" onClick={handleExport}>
                 <FaFileExport /> Export
               </button>
             </div>
@@ -71,7 +90,7 @@ export function ResearcherPopulationHealthPage() {
                 </tr>
               </thead>
               <tbody>
-                {conditionBreakdown.map((row) => (
+                {data.conditionBreakdown.map((row) => (
                   <tr key={row.condition}>
                     <td>{row.condition}</td>
                     <td>{row.records}</td>
@@ -97,7 +116,7 @@ export function ResearcherPopulationHealthPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ageGroupBreakdown.map((row) => (
+                  {data.ageGroupBreakdown.map((row) => (
                     <tr key={row.ageGroup}>
                       <td>{row.ageGroup}</td>
                       <td>{row.records}</td>

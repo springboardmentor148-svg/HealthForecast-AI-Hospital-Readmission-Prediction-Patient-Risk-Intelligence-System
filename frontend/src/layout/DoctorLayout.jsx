@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   FaHouseMedical,
   FaUserInjured,
@@ -8,6 +9,7 @@ import {
   FaSliders,
 } from "react-icons/fa6";
 import { RoleShell } from "./RoleShell.jsx";
+import { fetchDoctorNotifications } from "../services/notificationsApi.js";
 
 const sidebarItems = [
   { label: "Overview", icon: FaHouseMedical, path: "/app/doctor/overview" },
@@ -20,5 +22,31 @@ const sidebarItems = [
 ];
 
 export default function DoctorLayout() {
-  return <RoleShell sidebarItems={sidebarItems} profilePath="/app/doctor/profile" />;
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadNotifications() {
+      try {
+        const data = await fetchDoctorNotifications();
+        if (isMounted) {
+          setNotifications(data);
+        }
+      } catch (err) {
+        console.error("Failed to load notifications:", err);
+      }
+    }
+
+    loadNotifications();
+    return () => { isMounted = false; };
+  }, []);
+
+  return (
+    <RoleShell
+      sidebarItems={sidebarItems}
+      profilePath="/app/doctor/settings"
+      notifications={notifications}
+    />
+  );
 }

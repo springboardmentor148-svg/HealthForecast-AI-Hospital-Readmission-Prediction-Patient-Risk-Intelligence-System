@@ -1,26 +1,82 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   FaCircleCheck,
   FaTriangleExclamation,
   FaCircleInfo,
-  FaFilter,
 } from 'react-icons/fa6'
+import { fetchAuditLogs } from '../services/adminApi.js'
 
-const fullAuditLog = [
-  { icon: FaCircleCheck, tone: 'info', text: 'Alex Carter updated system settings.', time: '10 min ago', category: 'Settings' },
-  { icon: FaTriangleExclamation, tone: 'warning', text: 'Failed login attempt for dr.cole@hospital.org.', time: '1 hr ago', category: 'Security' },
-  { icon: FaCircleCheck, tone: 'neutral', text: 'New doctor account created: Dr. Priya Nair.', time: 'Yesterday', category: 'Users' },
-  { icon: FaCircleInfo, tone: 'info', text: 'Weekly prediction report generated automatically.', time: 'Yesterday', category: 'Reports' },
-  { icon: FaTriangleExclamation, tone: 'warning', text: 'Unusual API request volume detected from one account.', time: '2 days ago', category: 'Security' },
-  { icon: FaCircleCheck, tone: 'neutral', text: 'Dr. James Cole password reset completed.', time: '3 days ago', category: 'Users' },
-]
+function getIconTone(action) {
+  if (!action) return { icon: FaCircleInfo, tone: 'info' }
+  if (action.includes('REMOVED') || action.includes('FAILED')) {
+    return { icon: FaTriangleExclamation, tone: 'warning' }
+  }
+  if (action.includes('INVITED') || action.includes('ACTIVATED')) {
+    return { icon: FaCircleCheck, tone: 'neutral' }
+  }
+  return { icon: FaCircleInfo, tone: 'info' }
+}
 
-const categories = ['All', 'Security', 'Users', 'Settings', 'Reports']
+function formatTimeAgo(isoString) {
+  if (!isoString) return ''
+  const then = new Date(isoString)
+  const diffMs = Date.now() - then.getTime()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs} hr ago`
+  const days = Math.floor(hrs / 24)
+  if (days === 1) return 'Yesterday'
+  return `${days} days ago`
+}
+
+function actionToText(log) {
+  const actorName = log.actorName || 'Someone'
+  const target = log.target ? ` — ${log.target}` : ''
+  const details = log.details ? ` (${log.details})` : ''
+
+  switch (log.action) {
+    case 'USER_INVITED':
+      return `${actorName} invited a new user${target}${details}.`
+    case 'USER_ACTIVATED':
+      return `${actorName} activated${target}.`
+    case 'USER_DEACTIVATED':
+      return `${actorName} deactivated${target}.`
+    case 'ROLE_CHANGED':
+      return `${actorName} changed role for${target}${details}.`
+    case 'USER_REMOVED':
+      return `${actorName} removed${target}.`
+    default:
+      return `${actorName} performed ${log.action}${target}.`
+  }
+}
 
 export function AdminAuditPage() {
+  const [logs, setLogs] = useState([])
   const [category, setCategory] = useState('All')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const filteredLog = fullAuditLog.filter(
+  useEffect(() => {
+    async function loadLogs() {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await fetchAuditLogs()
+        setLogs(data)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadLogs()
+  }, [])
+
+  const categories = ['All', ...new Set(logs.map((l) => l.category))]
+
+  const filteredLog = logs.filter(
     (entry) => category === 'All' || entry.category === category
   )
 
@@ -53,24 +109,30 @@ export function AdminAuditPage() {
         </div>
 
         <ul className="notification-list">
-          {filteredLog.map((entry, index) => {
-            const Icon = entry.icon
+          {loading && <li className="dashboard-table-empty">Loading...</li>}
+
+          {!loading && error && (
+            <li className="dashboard-table-empty">{error}</li>
+          )}
+
+          {!loading && !error && filteredLog.map((entry) => {
+            const { icon: Icon, tone } = getIconTone(entry.action)
             return (
-              <li key={index} className="notification-item">
-                <span className={`notification-icon tone-${entry.tone}`}>
+              <li key={entry.id} className="notification-item">
+                <span className={`notification-icon tone-${tone}`}>
                   <Icon />
                 </span>
                 <div className="notification-body">
-                  <p>{entry.text}</p>
+                  <p>{actionToText(entry)}</p>
                   <span className="notification-time">
-                    {entry.category} · {entry.time}
+                    {entry.category} · {formatTimeAgo(entry.timestamp)}
                   </span>
                 </div>
               </li>
             )
           })}
 
-          {filteredLog.length === 0 && (
+          {!loading && !error && filteredLog.length === 0 && (
             <li className="dashboard-table-empty">No events in this category.</li>
           )}
         </ul>
