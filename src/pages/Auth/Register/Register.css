@@ -1,0 +1,89 @@
+.registerForm{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.agreeBox{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    font-size:14px;
+
+    color:#475569;
+
+}
+
+.registerBtn{
+
+    width:100%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    gap:10px;
+
+    border:none;
+
+    background:#2563EB;
+
+    color:white;
+
+    padding:15px;
+
+    border-radius:14px;
+
+    font-size:16px;
+
+    font-weight:600;
+
+    transition:.3s;
+
+}
+
+.registerBtn:hover{
+
+    background:#1D4ED8;
+
+    transform:translateY(-2px);
+
+}
+
+.registerBtn:disabled{
+
+    background:#94A3B8;
+
+    cursor:not-allowed;
+
+}
+
+.loginLink{
+
+    text-align:center;
+
+    color:#64748B;
+
+    margin-top:10px;
+
+}
+
+.loginLink a{
+
+    color:#2563EB;
+
+    font-weight:600;
+
+    margin-left:6px;
+
+}

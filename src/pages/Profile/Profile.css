@@ -1,0 +1,341 @@
+/* ================= PAGE ================= */
+
+.profilePage{
+
+    animation:fade .35s ease;
+
+}
+
+/* ================= HEADER ================= */
+
+.profileHeader{
+
+    background:#FFFFFF;
+
+    border-radius:20px;
+
+    padding:28px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:25px;
+
+    box-shadow:0 10px 25px rgba(15,23,42,.05);
+
+}
+
+.profileHeader h2{
+
+    margin:0;
+
+    font-size:28px;
+
+    color:#1E293B;
+
+    font-weight:700;
+
+}
+
+.profileHeader p{
+
+    margin-top:8px;
+
+    color:#64748B;
+
+}
+
+.editProfile{
+
+    border:none;
+
+    background:#2563EB;
+
+    color:white;
+
+    padding:14px 24px;
+
+    border-radius:14px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    font-weight:600;
+
+    transition:.3s;
+
+}
+
+.editProfile:hover{
+
+    background:#1D4ED8;
+
+    transform:translateY(-2px);
+
+}
+
+/* ================= GRID ================= */
+
+.profileGrid{
+
+    display:grid;
+
+    grid-template-columns:320px 1fr;
+
+    gap:25px;
+
+    margin-bottom:25px;
+
+}
+
+/* ================= PROFILE CARD ================= */
+
+.profileCard{
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:30px;
+
+    text-align:center;
+
+    box-shadow:0 10px 25px rgba(15,23,42,.05);
+
+}
+
+.profileCard img{
+
+    width:130px;
+
+    height:130px;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    margin-bottom:20px;
+
+    border:5px solid #EEF4FF;
+
+}
+
+.profileCard h3{
+
+    margin:0;
+
+    color:#1E293B;
+
+}
+
+.profileCard span{
+
+    display:block;
+
+    color:#64748B;
+
+    margin-top:6px;
+
+}
+
+.badge{
+
+    display:inline-block;
+
+    margin-top:20px;
+
+    background:#EEF4FF;
+
+    color:#2563EB;
+
+    padding:8px 18px;
+
+    border-radius:30px;
+
+    font-size:13px;
+
+    font-weight:600;
+
+}
+
+/* ================= DETAILS ================= */
+
+.detailsCard{
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:30px;
+
+    box-shadow:0 10px 25px rgba(15,23,42,.05);
+
+}
+
+.detailsCard h3{
+
+    margin-bottom:25px;
+
+    color:#1E293B;
+
+}
+
+.detail{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+    padding:18px 0;
+
+    border-bottom:1px solid #EEF2F7;
+
+}
+
+.detail:last-child{
+
+    border-bottom:none;
+
+}
+
+.detail svg{
+
+    color:#2563EB;
+
+    font-size:18px;
+
+}
+
+.detail span{
+
+    color:#475569;
+
+}
+
+/* ================= AI CARD ================= */
+
+.aiCard{
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:30px;
+
+    box-shadow:0 10px 25px rgba(15,23,42,.05);
+
+}
+
+.aiCard h3{
+
+    margin-bottom:25px;
+
+    color:#1E293B;
+
+}
+
+.aiGrid{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:20px;
+
+}
+
+.aiGrid div{
+
+    background:#F8FAFC;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    text-align:center;
+
+}
+
+.aiGrid svg{
+
+    font-size:34px;
+
+    color:#2563EB;
+
+    margin-bottom:15px;
+
+}
+
+.aiGrid h4{
+
+    margin-bottom:10px;
+
+    color:#1E293B;
+
+}
+
+.aiGrid p{
+
+    color:#64748B;
+
+    font-weight:600;
+
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:992px){
+
+.profileGrid{
+
+grid-template-columns:1fr;
+
+}
+
+.aiGrid{
+
+grid-template-columns:1fr;
+
+}
+
+.profileHeader{
+
+flex-direction:column;
+
+align-items:flex-start;
+
+gap:20px;
+
+}
+
+}
+
+/* ================= ANIMATION ================= */
+
+@keyframes fade{
+
+from{
+
+opacity:0;
+
+transform:translateY(20px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+}

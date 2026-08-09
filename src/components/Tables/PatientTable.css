@@ -1,0 +1,323 @@
+.patientTable{
+
+    background:#FFFFFF;
+
+    border-radius:20px;
+
+    padding:25px;
+
+    box-shadow:0 10px 25px rgba(15,23,42,.05);
+
+    overflow-x:auto;
+
+}
+
+.patientTable table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+.patientTable thead th{
+
+    color:#64748B;
+
+    font-size:13px;
+
+    font-weight:600;
+
+    text-transform:uppercase;
+
+    padding:16px 12px;
+
+    border-bottom:1px solid #E5E7EB;
+
+}
+
+.patientTable tbody td{
+
+    padding:18px 12px;
+
+    border-bottom:1px solid #F1F5F9;
+
+    vertical-align:middle;
+
+}
+
+.patientTable tbody tr{
+
+    transition:.25s;
+
+}
+
+.patientTable tbody tr:hover{
+
+    background:#F8FAFC;
+
+}
+
+.patientName{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.patientName img{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:50%;
+
+}
+
+.patientName span{
+
+    font-weight:600;
+
+    color:#1E293B;
+
+}
+
+/* Risk Badges */
+
+.risk{
+
+    padding:7px 16px;
+
+    border-radius:30px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+}
+
+.risk.high{
+
+    background:#FEE2E2;
+
+    color:#DC2626;
+
+}
+
+.risk.medium{
+
+    background:#FEF3C7;
+
+    color:#D97706;
+
+}
+
+.risk.low{
+
+    background:#DCFCE7;
+
+    color:#15803D;
+
+}
+
+/* Status */
+
+.status{
+
+    padding:7px 16px;
+
+    border-radius:30px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+}
+
+.status.active{
+
+    background:#DCFCE7;
+
+    color:#15803D;
+
+}
+
+.status.inactive{
+
+    background:#F3F4F6;
+
+    color:#6B7280;
+
+}
+
+/* Action Buttons */
+
+.actions{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.actions button{
+
+    width:38px;
+
+    height:38px;
+
+    border:none;
+
+    border-radius:10px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    transition:.25s;
+
+    cursor:pointer;
+
+}
+
+.actions .view{
+
+    background:#EEF4FF;
+
+    color:#2563EB;
+
+}
+
+.actions .edit{
+
+    background:#ECFDF5;
+
+    color:#059669;
+
+}
+
+.actions .delete{
+
+    background:#FEF2F2;
+
+    color:#DC2626;
+
+}
+
+.actions .view:hover{
+
+    background:#2563EB;
+
+    color:white;
+
+}
+
+.actions .edit:hover{
+
+    background:#10B981;
+
+    color:white;
+
+}
+
+.actions .delete:hover{
+
+    background:#DC2626;
+
+    color:white;
+
+}
+
+/* Pagination */
+
+.paginationArea{
+
+    margin-top:25px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.paginationArea span{
+
+    color:#64748B;
+
+    font-size:14px;
+
+}
+
+.pages{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.pages button{
+
+    border:none;
+
+    background:#F1F5F9;
+
+    padding:10px 16px;
+
+    border-radius:10px;
+
+    font-weight:500;
+
+    transition:.25s;
+
+}
+
+.pages button:hover{
+
+    background:#2563EB;
+
+    color:white;
+
+}
+
+.pages .active{
+
+    background:#2563EB;
+
+    color:white;
+
+}
+
+/* Responsive */
+
+@media(max-width:992px){
+
+.patientTable{
+
+overflow:auto;
+
+}
+
+.patientTable table{
+
+min-width:1000px;
+
+}
+
+.paginationArea{
+
+flex-direction:column;
+
+gap:20px;
+
+}
+
+}

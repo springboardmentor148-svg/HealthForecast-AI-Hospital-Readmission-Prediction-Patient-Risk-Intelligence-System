@@ -1,0 +1,279 @@
+/* ================= PAGE ================= */
+
+.predictionPage{
+
+    animation:fade .35s ease;
+
+}
+
+/* ================= HEADER ================= */
+
+.predictionHeader{
+
+    background:#FFFFFF;
+
+    border-radius:20px;
+
+    padding:28px;
+
+    margin-bottom:25px;
+
+    box-shadow:0 10px 25px rgba(15,23,42,.05);
+
+}
+
+.predictionHeader h2{
+
+    margin:0;
+
+    font-size:28px;
+
+    color:#1E293B;
+
+    font-weight:700;
+
+}
+
+.predictionHeader p{
+
+    margin-top:6px;
+
+    color:#64748B;
+
+    font-size:14px;
+
+}
+
+/* ================= GRID ================= */
+
+.predictionGrid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:25px;
+
+}
+
+/* ================= CARD ================= */
+
+.predictionCard{
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:28px;
+
+    box-shadow:0 8px 20px rgba(15,23,42,.05);
+
+    transition:.3s;
+
+}
+
+.predictionCard:hover{
+
+    transform:translateY(-3px);
+
+    box-shadow:0 15px 35px rgba(15,23,42,.08);
+
+}
+
+/* ================= CARD TITLE ================= */
+
+.cardTitle{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    font-size:18px;
+
+    font-weight:600;
+
+    margin-bottom:25px;
+
+    color:#1E293B;
+
+}
+
+.cardTitle svg{
+
+    color:#2563EB;
+
+    font-size:20px;
+
+}
+
+/* ================= FORM ================= */
+
+.formGrid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:18px;
+
+}
+
+.formGrid input,
+
+.formGrid select{
+
+    width:100%;
+
+    border:1px solid #E5E7EB;
+
+    border-radius:12px;
+
+    padding:14px 16px;
+
+    font-size:14px;
+
+    outline:none;
+
+    transition:.25s;
+
+    background:#FAFBFD;
+
+}
+
+.formGrid input:focus,
+
+.formGrid select:focus{
+
+    border-color:#2563EB;
+
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+
+}
+
+/* ================= PREDICT CARD ================= */
+
+.predictCard{
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    text-align:center;
+
+}
+
+.robotIcon{
+
+    font-size:55px;
+
+    color:#2563EB;
+
+    margin-bottom:20px;
+
+}
+
+.predictCard h3{
+
+    font-size:24px;
+
+    color:#1E293B;
+
+    margin-bottom:10px;
+
+}
+
+.predictCard p{
+
+    color:#64748B;
+
+    line-height:1.7;
+
+    margin-bottom:30px;
+
+}
+
+.predictBtn{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    background:#2563EB;
+
+    color:white;
+
+    border:none;
+
+    border-radius:14px;
+
+    padding:15px 28px;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    transition:.3s;
+
+}
+
+.predictBtn:hover{
+
+    transform:translateY(-2px);
+
+    background:#1D4ED8;
+
+    box-shadow:0 10px 25px rgba(37,99,235,.30);
+
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:1100px){
+
+.predictionGrid{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+@media(max-width:768px){
+
+.formGrid{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+/* ================= ANIMATION ================= */
+
+@keyframes fade{
+
+from{
+
+opacity:0;
+
+transform:translateY(20px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+}

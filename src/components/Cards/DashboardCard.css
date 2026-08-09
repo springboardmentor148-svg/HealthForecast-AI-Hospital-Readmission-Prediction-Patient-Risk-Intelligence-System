@@ -1,0 +1,111 @@
+.dashboardCard{
+
+    background:#FFFFFF;
+
+    border-radius:22px;
+
+    padding:22px;
+
+    border:1px solid #EEF2F7;
+
+    box-shadow:0 8px 24px rgba(15,23,42,.05);
+
+    transition:.35s;
+
+    height:190px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:space-between;
+
+}
+
+.dashboardCard:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:0 20px 45px rgba(15,23,42,.12);
+
+}
+
+.cardTop{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.iconBox{
+
+    width:58px;
+
+    height:58px;
+
+    border-radius:18px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    color:white;
+
+    font-size:24px;
+
+}
+
+.change{
+
+    background:#ECFDF5;
+
+    color:#16A34A;
+
+    padding:6px 12px;
+
+    border-radius:30px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+}
+
+.cardBody p{
+
+    color:#64748B;
+
+    font-size:14px;
+
+    margin-bottom:8px;
+
+}
+
+.cardBody h2{
+
+    font-size:32px;
+
+    font-weight:700;
+
+    color:#0F172A;
+
+    margin:0;
+
+}
+
+.cardFooter{
+
+    color:#94A3B8;
+
+    font-size:12px;
+
+    border-top:1px solid #F1F5F9;
+
+    padding-top:14px;
+
+}

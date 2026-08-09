@@ -1,0 +1,179 @@
+.loginForm{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:22px;
+
+}
+
+/* ================= INPUT ================= */
+
+.inputGroup{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+.inputGroup label{
+
+    color:#334155;
+
+    font-weight:600;
+
+    font-size:14px;
+
+}
+
+.inputBox{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    border:1px solid #E5E7EB;
+
+    border-radius:14px;
+
+    padding:14px 16px;
+
+    transition:.25s;
+
+}
+
+.inputBox:focus-within{
+
+    border-color:#2563EB;
+
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+
+}
+
+.inputBox svg{
+
+    color:#94A3B8;
+
+}
+
+.inputBox input{
+
+    width:100%;
+
+    border:none;
+
+    outline:none;
+
+    font-size:15px;
+
+}
+
+/* ================= REMEMBER ================= */
+
+.rememberRow{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    font-size:14px;
+
+}
+
+.rememberRow label{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:#475569;
+
+}
+
+.rememberRow a{
+
+    color:#2563EB;
+
+    font-weight:600;
+
+}
+
+/* ================= BUTTON ================= */
+
+.loginBtn{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    gap:10px;
+
+    background:#2563EB;
+
+    color:white;
+
+    border:none;
+
+    border-radius:14px;
+
+    padding:15px;
+
+    font-size:16px;
+
+    font-weight:600;
+
+    transition:.3s;
+
+}
+
+.loginBtn:hover{
+
+    background:#1D4ED8;
+
+    transform:translateY(-2px);
+
+}
+
+.loginBtn:disabled{
+
+    background:#94A3B8;
+
+    cursor:not-allowed;
+
+    transform:none;
+
+}
+
+/* ================= REGISTER ================= */
+
+.registerLink{
+
+    text-align:center;
+
+    color:#64748B;
+
+    margin-top:10px;
+
+}
+
+.registerLink a{
+
+    color:#2563EB;
+
+    font-weight:600;
+
+    margin-left:6px;
+
+}

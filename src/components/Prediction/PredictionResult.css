@@ -1,0 +1,337 @@
+.predictionResult{
+
+    background:#FFFFFF;
+
+    border-radius:22px;
+
+    padding:30px;
+
+    margin-top:30px;
+
+    box-shadow:0 12px 30px rgba(15,23,42,.05);
+
+}
+
+/* ================= HEADER ================= */
+
+.resultHeader{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:20px;
+
+    margin-bottom:30px;
+
+}
+
+.robot{
+
+    font-size:55px;
+
+    color:#2563EB;
+
+}
+
+.resultHeader h2{
+
+    margin:0;
+
+    color:#1E293B;
+
+    font-size:28px;
+
+    font-weight:700;
+
+}
+
+.resultHeader p{
+
+    margin-top:6px;
+
+    color:#64748B;
+
+}
+
+/* ================= RESULT BOXES ================= */
+
+.resultCards{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:20px;
+
+    margin-bottom:35px;
+
+}
+
+.resultBox{
+
+    background:#F8FAFC;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    text-align:center;
+
+    border:1px solid #E5E7EB;
+
+}
+
+.resultBox h5{
+
+    color:#64748B;
+
+    margin-bottom:10px;
+
+}
+
+.resultBox h1{
+
+    color:#2563EB;
+
+    font-size:40px;
+
+    margin:0;
+
+}
+
+.resultBox h3{
+
+    margin-top:15px;
+
+    font-size:24px;
+
+}
+
+.resultBox.danger{
+
+    background:#FEF2F2;
+
+}
+
+.resultBox.danger svg{
+
+    color:#DC2626;
+
+    font-size:38px;
+
+}
+
+.resultBox.danger h3{
+
+    color:#DC2626;
+
+}
+
+/* ================= RECOMMENDATIONS ================= */
+
+.recommendationCard{
+
+    background:#F8FAFC;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    margin-bottom:30px;
+
+}
+
+.recommendationCard h3{
+
+    margin-bottom:20px;
+
+    color:#1E293B;
+
+}
+
+.recommendationCard ul{
+
+    list-style:none;
+
+    padding:0;
+
+}
+
+.recommendationCard li{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    margin-bottom:16px;
+
+    font-size:15px;
+
+    color:#475569;
+
+}
+
+.recommendationCard svg{
+
+    color:#22C55E;
+
+}
+
+/* ================= FEATURE IMPORTANCE ================= */
+
+.featureCard{
+
+    background:#F8FAFC;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    margin-bottom:30px;
+
+}
+
+.featureCard h3{
+
+    margin-bottom:20px;
+
+}
+
+.featureRow{
+
+    display:grid;
+
+    grid-template-columns:180px 1fr 60px;
+
+    align-items:center;
+
+    gap:15px;
+
+    margin-bottom:18px;
+
+}
+
+.progress{
+
+    width:100%;
+
+    height:10px;
+
+    background:#E5E7EB;
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+}
+
+.progressBar{
+
+    height:100%;
+
+    background:linear-gradient(90deg,#2563EB,#3B82F6);
+
+    border-radius:20px;
+
+}
+
+.featureRow strong{
+
+    color:#2563EB;
+
+}
+
+/* ================= BUTTONS ================= */
+
+.resultButtons{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:18px;
+
+}
+
+.resultButtons button{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:14px 24px;
+
+    border:none;
+
+    border-radius:14px;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    transition:.3s;
+
+}
+
+.download{
+
+    background:#EEF4FF;
+
+    color:#2563EB;
+
+}
+
+.save{
+
+    background:#2563EB;
+
+    color:white;
+
+}
+
+.download:hover{
+
+    background:#2563EB;
+
+    color:white;
+
+}
+
+.save:hover{
+
+    background:#1D4ED8;
+
+    transform:translateY(-2px);
+
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:992px){
+
+.resultCards{
+
+grid-template-columns:1fr;
+
+}
+
+.featureRow{
+
+grid-template-columns:1fr;
+
+gap:8px;
+
+}
+
+.resultButtons{
+
+flex-direction:column;
+
+}
+
+}

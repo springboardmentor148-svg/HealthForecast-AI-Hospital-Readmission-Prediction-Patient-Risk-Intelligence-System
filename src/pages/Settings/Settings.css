@@ -1,0 +1,193 @@
+.settingsPage{
+
+    animation:fade .35s ease;
+
+}
+
+.settingsHeader{
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:28px;
+
+    margin-bottom:25px;
+
+    box-shadow:0 10px 25px rgba(15,23,42,.05);
+
+}
+
+.settingsHeader h2{
+
+    margin:0;
+
+    color:#1E293B;
+
+    font-size:28px;
+
+}
+
+.settingsHeader p{
+
+    margin-top:8px;
+
+    color:#64748B;
+
+}
+
+.settingsGrid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:25px;
+
+}
+
+.settingCard{
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:28px;
+
+    box-shadow:0 10px 25px rgba(15,23,42,.05);
+
+}
+
+.settingTitle{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    color:#2563EB;
+
+    font-size:18px;
+
+    font-weight:600;
+
+    margin-bottom:25px;
+
+}
+
+.settingCard label{
+
+    display:flex;
+
+    gap:12px;
+
+    margin-bottom:15px;
+
+    color:#475569;
+
+}
+
+.settingCard select{
+
+    width:100%;
+
+    padding:12px;
+
+    border:1px solid #E5E7EB;
+
+    border-radius:12px;
+
+    outline:none;
+
+}
+
+.settingCard button{
+
+    background:#2563EB;
+
+    color:white;
+
+    border:none;
+
+    padding:12px 20px;
+
+    border-radius:12px;
+
+}
+
+.settingCard p{
+
+    margin-bottom:5px;
+
+    color:#64748B;
+
+}
+
+.settingCard strong{
+
+    color:#1E293B;
+
+}
+
+.saveArea{
+
+    margin-top:30px;
+
+    display:flex;
+
+    justify-content:flex-end;
+
+}
+
+.saveArea button{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    border:none;
+
+    background:#2563EB;
+
+    color:white;
+
+    padding:14px 24px;
+
+    border-radius:14px;
+
+    font-weight:600;
+
+}
+
+@media(max-width:992px){
+
+.settingsGrid{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+@keyframes fade{
+
+from{
+
+opacity:0;
+
+transform:translateY(20px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+}

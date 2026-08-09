@@ -1,0 +1,165 @@
+.predictionTable{
+
+    background:#FFFFFF;
+
+    border-radius:22px;
+
+    padding:25px;
+
+    border:1px solid #EEF2F7;
+
+    box-shadow:0 10px 30px rgba(15,23,42,.05);
+
+}
+
+.tableHeader{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:25px;
+
+}
+
+.tableHeader h4{
+
+    margin:0;
+
+    font-size:20px;
+
+    font-weight:700;
+
+}
+
+.tableHeader p{
+
+    margin-top:4px;
+
+    color:#64748B;
+
+    font-size:13px;
+
+}
+
+.tableSearch{
+
+    width:260px;
+
+    display:flex;
+
+    align-items:center;
+
+    background:#F8FAFC;
+
+    border:1px solid #E5E7EB;
+
+    border-radius:12px;
+
+    padding:10px 15px;
+
+}
+
+.tableSearch input{
+
+    border:none;
+
+    background:transparent;
+
+    outline:none;
+
+    margin-left:10px;
+
+    width:100%;
+
+    font-size:14px;
+
+}
+
+.table th{
+
+    color:#64748B;
+
+    font-size:13px;
+
+    border:none;
+
+}
+
+.table td{
+
+    vertical-align:middle;
+
+    border-top:1px solid #F1F5F9;
+
+}
+
+.badgeRisk{
+
+    padding:7px 14px;
+
+    border-radius:30px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+}
+
+.high{
+
+    background:#FEE2E2;
+
+    color:#DC2626;
+
+}
+
+.medium{
+
+    background:#FEF3C7;
+
+    color:#D97706;
+
+}
+
+.low{
+
+    background:#DCFCE7;
+
+    color:#15803D;
+
+}
+
+.actions{
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+.actions button{
+
+    width:36px;
+
+    height:36px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#F8FAFC;
+
+    transition:.3s;
+
+}
+
+.actions button:hover{
+
+    background:#4F7CFF;
+
+    color:white;
+
+}
