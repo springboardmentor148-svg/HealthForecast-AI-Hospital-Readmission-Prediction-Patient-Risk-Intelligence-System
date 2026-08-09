@@ -25,6 +25,18 @@ from typing import List
 
 from audit import create_log
 
+from schemas import PatientCreate
+from schemas import PatientResponse
+from schemas import PatientUpdate
+
+from crud_patient import (
+    get_all_patients,
+    get_patient_by_id,
+    create_patient,
+    update_patient,
+    delete_patient
+)
+
 app = FastAPI(
     title="HealthForecast AI API",
     description="Hospital Readmission Prediction System",
@@ -226,3 +238,159 @@ def dashboard(
 ):
 
     return get_dashboard_stats(db)
+
+
+# ======================================================
+# Patients APIs
+# ======================================================
+
+from fastapi import HTTPException
+
+@app.get(
+    "/patients",
+    response_model=list[PatientResponse]
+)
+def get_patients(
+
+    db: Session = Depends(get_db),
+
+    current_user: User = Depends(get_current_user)
+
+):
+
+    return get_all_patients(db)
+
+
+@app.get(
+    "/patients/{patient_id}",
+    response_model=PatientResponse
+)
+def get_patient(
+
+    patient_id: int,
+
+    db: Session = Depends(get_db),
+
+    current_user: User = Depends(get_current_user)
+
+):
+
+    patient = get_patient_by_id(
+
+        db,
+
+        patient_id
+
+    )
+
+    if patient is None:
+
+        raise HTTPException(
+
+            status_code=404,
+
+            detail="Patient not found"
+
+        )
+
+    return patient
+
+
+@app.post(
+    "/patients",
+    response_model=PatientResponse
+)
+def add_patient(
+
+    patient: PatientCreate,
+
+    db: Session = Depends(get_db),
+
+    current_user: User = Depends(get_current_user)
+
+):
+
+    return create_patient(
+
+        db,
+
+        patient,
+
+        current_user.id
+
+    )
+
+
+@app.put(
+    "/patients/{patient_id}",
+    response_model=PatientResponse
+)
+def edit_patient(
+
+    patient_id: int,
+
+    patient: PatientUpdate,
+
+    db: Session = Depends(get_db),
+
+    current_user: User = Depends(get_current_user)
+
+):
+
+    updated = update_patient(
+
+        db,
+
+        patient_id,
+
+        patient.dict(exclude_unset=True)
+
+    )
+
+    if updated is None:
+
+        raise HTTPException(
+
+            status_code=404,
+
+            detail="Patient not found"
+
+        )
+
+    return updated
+
+
+@app.delete("/patients/{patient_id}")
+def remove_patient(
+
+    patient_id: int,
+
+    db: Session = Depends(get_db),
+
+    current_user: User = Depends(get_current_user)
+
+):
+
+    deleted = delete_patient(
+
+        db,
+
+        patient_id
+
+    )
+
+    if not deleted:
+
+        raise HTTPException(
+
+            status_code=404,
+
+            detail="Patient not found"
+
+        )
+
+    return {
+
+        "message": "Patient deleted successfully"
+
+    }
