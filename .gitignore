@@ -1,0 +1,28 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+evaluation_output.txt
+training_code.py
+training_code_clean.py
+
+# Jupyter temporary files
+.ipynb_checkpoints/
+
+# Local database
+healthforecast.db

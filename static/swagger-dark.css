@@ -1,0 +1,105 @@
+body {
+    background-color: #0f172a;
+}
+
+.swagger-ui {
+    filter: none;
+}
+
+.swagger-ui .topbar {
+    background-color: #1e293b;
+    border-bottom: 1px solid #334155;
+}
+
+.swagger-ui .info .title {
+    color: #38bdf8;
+}
+
+.swagger-ui .info {
+    color: #e2e8f0;
+}
+
+.swagger-ui .info .base-url,
+.swagger-ui .info p,
+.swagger-ui .info li {
+    color: #94a3b8;
+}
+
+.swagger-ui .scheme-container {
+    background-color: #1e293b;
+    box-shadow: none;
+    border: 1px solid #334155;
+}
+
+.swagger-ui .opblock-tag {
+    color: #e2e8f0;
+    border-bottom: 1px solid #334155;
+}
+
+.swagger-ui .opblock {
+    background: #1e293b;
+    border: 1px solid #334155;
+    box-shadow: none;
+}
+
+.swagger-ui .opblock .opblock-summary-description {
+    color: #94a3b8;
+}
+
+.swagger-ui .opblock.opblock-post {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.swagger-ui .opblock.opblock-get {
+    border-color: #818cf8;
+    background: rgba(129, 140, 248, 0.05);
+}
+
+.swagger-ui .opblock .opblock-summary-method {
+    background: #38bdf8;
+    color: #0f172a;
+}
+
+.swagger-ui .btn.authorize {
+    background-color: #38bdf8;
+    color: #0f172a;
+    border-color: #38bdf8;
+}
+
+.swagger-ui .btn.execute {
+    background-color: #38bdf8;
+    border-color: #38bdf8;
+    color: #0f172a;
+}
+
+.swagger-ui select,
+.swagger-ui input[type=text],
+.swagger-ui textarea {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+}
+
+.swagger-ui .model-box,
+.swagger-ui .responses-inner,
+.swagger-ui table thead tr td,
+.swagger-ui table thead tr th {
+    background-color: #1e293b;
+    color: #e2e8f0;
+}
+
+.swagger-ui .response-col_status {
+    color: #4ade80;
+}
+
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type,
+.swagger-ui label {
+    color: #e2e8f0;
+}
+
+.swagger-ui .opblock-description-wrapper p,
+.swagger-ui .markdown p {
+    color: #94a3b8;
+}
