@@ -1,9 +1,16 @@
+import os
 import joblib
 import pandas as pd
 
-# Load the trained model and label encoders once, when the server starts
-model = joblib.load("readmission_model.pkl")
-label_encoders = joblib.load("label_encoders.pkl")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+model = joblib.load(
+    os.path.join(BASE_DIR, "ml", "readmission_model.pkl")
+)
+
+label_encoders = joblib.load(
+    os.path.join(BASE_DIR, "ml", "label_encoders.pkl")
+)
 
 # These are the exact 45 feature columns the model was trained on, in order.
 # Fields not asked from the user default to a "typical" value so the form stays short.

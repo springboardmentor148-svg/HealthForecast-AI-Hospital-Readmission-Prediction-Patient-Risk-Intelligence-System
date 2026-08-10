@@ -1,7 +1,6 @@
-from database import SessionLocal
-import models
-from auth import hash_password
-
+from app.database import SessionLocal
+from app import models
+from app.auth import hash_password
 
 db = SessionLocal()
 

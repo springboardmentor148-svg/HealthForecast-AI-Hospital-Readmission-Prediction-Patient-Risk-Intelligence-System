@@ -1,14 +1,15 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from typing import List
 
-from database import SessionLocal, engine, Base
-import models
-import schemas
-from auth import hash_password, verify_password, create_access_token, get_current_user, require_role
-from ml_model import predict_readmission
+from app.database import SessionLocal, engine, Base
+from app import models
+from app import schemas
+from app.auth import hash_password, verify_password, create_access_token, get_current_user, require_role
+from app.ml_model import predict_readmission
 
 Base.metadata.create_all(bind=engine)
 
@@ -39,7 +40,13 @@ Developed as part of the HealthForecast AI internship project.
     openapi_tags=tags_metadata
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+app.mount(
+    "/static",
+    StaticFiles(directory=os.path.join(BASE_DIR, "static")),
+    name="static"
+)
 
 
 # ============================================================
@@ -2523,10 +2530,10 @@ def dashboard_stats(
 
     # Read the actual diabetes dataset
     dataset_path = os.path.join(
-        os.path.dirname(__file__),
-        "dataset",
-        "diabetic_data.csv"
-    )
+    os.path.dirname(os.path.dirname(__file__)),
+    "dataset",
+    "diabetic_data.csv"
+)
 
     try:
         df = pd.read_csv(dataset_path)
