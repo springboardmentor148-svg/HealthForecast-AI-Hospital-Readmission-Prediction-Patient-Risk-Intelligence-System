@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+**/__pycache__/
+.git/
+.gitignore
+healthforecast.db
+evaluation_output.txt
+training_code.py
+training_code_clean.py
+.ipynb_checkpoints/
+*.pyc
