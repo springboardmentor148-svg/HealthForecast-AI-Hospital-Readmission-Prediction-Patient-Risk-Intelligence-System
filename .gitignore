@@ -56,3 +56,4 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.rar
+!backend/ml_models/*.pkl
