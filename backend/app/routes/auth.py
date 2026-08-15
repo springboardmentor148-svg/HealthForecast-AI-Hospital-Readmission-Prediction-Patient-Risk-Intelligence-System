@@ -32,8 +32,6 @@ from app.security.jwt import (
 
 router = APIRouter(
 
-    prefix="/auth",
-
     tags=[
         "Authentication"
     ]
