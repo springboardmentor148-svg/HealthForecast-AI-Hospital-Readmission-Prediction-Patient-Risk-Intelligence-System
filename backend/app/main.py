@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 
+# Import database engine and Base models to auto-create missing tables
+from app.database.postgres import engine, Base
+import app.models  # Ensures all model definitions are registered
+
 from app.routes.auth import router as auth_router
 from app.routes.patients import router as patients_router
 from app.routes.predictions import router as predictions_router
@@ -12,6 +16,10 @@ from app.routes.models import router as models_router
 from app.routes.treatments import router as treatments_router
 from app.routes.users import router as users_router
 
+# ============================================================
+# AUTO-CREATE DATABASE TABLES ON STARTUP
+# ============================================================
+Base.metadata.create_all(bind=engine)
 
 # ============================================================
 # CREATE APPLICATION
@@ -23,17 +31,13 @@ app = FastAPI(
     description="AI-Based Hospital Management and Health Risk Prediction System",
 )
 
-
 # ============================================================
-# CORS
+# CORS (Allows both local testing and Render live frontend)
 # ============================================================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,7 +97,6 @@ app.include_router(
 
 @app.get("/")
 def root():
-
     return {
         "message": "Welcome to HealthForecast AI",
         "version": settings.APP_VERSION,
@@ -107,7 +110,6 @@ def root():
 
 @app.get("/health")
 def health_check():
-
     return {
         "status": "healthy",
         "app": settings.APP_NAME,
