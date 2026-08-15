@@ -404,59 +404,34 @@ def create_user(
 # AUTHENTICATE USER
 # ============================================================
 
+# ============================================================
+# AUTHENTICATE USER
+# ============================================================
+
 def authenticate_user(
-
     db: Session,
-
     email: str,
-
-    password: str
-
+    password: str,
+    role: str
 ):
 
-    """
-    Authenticate user using email and password.
-    """
-
-    # --------------------------------------------------------
-    # FIND USER
-    # --------------------------------------------------------
-
     user = get_user_by_email(
-
         db,
-
         email
-
     )
 
-
-    # --------------------------------------------------------
-    # USER NOT FOUND
-    # --------------------------------------------------------
-
     if not user:
-
         return None
 
+    # Check selected login role
+    if user.role != role.strip().lower():
+        return None
 
-    # --------------------------------------------------------
-    # VERIFY PASSWORD
-    # --------------------------------------------------------
-
+    # Verify password
     if not verify_password(
-
         password,
-
         user.hashed_password
-
     ):
-
         return None
-
-
-    # --------------------------------------------------------
-    # LOGIN SUCCESS
-    # --------------------------------------------------------
 
     return user

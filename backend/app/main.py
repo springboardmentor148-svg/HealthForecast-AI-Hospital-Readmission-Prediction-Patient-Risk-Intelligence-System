@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 
-# Import routers
 from app.routes.auth import router as auth_router
 from app.routes.patients import router as patients_router
 from app.routes.predictions import router as predictions_router
@@ -11,8 +10,11 @@ from app.routes.analytics import router as analytics_router
 from app.routes.admin import router as admin_router
 from app.routes.models import router as models_router
 from app.routes.treatments import router as treatments_router
+from app.routes.users import router as users_router
+
+
 # ============================================================
-# Create FastAPI Application
+# CREATE APPLICATION
 # ============================================================
 
 app = FastAPI(
@@ -23,7 +25,7 @@ app = FastAPI(
 
 
 # ============================================================
-# CORS Configuration
+# CORS
 # ============================================================
 
 app.add_middleware(
@@ -39,57 +41,59 @@ app.add_middleware(
 
 
 # ============================================================
-# Include API Routers
+# ROUTERS
 # ============================================================
 
-# Authentication
 app.include_router(
     auth_router,
     prefix="/auth",
     tags=["Authentication"],
 )
 
-# Patients
+app.include_router(
+    users_router,
+)
+
 app.include_router(
     patients_router,
     prefix="/patients",
     tags=["Patients"],
 )
 
-# Predictions
 app.include_router(
     predictions_router,
     prefix="/predictions",
     tags=["Predictions"],
 )
 
-# Analytics / Dashboard
 app.include_router(
     analytics_router,
     prefix="/analytics",
     tags=["Analytics"],
 )
 
-# Admin
 app.include_router(
     admin_router,
     prefix="/admin",
     tags=["Admin"],
 )
 
-app.include_router(models_router)
-# Treatments
+app.include_router(
+    models_router,
+)
+
 app.include_router(
     treatments_router,
-    prefix="/treatments",
-    tags=["Treatments"],
 )
+
+
 # ============================================================
-# Root Endpoint
+# ROOT
 # ============================================================
 
 @app.get("/")
 def root():
+
     return {
         "message": "Welcome to HealthForecast AI",
         "version": settings.APP_VERSION,
@@ -98,11 +102,12 @@ def root():
 
 
 # ============================================================
-# Health Check
+# HEALTH CHECK
 # ============================================================
 
 @app.get("/health")
 def health_check():
+
     return {
         "status": "healthy",
         "app": settings.APP_NAME,

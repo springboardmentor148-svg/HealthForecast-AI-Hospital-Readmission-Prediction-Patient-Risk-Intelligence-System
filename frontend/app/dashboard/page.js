@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-getPatients,
-addPatient,
-getPredictions,
-generatePrediction,
+  getPatients,
+  addPatient,
+  getPredictions,
+  generatePrediction,
+  getTreatments,
+  getPatientTreatments,
+  addTreatment,
 } from "../../lib/api";
-
 import { logout } from "../../lib/auth";
 
 import {
@@ -48,6 +50,18 @@ const [predictions, setPredictions] =
 useState([]);
 const [selectedPatient, setSelectedPatient] =
   useState(null);
+  // ============================================================
+// TREATMENT DATA STATES
+// ============================================================
+
+const [treatments, setTreatments] =
+  useState([]);
+
+const [patientTreatments, setPatientTreatments] =
+  useState([]);
+
+const [selectedTreatmentPatient, setSelectedTreatmentPatient] =
+  useState(null);
 // ============================================================
 // LOADING STATES
 // ============================================================
@@ -64,6 +78,14 @@ useState(false);
 const [submittingPrediction, setSubmittingPrediction] =
 useState(false);
 
+const [loadingTreatments, setLoadingTreatments] =
+  useState(false);
+
+const [loadingPatientTreatments, setLoadingPatientTreatments] =
+  useState(false);
+
+const [submittingTreatment, setSubmittingTreatment] =
+  useState(false);
 // ============================================================
 // FORM VISIBILITY
 // ============================================================
@@ -273,6 +295,31 @@ useState({
   admission_history: "",
 
 });
+// ============================================================
+// TREATMENT FORM
+// ============================================================
+
+const [treatmentForm, setTreatmentForm] =
+  useState({
+
+    patient_id: "",
+
+    doctor_id: "",
+
+    treatment_name: "",
+
+    description: "",
+
+    status: "planned",
+    outcome: "not_evaluated",
+
+    outcome_notes: "",
+
+    start_date: "",
+
+    end_date: "",
+
+  });
 
 
 // ============================================================
@@ -425,6 +472,144 @@ try {
 
 
 };
+// ============================================================
+// LOAD ALL TREATMENTS
+// ============================================================
+
+const loadTreatments = async () => {
+
+  setLoadingTreatments(true);
+
+  try {
+
+    const data =
+      await getTreatments();
+
+    console.log(
+      "Treatments API response:",
+      data
+    );
+
+    if (Array.isArray(data)) {
+
+      setTreatments(data);
+
+    } else if (
+      Array.isArray(data?.treatments)
+    ) {
+
+      setTreatments(
+        data.treatments
+      );
+
+    } else {
+
+      setTreatments([]);
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Failed to load treatments:",
+      error
+    );
+
+    if (
+      error.message?.includes(
+        "Not authenticated"
+      )
+    ) {
+
+      alert(
+        "Session expired. Please login again."
+      );
+
+      logout();
+
+      return;
+
+    }
+
+    alert(
+      error.message ||
+      "Failed to load treatments."
+    );
+
+  } finally {
+
+    setLoadingTreatments(false);
+
+  }
+
+};
+// ============================================================
+// LOAD PATIENT TREATMENTS
+// ============================================================
+
+const loadPatientTreatments = async (
+  patientId
+) => {
+
+  if (!patientId) {
+
+    return;
+
+  }
+
+  setLoadingPatientTreatments(true);
+
+  try {
+
+    const data =
+      await getPatientTreatments(
+        patientId
+      );
+
+    console.log(
+      "Patient treatments response:",
+      data
+    );
+
+    if (Array.isArray(data)) {
+
+      setPatientTreatments(data);
+
+    } else if (
+      Array.isArray(data?.treatments)
+    ) {
+
+      setPatientTreatments(
+        data.treatments
+      );
+
+    } else {
+
+      setPatientTreatments([]);
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Failed to load patient treatments:",
+      error
+    );
+
+    setPatientTreatments([]);
+
+    alert(
+      error.message ||
+      "Failed to load patient treatments."
+    );
+
+  } finally {
+
+    setLoadingPatientTreatments(false);
+
+  }
+
+};
 
 // ============================================================
 // INITIAL LOAD
@@ -436,6 +621,7 @@ useEffect(() => {
 loadPatients();
 
 loadPredictions();
+loadTreatments();
 
 
 }, []);
@@ -680,6 +866,129 @@ async (e) => {
   }
 
 };
+// ============================================================
+// ADD TREATMENT
+// ============================================================
+
+const handleTreatmentSubmit = async (
+  e
+) => {
+
+  e.preventDefault();
+
+  setSubmittingTreatment(true);
+
+  try {
+
+    const treatmentData = {
+
+      patient_id:
+        Number(
+          treatmentForm.patient_id
+        ),
+
+      doctor_id:
+        treatmentForm.doctor_id
+          ? Number(
+              treatmentForm.doctor_id
+            )
+          : null,
+
+      treatment_name:
+        treatmentForm.treatment_name,
+
+      description:
+        treatmentForm.description ||
+        null,
+
+      status:
+        treatmentForm.status,
+      outcome:
+        treatmentForm.outcome,
+
+      outcome_notes:
+        treatmentForm.outcome_notes,
+
+      start_date:
+        treatmentForm.start_date
+          ? `${treatmentForm.start_date}T00:00:00`
+          : null,
+
+      end_date:
+        treatmentForm.end_date
+          ? `${treatmentForm.end_date}T00:00:00`
+          : null,
+
+    };
+
+    console.log(
+      "Sending treatment data:",
+      treatmentData
+    );
+
+    const result =
+      await addTreatment(
+        treatmentData
+      );
+
+    console.log(
+      "Treatment created:",
+      result
+    );
+
+    alert(
+      "Treatment added successfully!"
+    );
+
+    setTreatmentForm({
+
+      patient_id: "",
+
+      doctor_id: "",
+
+      treatment_name: "",
+
+      description: "",
+
+      status: "planned",
+
+      start_date: "",
+
+      end_date: "",
+
+    });
+
+    await loadTreatments();
+
+    if (
+      selectedTreatmentPatient
+    ) {
+
+      await loadPatientTreatments(
+        selectedTreatmentPatient.id
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Add treatment error:",
+      error
+    );
+
+    alert(
+      error.message ||
+      "Failed to add treatment."
+    );
+
+  } finally {
+
+    setSubmittingTreatment(false);
+
+  }
+
+};
 
 
 // ============================================================
@@ -691,7 +1000,114 @@ patients.length;
 
 const totalPredictions =
 predictions.length;
+// ============================================================
+// TREATMENT STATISTICS
+// ============================================================
 
+const totalTreatments =
+  treatments.length;
+
+const plannedTreatments =
+  treatments.filter(
+    (item) =>
+      String(
+        item.status || ""
+      ).toLowerCase() ===
+      "planned"
+  ).length;
+
+const ongoingTreatments =
+  treatments.filter(
+    (item) =>
+      String(
+        item.status || ""
+      ).toLowerCase() ===
+      "ongoing"
+  ).length;
+
+const completedTreatments =
+  treatments.filter(
+    (item) =>
+      String(
+        item.status || ""
+      ).toLowerCase() ===
+      "completed"
+  ).length;
+  // ============================================================
+// TREATMENT OUTCOME EVALUATION
+// ============================================================
+
+const treatmentOutcomeData =
+  treatments.map((treatment) => {
+
+    const status =
+      String(
+        treatment.status || ""
+      ).toLowerCase();
+
+    let outcome =
+      "Unknown";
+
+    if (status === "planned") {
+
+      outcome =
+        "Not Started";
+
+    } else if (status === "ongoing") {
+
+      outcome =
+        "In Progress";
+
+    } else if (status === "completed") {
+
+      outcome =
+        "Completed";
+
+    }
+
+    return {
+
+      id:
+        treatment.id,
+
+      patientId:
+        treatment.patient_id,
+
+      treatmentName:
+        treatment.treatment_name ||
+        "Unnamed Treatment",
+
+      status,
+
+      outcome,
+
+      startDate:
+        treatment.start_date,
+
+      endDate:
+        treatment.end_date,
+
+    };
+
+  });
+// ============================================================
+// TREATMENT ANALYTICS DATA
+// ============================================================
+
+const treatmentStatusData = [
+  {
+    name: "Planned",
+    count: plannedTreatments,
+  },
+  {
+    name: "Ongoing",
+    count: ongoingTreatments,
+  },
+  {
+    name: "Completed",
+    count: completedTreatments,
+  },
+];
 const highRisk =
 predictions.filter(
 
@@ -1076,16 +1492,32 @@ return (
 
     </div>
 <button
-  onClick={() =>
-    setActiveSection("treatment")
-  }
+
+  onClick={() => {
+
+    setActiveSection(
+      "treatments"
+    );
+
+    loadTreatments();
+
+  }}
+
   style={
-    activeSection === "treatment"
+
+    activeSection ===
+    "treatments"
+
       ? styles.activeNavButton
+
       : styles.navButton
+
   }
+
 >
-  Treatment Effectiveness
+
+  Treatments
+
 </button>
 <button
   onClick={() =>
@@ -2103,7 +2535,1085 @@ return (
       </section>
 
     )}
+{/* ================================================== */}
+{/* TREATMENT MANAGEMENT */}
+{/* ================================================== */}
 
+{activeSection ===
+  "treatments" && (
+
+  <section
+    style={styles.section}
+  >
+
+    <div
+      style={
+        styles.sectionHeader
+      }
+    >
+
+      <div>
+
+        <h2>
+          Treatment Management
+        </h2>
+
+        <p
+          style={
+            styles.subtitle
+          }
+        >
+
+          Manage patient treatments
+          and view treatment history.
+
+        </p>
+
+      </div>
+
+    </div>
+
+
+    {/* ================================================== */}
+    {/* TREATMENT STATISTICS */}
+    {/* ================================================== */}
+
+    <div
+      style={
+        styles.statsGrid
+      }
+    >
+
+      <StatCard
+
+        title="Total Treatments"
+
+        value={
+          totalTreatments
+        }
+
+      />
+
+      <StatCard
+
+        title="Planned"
+
+        value={
+          plannedTreatments
+        }
+
+      />
+
+      <StatCard
+
+        title="Ongoing"
+
+        value={
+          ongoingTreatments
+        }
+
+      />
+
+      <StatCard
+
+        title="Completed"
+
+        value={
+          completedTreatments
+        }
+
+      />
+
+    </div>
+{/* ================================================== */}
+{/* TREATMENT ANALYTICS */}
+{/* ================================================== */}
+
+<div
+  style={
+    styles.analyticsGrid
+  }
+>
+
+  {/* TREATMENT STATUS BAR CHART */}
+
+  <div
+    style={
+      styles.chartCard
+    }
+  >
+
+    <h3>
+      Treatment Status Analytics
+    </h3>
+
+    <p
+      style={
+        styles.chartDescription
+      }
+    >
+
+      Real-time distribution of
+      patient treatment statuses.
+
+    </p>
+
+    {totalTreatments === 0 ? (
+
+      <div
+        style={
+          styles.emptyMessage
+        }
+      >
+
+        No treatment data
+        available yet.
+
+      </div>
+
+    ) : (
+
+      <ResponsiveContainer
+        width="100%"
+        height={350}
+      >
+
+        <BarChart
+          data={
+            treatmentStatusData
+          }
+        >
+
+          <CartesianGrid
+            strokeDasharray="3 3"
+          />
+
+          <XAxis
+            dataKey="name"
+          />
+
+          <YAxis
+            allowDecimals={false}
+          />
+
+          <Tooltip />
+
+          <Legend />
+
+          <Bar
+            dataKey="count"
+            name="Treatments"
+            fill="#2563eb"
+            radius={[
+              8,
+              8,
+              0,
+              0,
+            ]}
+          />
+
+        </BarChart>
+
+      </ResponsiveContainer>
+
+    )}
+
+  </div>
+
+
+  {/* TREATMENT STATUS PIE CHART */}
+
+  <div
+    style={
+      styles.chartCard
+    }
+  >
+
+    <h3>
+      Treatment Distribution
+    </h3>
+
+    <p
+      style={
+        styles.chartDescription
+      }
+    >
+
+      Proportion of planned,
+      ongoing, and completed
+      treatments.
+
+    </p>
+
+    {totalTreatments === 0 ? (
+
+      <div
+        style={
+          styles.emptyMessage
+        }
+      >
+
+        No treatment data
+        available yet.
+
+      </div>
+
+    ) : (
+
+      <ResponsiveContainer
+        width="100%"
+        height={350}
+      >
+
+        <PieChart>
+
+          <Pie
+            data={
+              treatmentStatusData
+            }
+
+            dataKey="count"
+
+            nameKey="name"
+
+            cx="50%"
+
+            cy="50%"
+
+            outerRadius={120}
+
+            label
+          >
+
+            {treatmentStatusData.map(
+
+              (entry, index) => (
+
+                <Cell
+
+                  key={
+                    `treatment-cell-${index}`
+                  }
+
+                  fill={
+                    [
+                      "#2563eb",
+                      "#f59e0b",
+                      "#16a34a",
+                    ][
+                      index %
+                      3
+                    ]
+                  }
+
+                />
+
+              )
+
+            )}
+
+          </Pie>
+
+          <Tooltip />
+
+          <Legend />
+
+        </PieChart>
+
+      </ResponsiveContainer>
+
+    )}
+
+  </div>
+
+</div>
+
+    {/* ================================================== */}
+    {/* ADD TREATMENT */}
+    {/* ================================================== */}
+
+    <div
+      style={
+        styles.chartCard
+      }
+    >
+
+      <h3>
+        Add New Treatment
+      </h3>
+
+      <form
+
+        onSubmit={
+          handleTreatmentSubmit
+        }
+
+        style={
+          styles.form
+        }
+
+      >
+
+        <select
+
+          value={
+            treatmentForm.patient_id
+          }
+
+          onChange={(e) =>
+
+            setTreatmentForm({
+
+              ...treatmentForm,
+
+              patient_id:
+                e.target.value,
+
+            })
+
+          }
+
+          required
+
+          style={
+            styles.input
+          }
+
+        >
+
+          <option value="">
+
+            Select Patient
+
+          </option>
+
+          {patients.map(
+            (patient) => (
+
+              <option
+
+                key={
+                  patient.id
+                }
+
+                value={
+                  patient.id
+                }
+
+              >
+
+                {patient.full_name}
+
+                {" "}(
+                ID: {patient.id}
+                )
+
+              </option>
+
+            )
+          )}
+
+        </select>
+
+
+        <input
+
+          type="number"
+
+          placeholder="Doctor ID (Optional)"
+
+          value={
+            treatmentForm.doctor_id
+          }
+
+          onChange={(e) =>
+
+            setTreatmentForm({
+
+              ...treatmentForm,
+
+              doctor_id:
+                e.target.value,
+
+            })
+
+          }
+
+          style={
+            styles.input
+          }
+
+        />
+
+
+        <input
+
+          placeholder="Treatment Name"
+
+          value={
+            treatmentForm.treatment_name
+          }
+
+          onChange={(e) =>
+
+            setTreatmentForm({
+
+              ...treatmentForm,
+
+              treatment_name:
+                e.target.value,
+
+            })
+
+          }
+
+          required
+
+          style={
+            styles.input
+          }
+
+        />
+
+
+        <textarea
+
+          placeholder="Treatment Description"
+
+          value={
+            treatmentForm.description
+          }
+
+          onChange={(e) =>
+
+            setTreatmentForm({
+
+              ...treatmentForm,
+
+              description:
+                e.target.value,
+
+            })
+
+          }
+
+          style={
+            styles.input
+          }
+
+        />
+
+
+        <select
+
+          value={
+            treatmentForm.status
+          }
+
+          onChange={(e) =>
+
+            setTreatmentForm({
+
+              ...treatmentForm,
+
+              status:
+                e.target.value,
+
+            })
+
+          }
+
+          style={
+            styles.input
+          }
+
+        >
+
+          <option value="planned">
+
+            Planned
+
+          </option>
+
+          <option value="ongoing">
+
+            Ongoing
+
+          </option>
+
+          <option value="completed">
+
+            Completed
+
+          </option>
+
+        </select>
+<select
+  value={
+    treatmentForm.outcome
+  }
+
+  onChange={(e) =>
+    setTreatmentForm({
+
+      ...treatmentForm,
+
+      outcome:
+        e.target.value,
+
+    })
+  }
+
+  style={
+    styles.input
+  }
+
+>
+
+  <option value="not_evaluated">
+    Not Evaluated
+  </option>
+
+  <option value="effective">
+    Effective
+  </option>
+
+  <option value="partially_effective">
+    Partially Effective
+  </option>
+
+  <option value="not_effective">
+    Not Effective
+  </option>
+
+</select>
+<textarea
+  placeholder="Treatment Outcome Notes"
+
+  value={
+    treatmentForm.outcome_notes
+  }
+
+  onChange={(e) =>
+    setTreatmentForm({
+
+      ...treatmentForm,
+
+      outcome_notes:
+        e.target.value,
+
+    })
+  }
+
+  style={
+    styles.input
+  }
+
+/>
+
+        <label>
+
+          Start Date
+
+        </label>
+
+        <input
+
+          type="date"
+
+          value={
+            treatmentForm.start_date
+          }
+
+          onChange={(e) =>
+
+            setTreatmentForm({
+
+              ...treatmentForm,
+
+              start_date:
+                e.target.value,
+
+            })
+
+          }
+
+          style={
+            styles.input
+          }
+
+        />
+
+
+        <label>
+
+          End Date
+
+        </label>
+
+        <input
+
+          type="date"
+
+          value={
+            treatmentForm.end_date
+          }
+
+          onChange={(e) =>
+
+            setTreatmentForm({
+
+              ...treatmentForm,
+
+              end_date:
+                e.target.value,
+
+            })
+
+          }
+
+          style={
+            styles.input
+          }
+
+        />
+
+
+        <button
+
+          type="submit"
+
+          disabled={
+            submittingTreatment
+          }
+
+          style={
+            styles.primaryButton
+          }
+
+        >
+
+          {submittingTreatment
+
+            ? "Adding Treatment..."
+
+            : "Add Treatment"}
+
+        </button>
+
+      </form>
+
+    </div>
+
+
+    {/* ================================================== */}
+    {/* TREATMENT LIST */}
+    {/* ================================================== */}
+
+    <div
+      style={
+        styles.chartCard
+      }
+    >
+
+      <div
+        style={
+          styles.sectionHeader
+        }
+      >
+
+        <div>
+
+          <h3>
+            All Treatments
+          </h3>
+
+          <p
+            style={
+              styles.subtitle
+            }
+          >
+
+            Real treatment records
+            from the FastAPI backend.
+
+          </p>
+
+        </div>
+
+
+        <button
+
+          onClick={
+            loadTreatments
+          }
+
+          style={
+            styles.secondaryButton
+          }
+
+        >
+
+          Refresh
+
+        </button>
+
+      </div>
+
+
+      {loadingTreatments ? (
+
+        <p>
+          Loading treatments...
+        </p>
+
+      ) : treatments.length ===
+        0 ? (
+
+        <div
+          style={
+            styles.emptyMessage
+          }
+        >
+
+          No treatments found.
+
+        </div>
+
+      ) : (
+
+        <div
+          style={
+            styles.recentPredictionList
+          }
+        >
+
+          {treatments.map(
+
+            (treatment) => (
+
+              <div
+
+                key={
+                  treatment.id
+                }
+
+                style={
+                  styles.recentPredictionItem
+                }
+
+              >
+
+                <div>
+
+                  <strong>
+
+                    {
+                      treatment.treatment_name
+                    }
+
+                  </strong>
+
+
+                  <p>
+
+                    Treatment ID:{" "}
+
+                    {
+                      treatment.id
+                    }
+
+                  </p>
+
+
+                  <p>
+
+                    Patient ID:{" "}
+
+                    {
+                      treatment.patient_id
+                    }
+
+                  </p>
+
+
+                  <p>
+
+                    Status:{" "}
+
+                    {
+                      treatment.status ||
+                      "Unknown"
+                    }
+
+                  </p>
+
+
+                  <p>
+
+                    Description:{" "}
+
+                    {
+                      treatment.description ||
+                      "No description"
+                    }
+
+                  </p>
+
+                </div>
+
+
+                <button
+
+                  onClick={() => {
+
+                    setSelectedTreatmentPatient({
+
+                      id:
+                        treatment.patient_id,
+
+                    });
+
+                    loadPatientTreatments(
+
+                      treatment.patient_id
+
+                    );
+
+                  }}
+
+                  style={
+                    styles.secondaryButton
+                  }
+
+                >
+
+                  View Patient History
+
+                </button>
+
+              </div>
+
+            )
+
+          )}
+
+        </div>
+
+      )}
+
+    </div>
+
+
+    {/* ================================================== */}
+    {/* PATIENT TREATMENT HISTORY */}
+    {/* ================================================== */}
+
+    {selectedTreatmentPatient && (
+
+      <div
+        style={
+          styles.chartCard
+        }
+      >
+
+        <div
+          style={
+            styles.sectionHeader
+          }
+        >
+
+          <div>
+
+            <h3>
+
+              Patient Treatment History
+
+            </h3>
+
+            <p
+              style={
+                styles.subtitle
+              }
+            >
+
+              Patient ID:{" "}
+
+              {
+                selectedTreatmentPatient.id
+              }
+
+            </p>
+
+          </div>
+
+
+          <button
+
+            onClick={() => {
+
+              setSelectedTreatmentPatient(
+                null
+              );
+
+              setPatientTreatments([]);
+
+            }}
+
+            style={
+              styles.secondaryButton
+            }
+
+          >
+
+            Close
+
+          </button>
+
+        </div>
+
+
+        {loadingPatientTreatments ? (
+
+          <p>
+
+            Loading patient treatment history...
+
+          </p>
+
+        ) : patientTreatments.length ===
+          0 ? (
+
+          <div
+            style={
+              styles.emptyMessage
+            }
+          >
+
+            No treatment history found
+            for this patient.
+
+          </div>
+
+        ) : (
+
+          <div
+            style={
+              styles.recentPredictionList
+            }
+          >
+
+            {patientTreatments.map(
+
+              (treatment) => (
+
+                <div
+
+                  key={
+                    treatment.id
+                  }
+
+                  style={
+                    styles.recentPredictionItem
+                  }
+
+                >
+
+                  <div>
+
+                    <strong>
+
+                      {
+                        treatment.treatment_name
+                      }
+
+                    </strong>
+
+
+                    <p>
+
+                      {
+                        treatment.description ||
+                        "No description"
+                      }
+
+                    </p>
+
+
+                    <p>
+
+                      Start Date:{" "}
+
+                      {
+                        treatment.start_date
+                          ? new Date(
+                              treatment.start_date
+                            ).toLocaleDateString()
+                          : "N/A"
+                      }
+
+                    </p>
+
+
+                    <p>
+
+                      End Date:{" "}
+
+                      {
+                        treatment.end_date
+                          ? new Date(
+                              treatment.end_date
+                            ).toLocaleDateString()
+                          : "N/A"
+                      }
+
+                    </p>
+
+                  </div>
+
+
+                  <span
+
+                    style={
+
+                      String(
+                        treatment.status ||
+                        ""
+                      ).toLowerCase() ===
+                      "completed"
+
+                        ? styles.lowRiskBadge
+
+                        : styles.highRiskBadge
+
+                    }
+
+                  >
+
+                    {
+                      treatment.status ||
+                      "Unknown"
+                    }
+
+                  </span>
+
+                </div>
+
+              )
+
+            )}
+
+          </div>
+
+        )}
+
+      </div>
+
+    )}
+
+  </section>
+
+)}
 
     {/* ================================================== */}
     {/* RISK ANALYSIS */}
@@ -6397,6 +7907,39 @@ optimizationCard: {
   background: "#f9fafb",
   border: "1px solid #e5e7eb",
   borderRadius: "12px",
+},
+treatmentStatusBadge: {
+
+  padding:
+    "8px 14px",
+
+  borderRadius:
+    "20px",
+
+  fontSize:
+    "13px",
+
+  fontWeight:
+    "600",
+
+},
+analyticsGrid: {
+
+  display:
+    "grid",
+
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(400px, 1fr))",
+
+  gap:
+    "20px",
+
+  marginTop:
+    "25px",
+
+  marginBottom:
+    "25px",
+
 },
 
 

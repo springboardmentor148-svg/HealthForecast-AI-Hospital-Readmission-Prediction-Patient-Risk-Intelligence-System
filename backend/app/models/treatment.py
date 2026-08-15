@@ -42,6 +42,16 @@ class Treatment(Base):
         default="planned",
         nullable=False
     )
+    outcome = Column(
+    String(50),
+    default="not_evaluated",
+    nullable=False
+    )
+
+    outcome_notes = Column(
+    Text,
+    nullable=True
+   )
 
     start_date = Column(
         DateTime,

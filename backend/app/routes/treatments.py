@@ -10,7 +10,6 @@ from app.schemas.treatment import (
     TreatmentResponse,
 )
 
-
 router = APIRouter(
     prefix="/treatments",
     tags=["Treatments"],
@@ -50,27 +49,16 @@ def create_treatment(
 
     # Create treatment
     treatment = Treatment(
-        patient_id=
-            treatment_data.patient_id,
-
-        doctor_id=
-            treatment_data.doctor_id,
-
-        treatment_name=
-            treatment_data.treatment_name,
-
-        description=
-            treatment_data.description,
-
-        status=
-            treatment_data.status,
-
-        start_date=
-            treatment_data.start_date,
-
-        end_date=
-            treatment_data.end_date,
-    )
+    patient_id=treatment_data.patient_id,
+    doctor_id=treatment_data.doctor_id,
+    treatment_name=treatment_data.treatment_name,
+    description=treatment_data.description,
+    status=treatment_data.status,
+    outcome=treatment_data.outcome,
+    outcome_notes=treatment_data.outcome_notes,
+    start_date=treatment_data.start_date,
+    end_date=treatment_data.end_date,
+)
 
     db.add(treatment)
 
@@ -107,7 +95,6 @@ def get_treatments(
 # ============================================================
 # GET TREATMENTS BY PATIENT
 # ============================================================
-
 @router.get(
     "/patient/{patient_id}",
     response_model=List[TreatmentResponse],

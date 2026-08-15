@@ -12,6 +12,8 @@ class TreatmentCreate(BaseModel):
     status: Optional[str] = "planned"
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+    outcome: Optional[str] = "not_evaluated"
+    outcome_notes: Optional[str] = None
 
 
 class TreatmentResponse(BaseModel):
@@ -24,6 +26,8 @@ class TreatmentResponse(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     created_at: datetime
+    outcome: Optional[str] = "not_evaluated"
+    outcome_notes: Optional[str] = None
 
     class Config:
         from_attributes = True

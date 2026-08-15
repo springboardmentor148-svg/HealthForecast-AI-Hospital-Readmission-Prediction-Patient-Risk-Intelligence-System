@@ -216,9 +216,18 @@ def get_all_predictions(
 
 ):
 
-    predictions = (
+    # Get predictions along with their patient details
+    results = (
 
-        db.query(Prediction)
+        db.query(
+            Prediction,
+            Patient
+        )
+
+        .join(
+            Patient,
+            Prediction.patient_id == Patient.id
+        )
 
         .order_by(
             Prediction.created_at.desc()
@@ -228,43 +237,40 @@ def get_all_predictions(
 
     )
 
-
     return {
 
         "success": True,
 
-        "total":
-            len(predictions),
+        "total": len(results),
 
         "predictions": [
 
             {
 
-                "id":
-                    prediction.id,
+                # Prediction information
+                "id": prediction.id,
 
-                "patient_id":
-                    prediction.patient_id,
+                "patient_id": prediction.patient_id,
 
-                "prediction":
-                    prediction.prediction,
+                "prediction": prediction.prediction,
 
-                "risk_level":
-                    prediction.risk_level,
+                "risk_level": prediction.risk_level,
 
-                "probability":
-                    prediction.probability,
+                "probability": prediction.probability,
 
-                "model_name":
-                    prediction.model_name,
+                "model_name": prediction.model_name,
 
-                "created_at":
-                    prediction.created_at,
+                "created_at": prediction.created_at,
+
+                # Patient information
+                "age": patient.age,
+
+                "gender": patient.gender,
 
             }
 
-            for prediction
-            in predictions
+            for prediction, patient
+            in results
 
         ],
 
