@@ -17,13 +17,15 @@ class User(Base):
     hospital_contact = Column(String, nullable=False)
     hospital_address = Column(String, nullable=False)
 
-    department = Column(String, nullable=True)  # sirf Doctor ke liye required
-    user_role = Column(String, nullable=False)   # "Doctor" | "Hospital Administrator" | "Healthcare Researcher" | "System Administrator"
+    department = Column(String, nullable=True)
+    user_role = Column(String, nullable=False)
 
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
+    is_verified = Column(Boolean, nullable=False, default=False)
+    otp_code = Column(String, nullable=True)
+    otp_expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-
 
 class Prediction(Base):
     __tablename__ = "predictions"

@@ -6,3 +6,5 @@ __pycache__/
 *.pyc
 
 .env
+backend_api/uploads/
+dataset/*.pkl

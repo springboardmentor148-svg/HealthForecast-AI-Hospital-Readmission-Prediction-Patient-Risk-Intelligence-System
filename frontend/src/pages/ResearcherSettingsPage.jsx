@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext.jsx";
 import {
   FaUser,
   FaLock,
@@ -29,19 +30,17 @@ const tabs = [
 
 export function ResearcherSettingsPage() {
   const { user } = useOutletContext();
+  const { updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [savedMessage, setSavedMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  // Profile — seedha login ke waqt mile "user" context se aata hai,
-  // koi alag GET call ki zaroorat nahi (backend me GET /users/me hai nahi)
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [mobileNumber, setMobileNumber] = useState(user?.mobileNumber || "");
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // Security / Password
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -50,20 +49,16 @@ export function ResearcherSettingsPage() {
   const [passwordError, setPasswordError] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
-  // Notifications
   const [notifyNewDataset, setNotifyNewDataset] = useState(true);
   const [notifyExportComplete, setNotifyExportComplete] = useState(true);
   const [notifyStudyUpdate, setNotifyStudyUpdate] = useState(true);
   const [notifyWeeklyDigest, setNotifyWeeklyDigest] = useState(false);
   const [savingNotifications, setSavingNotifications] = useState(false);
 
-  // Appearance
   const [defaultTheme, setDefaultTheme] = useState("light");
   const [compactLayout, setCompactLayout] = useState(false);
   const [savingAppearance, setSavingAppearance] = useState(false);
 
-  // Saare saved preferences (twoFactor, notifications, appearance) ek hi
-  // call me load karte hain — GET /users/me/all-preferences
   useEffect(() => {
     fetchAllMyPreferences()
       .then((data) => {
@@ -95,18 +90,23 @@ export function ResearcherSettingsPage() {
     setTimeout(() => setSavedMessage(""), 2500);
   };
 
-  const handleSaveProfile = async (event) => {
-    event.preventDefault();
-    setSavingProfile(true);
-    try {
-      await updateMyProfile({ fullName, email, mobileNumber });
-      flashSaved("Profile updated successfully.");
-    } catch (err) {
-      setLoadError(err.message || "Could not update profile. Please try again.");
-    } finally {
-      setSavingProfile(false);
-    }
-  };
+ const handleSaveProfile = async (event) => {
+  event.preventDefault();
+  setSavingProfile(true);
+  try {
+    const updated = await updateMyProfile({ fullName, email, mobileNumber });
+    updateUser({
+      fullName: updated.fullName,
+      email: updated.email,
+      mobileNumber: updated.mobileNumber,
+    });
+    flashSaved("Profile updated successfully.");
+  } catch (err) {
+    setLoadError(err.message || "Could not update profile. Please try again.");
+  } finally {
+    setSavingProfile(false);
+  }
+};
 
   const handleChangePassword = async (event) => {
     event.preventDefault();
@@ -144,7 +144,7 @@ export function ResearcherSettingsPage() {
     try {
       await updateMyTwoFactor(checked);
     } catch (err) {
-      setTwoFactorEnabled(!checked); // revert on failure
+      setTwoFactorEnabled(!checked);
       setLoadError(err.message || "Could not update two-factor setting.");
     }
   };
@@ -278,6 +278,14 @@ export function ResearcherSettingsPage() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
 
@@ -289,6 +297,14 @@ export function ResearcherSettingsPage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
 
@@ -300,18 +316,17 @@ export function ResearcherSettingsPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
                 </div>
-
-                <button
-                  type="button"
-                  className="secondary-button settings-show-password-btn"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  {showPassword ? "Hide Passwords" : "Show Passwords"}
-                </button>
 
                 <div className="dashboard-inline-actions">
                   <button type="submit" className="primary-button" disabled={savingPassword}>

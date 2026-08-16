@@ -1,8 +1,12 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 
-SECRET_KEY = "CHANGE_THIS_TO_A_RANDOM_SECRET_LATER"  # abhi ke liye dummy, production me .env se aayega
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 

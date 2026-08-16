@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  backend_api:
+    build: ./backend_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend_api/healthforecastai.db:/app/healthforecastai.db
+      - ./backend_api/uploads:/app/uploads
+    env_file:
+      - ./backend_api/.env
+
+  ml_backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./dataset:/dataset
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend_api
+      - ml_backend

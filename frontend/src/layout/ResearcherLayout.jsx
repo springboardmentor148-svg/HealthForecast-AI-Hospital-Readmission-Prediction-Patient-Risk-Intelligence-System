@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { FaChartPie, FaFlask, FaChartLine, FaUsers, FaDatabase, FaSliders } from "react-icons/fa6";
 import { RoleShell } from "./RoleShell.jsx";
+import { fetchResearcherNotifications } from "../services/notificationsApi.js";
 
 const sidebarItems = [
   { label: "Overview", icon: FaChartPie, path: "/app/research/overview" },
@@ -11,5 +13,31 @@ const sidebarItems = [
 ];
 
 export default function ResearcherLayout() {
-  return <RoleShell sidebarItems={sidebarItems} profilePath="/app/research/profile" />;
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadNotifications() {
+      try {
+        const data = await fetchResearcherNotifications();
+        if (isMounted) {
+          setNotifications(data);
+        }
+      } catch (err) {
+        console.error("Failed to load notifications:", err);
+      }
+    }
+
+    loadNotifications();
+    return () => { isMounted = false; };
+  }, []);
+
+  return (
+    <RoleShell
+      sidebarItems={sidebarItems}
+      profilePath="/app/research/profile"
+      notifications={notifications}
+    />
+  );
 }

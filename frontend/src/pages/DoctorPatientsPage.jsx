@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaMagnifyingGlass, FaUserInjured } from "react-icons/fa6";
 import { fetchPatients } from "../services/patientsApi.js";
+import { CATEGORY_OPTIONS } from "../data/categoryOptions.js";
 
 export function DoctorPatientsPage() {
   const navigate = useNavigate();
@@ -119,7 +120,7 @@ export function DoctorPatientsPage() {
                       {patient.name} <span style={{ opacity: 0.6 }}>({patient.patientId})</span>
                     </td>
                     <td>
-                      {patient.age} / {patient.gender}
+                      {patient.age} / {getGenderLabel(patient.gender)}
                     </td>
                     <td>{patient.condition}</td>
                     <td>
@@ -138,4 +139,9 @@ export function DoctorPatientsPage() {
       </section>
     </>
   );
+}
+
+function getGenderLabel(value) {
+  const match = CATEGORY_OPTIONS.gender.find((g) => g.value === String(value));
+  return match ? match.label : value;
 }

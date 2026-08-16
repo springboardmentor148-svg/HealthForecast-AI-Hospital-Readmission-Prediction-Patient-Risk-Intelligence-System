@@ -1,7 +1,7 @@
 import re
-import subprocess
 from pathlib import Path
 
+import requests
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -13,12 +13,8 @@ from schemas import ModelVersionResponse, ModelOverviewResponse, RetrainRequest
 
 router = APIRouter(prefix="/admin/models", tags=["System Admin - AI Models"])
 
-# backend_api aur backend HealthForecastAI ke andar sibling folders hai
-TRAINING_DIR = Path(__file__).resolve().parent.parent.parent / "backend"
-TRAINING_SCRIPT = "model_training.py"
-
-# Training script isi venv ke Python se chalti hai (backend_api ke venv se alag)
-TRAINING_PYTHON = Path(__file__).resolve().parent.parent.parent / "venv" / "Scripts" / "python.exe"
+# Public router — no login required, used by the landing page
+public_router = APIRouter(prefix="/public", tags=["Public"])
 
 
 def next_version(db: Session) -> str:
@@ -70,6 +66,24 @@ def list_models(
     )
 
 
+# ---------- PUBLIC: latest model stats (no auth, for landing page) ----------
+@public_router.get("/model-stats")
+def public_model_stats(db: Session = Depends(get_db)):
+    deployed = (
+        db.query(ModelVersion)
+        .filter(ModelVersion.status == "Deployed")
+        .order_by(ModelVersion.id.desc())
+        .first()
+    )
+    if not deployed:
+        return {"accuracy": None, "version": None}
+
+    return {
+        "accuracy": f"{deployed.accuracy:.1f}%",
+        "version": deployed.version,
+    }
+
+
 # ---------- RETRAIN MODEL ----------
 @router.post("/retrain", response_model=ModelVersionResponse)
 def retrain_model(
@@ -77,34 +91,26 @@ def retrain_model(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    script_path = TRAINING_DIR / TRAINING_SCRIPT
-    if not script_path.exists():
-        raise HTTPException(status_code=404, detail=f"Training script not found at {script_path}")
-
-    python_exe = str(TRAINING_PYTHON) if TRAINING_PYTHON.exists() else "python"
-
-    # dataset/ folder backend ka sibling hai (project root mein), isliye
-    # script ko root folder se chalate hai taaki relative paths sahi resolve ho
-    project_root = TRAINING_DIR.parent
-
     try:
-        result = subprocess.run(
-            [python_exe, str(script_path)],
-            cwd=str(project_root),
-            capture_output=True,
-            text=True,
+        response = requests.post(
+            "http://ml_backend:5000/train",
+            json={},
             timeout=1800,
         )
-    except subprocess.TimeoutExpired:
+    except requests.exceptions.Timeout:
         raise HTTPException(status_code=504, detail="Training timed out (30 min limit)")
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Could not reach ML training service (ml_backend)")
 
-    if result.returncode != 0:
+    result_data = response.json()
+
+    if not result_data.get("success"):
         raise HTTPException(
             status_code=500,
-            detail=f"Training script failed: {result.stderr[-1500:]}",
+            detail=f"Training script failed: {result_data.get('error', 'Unknown error')[-1500:]}",
         )
 
-    output = result.stdout
+    output = result_data.get("output", "")
 
     accuracy = parse_metric(output, "Accuracy")
     precision = parse_metric(output, "Precision")

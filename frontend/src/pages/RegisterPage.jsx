@@ -100,9 +100,15 @@ export function RegisterPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const update = (field) => (e) =>
     setFormData((prev) => ({ ...prev, [field]: e.target.value }))
+
+  const updateDigitsOnly = (field, maxLength) => (e) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, maxLength)
+    setFormData((prev) => ({ ...prev, [field]: digitsOnly }))
+  }
 
   const handleRoleSelect = (roleId) => {
     setFormData((prev) => ({
@@ -118,6 +124,14 @@ export function RegisterPage() {
         setError('Please fill in all personal details.')
         return false
       }
+      if (formData.fullName.trim().length < 3) {
+        setError('Full name must be at least 3 characters.')
+        return false
+      }
+      if (!/^[6-9]\d{9}$/.test(formData.mobileNumber.trim())) {
+        setError('Mobile number must be exactly 10 digits.')
+        return false
+      }
     }
 
     if (step === 2) {
@@ -131,11 +145,48 @@ export function RegisterPage() {
         setError('Please fill in all hospital details.')
         return false
       }
+      if (formData.hospitalName.trim().length < 3) {
+        setError('Hospital name must be at least 3 characters.')
+        return false
+      }
+      if (!/^[6-9]\d{9}$/.test(formData.hospitalContact.trim())) {
+        setError('Hospital contact number must be exactly 10 digits.')
+        return false
+      }
+      if (formData.hospitalAddress.trim().length < 10) {
+        setError('Please enter a complete hospital address (at least 10 characters).')
+        return false
+      }
     }
 
     if (step === 3) {
       if (formData.userRole === 'Doctor' && !formData.department) {
         setError('Please select a department.')
+        return false
+      }
+    }
+
+    if (step === 4) {
+      const password = formData.password
+
+      if (!password) {
+        setError('Please enter a password.')
+        return false
+      }
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters.')
+        return false
+      }
+      if (!/^[A-Z]/.test(password)) {
+        setError('Password must start with a capital letter.')
+        return false
+      }
+      if (!/[0-9]/.test(password)) {
+        setError('Password must contain at least one number.')
+        return false
+      }
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        setError('Password must contain at least one special character (e.g. @, #, !).')
         return false
       }
     }
@@ -163,41 +214,42 @@ export function RegisterPage() {
   }
 
   const handleSubmit = async (event) => {
-  event.preventDefault()
+    event.preventDefault()
 
-  if (!validateStep(4)) return
+    if (isSubmitting) return
 
-  if (formData.password !== formData.confirmPassword) {
-    setError('Passwords do not match.')
-    return
+    if (!validateStep(4)) return
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    setError('')
+    setIsSubmitting(true)
+
+    try {
+      await registerUser({
+        fullName: formData.fullName,
+        email: formData.email,
+        mobileNumber: formData.mobileNumber,
+        hospitalName: formData.hospitalName,
+        hospitalType: formData.hospitalType,
+        ownershipType: formData.ownershipType,
+        hospitalContact: formData.hospitalContact,
+        hospitalAddress: formData.hospitalAddress,
+        department: formData.userRole === 'Doctor' ? formData.department : null,
+        userRole: formData.userRole,
+        password: formData.password,
+      })
+
+      navigate('/verify-otp', { state: { email: formData.email } })
+    } catch (err) {
+      setError(err.message)
+      setIsSubmitting(false)
+    }
   }
-  if (formData.password.length < 8) {
-    setError('Password must be at least 8 characters.')
-    return
-  }
 
-  setError('')
-
-  try {
-    await registerUser({
-      fullName: formData.fullName,
-      email: formData.email,
-      mobileNumber: formData.mobileNumber,
-      hospitalName: formData.hospitalName,
-      hospitalType: formData.hospitalType,
-      ownershipType: formData.ownershipType,
-      hospitalContact: formData.hospitalContact,
-      hospitalAddress: formData.hospitalAddress,
-      department: formData.userRole === 'Doctor' ? formData.department : null,
-      userRole: formData.userRole,
-      password: formData.password,
-    })
-
-    navigate('/login')
-  } catch (err) {
-    setError(err.message)
-  }
-}
   return (
     <main className="auth-shell">
       <section className="auth-visual">
@@ -330,7 +382,14 @@ export function RegisterPage() {
                   <span>Mobile Number</span>
                   <div className="auth-input-wrap">
                     <FaPhone className="auth-input-icon" aria-hidden="true" />
-                    <input value={formData.mobileNumber} onChange={update('mobileNumber')} placeholder="+91 98765 43210" required />
+                    <input
+                      value={formData.mobileNumber}
+                      onChange={updateDigitsOnly('mobileNumber', 10)}
+                      placeholder="9876543210"
+                      maxLength={10}
+                      inputMode="numeric"
+                      required
+                    />
                   </div>
                 </label>
               </div>
@@ -381,7 +440,14 @@ export function RegisterPage() {
                   <span>Hospital Contact Number</span>
                   <div className="auth-input-wrap">
                     <FaPhone className="auth-input-icon" aria-hidden="true" />
-                    <input value={formData.hospitalContact} onChange={update('hospitalContact')} placeholder="+91 22 4567 8900" required />
+                    <input
+                      value={formData.hospitalContact}
+                      onChange={updateDigitsOnly('hospitalContact', 10)}
+                      placeholder="9876543210"
+                      maxLength={10}
+                      inputMode="numeric"
+                      required
+                    />
                   </div>
                 </label>
 
@@ -474,6 +540,10 @@ export function RegisterPage() {
                     />
                   </div>
                 </label>
+
+                <p className="auth-help-note auth-field-full" style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                  Password must start with a capital letter and include at least one number and one special character (e.g. Pass@123).
+                </p>
               </div>
             )}
 
@@ -481,7 +551,7 @@ export function RegisterPage() {
 
             <div className="auth-step-actions">
               {currentStep > 1 && (
-                <button type="button" className="auth-back-button" onClick={handleBack}>
+                <button type="button" className="auth-back-button" onClick={handleBack} disabled={isSubmitting}>
                   <FaArrowLeft aria-hidden="true" /> Back
                 </button>
               )}
@@ -491,8 +561,8 @@ export function RegisterPage() {
                   Next <FaArrowRight aria-hidden="true" />
                 </button>
               ) : (
-                <button type="submit" className="auth-submit">
-                  Create account <FaArrowRight aria-hidden="true" />
+                <button type="submit" className="auth-submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Creating account...' : 'Create account'} <FaArrowRight aria-hidden="true" />
                 </button>
               )}
             </div>

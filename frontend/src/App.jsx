@@ -1,6 +1,7 @@
 import { PredictionPage } from './pages/PredictionPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import { RegisterPage } from './pages/RegisterPage.jsx'
+import { VerifyOtpPage } from './pages/VerifyOtpPage.jsx'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage.jsx'
 import { LandingPage } from './pages/LandingPage.jsx'
 import { DashboardPage } from './pages/DashboardPage.jsx'
@@ -50,6 +51,7 @@ export function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-otp" element={<VerifyOtpPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

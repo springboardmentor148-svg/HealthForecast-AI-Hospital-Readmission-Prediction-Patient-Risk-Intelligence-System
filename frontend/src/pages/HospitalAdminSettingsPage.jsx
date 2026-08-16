@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthContext.jsx";
 import { useOutletContext } from "react-router-dom";
 import {
   FaUser,
@@ -64,7 +65,6 @@ const departmentOptions = [
   "Pathology",
 ];
 
-// Default values jab tak backend se preference load na ho jaye
 const DEFAULT_ALERT_THRESHOLDS = { readmissionThreshold: 10, bedOccupancyThreshold: 85, criticalAlertEmail: true };
 const DEFAULT_NOTIFICATIONS = { notifyReadmission: true, notifyOccupancy: true, notifyWeeklyReport: true, notifyNewUser: false };
 const DEFAULT_REPORT_PREFS = { reportFormat: "PDF", autoGenerateWeekly: true, autoGenerateMonthly: true, reportRecipients: "" };
@@ -73,16 +73,15 @@ const DEFAULT_APPEARANCE = { defaultTheme: "light", compactLayout: false };
 
 export function HospitalAdminSettingsPage() {
   const { user } = useOutletContext();
+  const { updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [savedMessage, setSavedMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Profile — real backend se (PUT /users/me)
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [phone, setPhone] = useState(user?.mobileNumber || "");
 
-  // Security / Password
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -90,7 +89,6 @@ export function HospitalAdminSettingsPage() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
-  // Hospital Profile — real backend se
   const [hospitalLoading, setHospitalLoading] = useState(true);
   const [hospitalName, setHospitalName] = useState("");
   const [hospitalAddress, setHospitalAddress] = useState("");
@@ -98,35 +96,29 @@ export function HospitalAdminSettingsPage() {
   const [hospitalType, setHospitalType] = useState("Multi-Specialty Hospital");
   const [ownershipType, setOwnershipType] = useState("Private Hospital");
 
-  // Departments — real backend se
   const [departments, setDepartments] = useState([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [doctorOptions, setDoctorOptions] = useState([]);
   const [newDeptName, setNewDeptName] = useState("");
   const [newDeptHeadId, setNewDeptHeadId] = useState("");
 
-  // Alert Thresholds — preferences se
   const [readmissionThreshold, setReadmissionThreshold] = useState(DEFAULT_ALERT_THRESHOLDS.readmissionThreshold);
   const [bedOccupancyThreshold, setBedOccupancyThreshold] = useState(DEFAULT_ALERT_THRESHOLDS.bedOccupancyThreshold);
   const [criticalAlertEmail, setCriticalAlertEmail] = useState(DEFAULT_ALERT_THRESHOLDS.criticalAlertEmail);
 
-  // Notifications — preferences se
   const [notifyReadmission, setNotifyReadmission] = useState(DEFAULT_NOTIFICATIONS.notifyReadmission);
   const [notifyOccupancy, setNotifyOccupancy] = useState(DEFAULT_NOTIFICATIONS.notifyOccupancy);
   const [notifyWeeklyReport, setNotifyWeeklyReport] = useState(DEFAULT_NOTIFICATIONS.notifyWeeklyReport);
   const [notifyNewUser, setNotifyNewUser] = useState(DEFAULT_NOTIFICATIONS.notifyNewUser);
 
-  // Report Preferences — preferences se
   const [reportFormat, setReportFormat] = useState(DEFAULT_REPORT_PREFS.reportFormat);
   const [autoGenerateWeekly, setAutoGenerateWeekly] = useState(DEFAULT_REPORT_PREFS.autoGenerateWeekly);
   const [autoGenerateMonthly, setAutoGenerateMonthly] = useState(DEFAULT_REPORT_PREFS.autoGenerateMonthly);
   const [reportRecipients, setReportRecipients] = useState(user?.email || "");
 
-  // Data & Privacy — preferences se
   const [dataRetention, setDataRetention] = useState(DEFAULT_PRIVACY.dataRetention);
   const [auditLogAccess, setAuditLogAccess] = useState(DEFAULT_PRIVACY.auditLogAccess);
 
-  // Appearance — preferences se
   const [defaultTheme, setDefaultTheme] = useState(DEFAULT_APPEARANCE.defaultTheme);
   const [compactLayout, setCompactLayout] = useState(DEFAULT_APPEARANCE.compactLayout);
 
@@ -140,7 +132,6 @@ export function HospitalAdminSettingsPage() {
     setTimeout(() => setErrorMessage(""), 3500);
   };
 
-  // ---------- Load Hospital Profile ----------
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -160,7 +151,6 @@ export function HospitalAdminSettingsPage() {
     loadProfile();
   }, []);
 
-  // ---------- Load Departments + Doctors ----------
   useEffect(() => {
     async function loadDepartmentsData() {
       try {
@@ -180,8 +170,6 @@ export function HospitalAdminSettingsPage() {
     loadDepartmentsData();
   }, []);
 
-  // ---------- Load all preference-backed tabs (Alerts, Notifications,
-  // Report Prefs, Privacy, Appearance, Two-Factor) in one go ----------
   useEffect(() => {
     async function loadPreferences() {
       try {
@@ -235,25 +223,27 @@ export function HospitalAdminSettingsPage() {
           setTwoFactorEnabled(twoFactorPref.enabled ?? false);
         }
       } catch (err) {
-        // Preferences load fail hone pe defaults hi use ho jayenge, error dikhana zaroori nahi
         console.error("Failed to load preferences:", err);
       }
     }
     loadPreferences();
   }, []);
 
-  // ---------- PROFILE ----------
   const handleSaveProfile = async (event) => {
-    event.preventDefault();
-    try {
-      await updateMyProfile({ fullName, email, mobileNumber: phone });
-      flashSaved("Profile updated successfully.");
-    } catch (err) {
-      flashError(err.message);
-    }
-  };
+  event.preventDefault();
+  try {
+    const updated = await updateMyProfile({ fullName, email, mobileNumber: phone });
+    updateUser({
+      fullName: updated.fullName,
+      email: updated.email,
+      mobileNumber: updated.mobileNumber,
+    });
+    flashSaved("Profile updated successfully.");
+  } catch (err) {
+    flashError(err.message);
+  }
+};
 
-  // ---------- PASSWORD ----------
   const handleChangePassword = async (event) => {
     event.preventDefault();
     setPasswordError("");
@@ -291,7 +281,6 @@ export function HospitalAdminSettingsPage() {
     }
   };
 
-  // ---------- HOSPITAL PROFILE ----------
   const handleSaveHospitalProfile = async (event) => {
     event.preventDefault();
     try {
@@ -308,7 +297,6 @@ export function HospitalAdminSettingsPage() {
     }
   };
 
-  // ---------- DEPARTMENTS ----------
   const handleAddDepartment = async (event) => {
     event.preventDefault();
     if (!newDeptName.trim()) return;
@@ -346,7 +334,6 @@ export function HospitalAdminSettingsPage() {
     }
   };
 
-  // ---------- ALERT THRESHOLDS ----------
   const handleSaveAlertThresholds = async (event) => {
     event.preventDefault();
     try {
@@ -361,7 +348,6 @@ export function HospitalAdminSettingsPage() {
     }
   };
 
-  // ---------- NOTIFICATIONS ----------
   const handleSaveNotifications = async (event) => {
     event.preventDefault();
     try {
@@ -377,7 +363,6 @@ export function HospitalAdminSettingsPage() {
     }
   };
 
-  // ---------- REPORT PREFERENCES ----------
   const handleSaveReportPrefs = async (event) => {
     event.preventDefault();
     try {
@@ -393,7 +378,6 @@ export function HospitalAdminSettingsPage() {
     }
   };
 
-  // ---------- DATA & PRIVACY ----------
   const handleSavePrivacy = async (event) => {
     event.preventDefault();
     try {
@@ -429,7 +413,6 @@ export function HospitalAdminSettingsPage() {
     URL.revokeObjectURL(url);
   };
 
-  // ---------- APPEARANCE ----------
   const handleSaveAppearance = async (event) => {
     event.preventDefault();
     try {
@@ -531,6 +514,14 @@ export function HospitalAdminSettingsPage() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
 
@@ -542,6 +533,14 @@ export function HospitalAdminSettingsPage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
 
@@ -553,18 +552,17 @@ export function HospitalAdminSettingsPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
                 </div>
-
-                <button
-                  type="button"
-                  className="secondary-button settings-show-password-btn"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  {showPassword ? "Hide Passwords" : "Show Passwords"}
-                </button>
 
                 <div className="dashboard-inline-actions">
                   <button type="submit" className="primary-button">

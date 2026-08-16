@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   FaChartPie,
   FaHospitalUser,
@@ -8,6 +9,7 @@ import {
   FaSliders,
 } from "react-icons/fa6";
 import { RoleShell } from "./RoleShell.jsx";
+import { fetchHospitalAdminNotifications } from "../services/notificationsApi.js";
 
 const sidebarItems = [
   { label: "Overview", icon: FaChartPie, path: "/app/hospital-admin/overview" },
@@ -19,18 +21,32 @@ const sidebarItems = [
   { label: "Settings", icon: FaSliders, path: "/app/hospital-admin/settings" },
 ];
 
-const hospitalAdminNotifications = [
-  { id: 1, text: "Endocrinology readmission rate crossed the 10% alert threshold.", time: "1 hr ago" },
-  { id: 2, text: "Weekly hospital performance report is ready to view.", time: "3 hr ago" },
-  { id: 3, text: "Bed occupancy in General Surgery reached 82%.", time: "Yesterday" },
-];
-
 export default function HospitalAdminLayout() {
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadNotifications() {
+      try {
+        const data = await fetchHospitalAdminNotifications();
+        if (isMounted) {
+          setNotifications(data);
+        }
+      } catch (err) {
+        console.error("Failed to load notifications:", err);
+      }
+    }
+
+    loadNotifications();
+    return () => { isMounted = false; };
+  }, []);
+
   return (
     <RoleShell
       sidebarItems={sidebarItems}
       profilePath="/app/hospital-admin/settings"
-      notifications={hospitalAdminNotifications}
+      notifications={notifications}
     />
   );
 }

@@ -567,3 +567,13 @@ class ExportLogItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ================= Email Verification (OTP) =================
+
+class VerifyOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+class ResendOtpRequest(BaseModel):
+    email: EmailStr

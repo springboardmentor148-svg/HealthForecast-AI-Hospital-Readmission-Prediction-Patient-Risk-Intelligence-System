@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthContext.jsx";
 import { useOutletContext } from "react-router-dom";
 import {
   FaUser,
@@ -52,6 +53,7 @@ const permissionColumns = ["View Predictions", "Manage Users", "Export Data", "V
 
 export function AdminSettingsPage() {
   const { user } = useOutletContext();
+  const { updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [savedMessage, setSavedMessage] = useState("");
 
@@ -165,15 +167,20 @@ export function AdminSettingsPage() {
   };
 
   const handleSaveProfile = async (event) => {
-    event.preventDefault();
-    if (!user?.id) return;
-    try {
-      await editAdminUser(user.id, { fullName, email, mobileNumber: phone });
-      flashSaved("Profile updated successfully.");
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+  event.preventDefault();
+  if (!user?.id) return;
+  try {
+    const updated = await editAdminUser(user.id, { fullName, email, mobileNumber: phone });
+    updateUser({
+      fullName: updated.fullName,
+      email: updated.email,
+      mobileNumber: updated.mobileNumber,
+    });
+    flashSaved("Profile updated successfully.");
+  } catch (err) {
+    alert(err.message);
+  }
+};
 
   const handleChangePassword = async (event) => {
     event.preventDefault();
@@ -396,6 +403,14 @@ export function AdminSettingsPage() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
 
@@ -407,6 +422,14 @@ export function AdminSettingsPage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
 
@@ -418,18 +441,17 @@ export function AdminSettingsPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />
+                      <button
+                        type="button"
+                        className="password-toggle-icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                     </div>
                   </label>
                 </div>
-
-                <button
-                  type="button"
-                  className="secondary-button settings-show-password-btn"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  {showPassword ? "Hide Passwords" : "Show Passwords"}
-                </button>
 
                 <div className="dashboard-inline-actions">
                   <button type="submit" className="primary-button">

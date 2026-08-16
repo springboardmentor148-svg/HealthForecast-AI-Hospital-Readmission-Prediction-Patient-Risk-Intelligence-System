@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import {
   FaCircleCheck,
   FaCircleExclamation,
@@ -6,6 +7,7 @@ import {
 } from 'react-icons/fa6'
 
 export function ResultPanel({ result, onReset }) {
+  const navigate = useNavigate()
   const riskProfile = getRiskProfile(result)
   const confidenceValue = Number.parseFloat(result.confidence) || 0
   const confidencePercent = Math.min(100, Math.max(0, confidenceValue))
@@ -115,9 +117,9 @@ export function ResultPanel({ result, onReset }) {
         <button type="button" className="btn-new-prediction" onClick={onReset}>
           Generate Another Prediction
         </button>
-        <a href="#home" className="btn-return-home">
+        <button type="button" className="btn-return-home" onClick={() => navigate('/app/doctor')}>
           Return to Home
-        </a>
+        </button>
       </div>
 
       <div className="result-disclaimer">

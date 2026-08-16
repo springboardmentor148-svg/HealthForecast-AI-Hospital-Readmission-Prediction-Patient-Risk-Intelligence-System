@@ -28,3 +28,36 @@ export async function fetchDoctorNotifications() {
     throw new Error(message)
   }
 }
+
+export async function fetchAdminNotifications() {
+  try {
+    const response = await notificationsApiClient.get('/notifications/admin')
+    return response.data
+  } catch (error) {
+    const message =
+      error.response?.data?.detail || 'Failed to fetch notifications.'
+    throw new Error(message)
+  }
+}
+
+export async function fetchResearcherNotifications() {
+  try {
+    const response = await notificationsApiClient.get('/notifications/researcher')
+    return response.data
+  } catch (error) {
+    const message =
+      error.response?.data?.detail || 'Failed to fetch notifications.'
+    throw new Error(message)
+  }
+}
+
+export async function fetchHospitalAdminNotifications() {
+  try {
+    const response = await notificationsApiClient.get('/notifications/hospital-admin')
+    return response.data
+  } catch (error) {
+    const message =
+      error.response?.data?.detail || 'Failed to fetch notifications.'
+    throw new Error(message)
+  }
+}
