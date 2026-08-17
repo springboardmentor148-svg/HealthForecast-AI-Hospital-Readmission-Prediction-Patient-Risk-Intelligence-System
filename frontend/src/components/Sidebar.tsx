@@ -26,6 +26,7 @@ interface SidebarProps {
   userRole: UserRole;
   patientCount: number;
   highRiskCount: number;
+  modelVersion?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -34,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userRole,
   patientCount,
   highRiskCount,
+  modelVersion,
 }) => {
   const getTabsForRole = (): { id: NavTab; label: string; icon: React.ReactNode; badge?: string }[] => {
     const baseTabs: { id: NavTab; label: string; icon: React.ReactNode; badge?: string }[] = [];
@@ -59,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // Healthcare Researcher view
     else if (userRole === 'researcher') {
       baseTabs.push(
-        { id: 'researcher', label: 'Diabetes 130 Dataset Cohort', icon: <Database className="w-4 h-4" />, badge: '101,766 Enc' },
+        { id: 'researcher', label: 'Dataset Cohort', icon: <Database className="w-4 h-4" />, badge: `${patientCount} Records` },
         { id: 'treatment', label: 'Treatment Outcome Analytics', icon: <Pill className="w-4 h-4" /> },
         { id: 'analytics', label: 'Population Health Trends', icon: <BarChart3 className="w-4 h-4" /> },
         { id: 'patients', label: 'Anonymized Records', icon: <Users className="w-4 h-4" /> }
@@ -68,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // System Admin view
     else if (userRole === 'sysadmin') {
       baseTabs.push(
-        { id: 'model_ops', label: 'AI Model Management', icon: <Cpu className="w-4 h-4" />, badge: 'v2.4.1' },
+        { id: 'model_ops', label: 'AI Model Management', icon: <Cpu className="w-4 h-4" />, badge: modelVersion || 'no model' },
         { id: 'rbac', label: 'User Roles & Audit Logs', icon: <ShieldCheck className="w-4 h-4" /> },
         { id: 'analytics', label: 'System Analytics', icon: <BarChart3 className="w-4 h-4" /> },
         { id: 'patients', label: 'All Patient Records', icon: <Users className="w-4 h-4" /> },
@@ -125,9 +127,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Dataset Footnote */}
       <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 space-y-1">
-        <p className="font-semibold text-slate-400">Diabetes 130-US Hospitals</p>
-        <p>101,766 Clinical Encounters</p>
-        <p className="text-[10px] text-teal-500/80">XGBoost & Gemini Intelligence</p>
+        <p className="font-semibold text-slate-400">Hospital Readmission Cohort</p>
+        <p>{patientCount} Patient Records</p>
+        <p className="text-[10px] text-teal-500/80">XGBoost Readmission Model</p>
       </div>
     </aside>
   );

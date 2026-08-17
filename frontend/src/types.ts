@@ -74,8 +74,6 @@ export interface TreatmentOutcomeMetric {
   patientCount: number;
   readmissionRate30Day: number; // percentage
   avgLengthOfStay: number; // days
-  a1cReductionAvg: number; // %
-  satisfactionScore: number; // out of 10
 }
 
 export interface ModelPerformanceMetrics {
@@ -88,6 +86,7 @@ export interface ModelPerformanceMetrics {
   f1Score: number;
   rocAuc: number;
   trainedEncounters: number;
+  featureCount: number;
   lastTrained: string;
   featureImportances: { feature: string; importance: number }[];
   confusionMatrix: {
@@ -96,19 +95,15 @@ export interface ModelPerformanceMetrics {
     trueNegative: number;
     falseNegative: number;
   };
-  rocCurveData: { fpr: number; tpr: number }[];
 }
 
 export interface HospitalAnalyticsSummary {
   totalPatients: number;
   highRiskPatientsCount: number;
   readmissionRate30Day: number;
-  readmissionRate30DayPrevious: number;
   avgLengthOfStayDays: number;
-  estimatedCostSavings: number;
-  readmissionsByAge: { ageGroup: string; rate: number; count: number }[];
   readmissionsByDepartment: { department: string; rate: number; patientCount: number }[];
-  monthlyTrend: { month: string; readmitRate: number; totalAdmissions: number; highRiskRatio: number }[];
+  readmissionsByAge: { ageGroup: string; rate: number; count: number }[];
   riskDistribution: { tier: RiskTier; count: number; percentage: number }[];
 }
 

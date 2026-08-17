@@ -202,6 +202,16 @@ class PredictionRequest(BaseModel):
     }
 
 
+class PatientCreateRequest(PredictionRequest):
+    """Prediction request extended with the non-model fields stored on a patient record."""
+
+    name: str = Field(default="", description="Patient full name")
+    department: str = Field(default="", description="Clinical department")
+    medicalRecordNumber: Optional[str] = Field(
+        default=None, description="Medical record number (generated when absent)"
+    )
+
+
 class PredictionResponse(BaseModel):
     riskScore: float = Field(
         ..., ge=0, le=100,

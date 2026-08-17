@@ -17,6 +17,10 @@ joblib
 # Database
 sqlalchemy
 psycopg2-binary
+alembic
+
+# Gemini
+google-genai
 
 # Utils
 python-dotenv

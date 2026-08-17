@@ -13,16 +13,42 @@ import { UserManagementRBACView } from './components/UserManagementRBACView';
 import { NewPatientModal } from './components/NewPatientModal';
 
 import { PatientRecord, UserRole, UserProfile, HospitalAnalyticsSummary, ModelPerformanceMetrics, TreatmentOutcomeMetric, AuditLogEntry } from './types';
-import { DEMO_USERS, INITIAL_PATIENTS, HOSPITAL_ANALYTICS, MODEL_METRICS, TREATMENT_OUTCOMES, INITIAL_AUDIT_LOGS } from './mockData';
+import { DEMO_USERS } from './mockData';
+
+const EMPTY_ANALYTICS: HospitalAnalyticsSummary = {
+  totalPatients: 0,
+  highRiskPatientsCount: 0,
+  readmissionRate30Day: 0,
+  avgLengthOfStayDays: 0,
+  readmissionsByDepartment: [],
+  readmissionsByAge: [],
+  riskDistribution: [],
+};
+
+const EMPTY_MODEL_METRICS: ModelPerformanceMetrics = {
+  modelName: '',
+  modelVersion: '',
+  algorithm: 'XGBoost Classifier',
+  accuracy: 0,
+  precision: 0,
+  recall: 0,
+  f1Score: 0,
+  rocAuc: 0,
+  trainedEncounters: 0,
+  featureCount: 0,
+  lastTrained: '',
+  featureImportances: [],
+  confusionMatrix: { truePositive: 0, falsePositive: 0, trueNegative: 0, falseNegative: 0 },
+};
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEMO_USERS[0]); // Default: Doctor
   const [activeTab, setActiveTab] = useState<NavTab>('patients');
-  const [patients, setPatients] = useState<PatientRecord[]>(INITIAL_PATIENTS);
-  const [analytics, setAnalytics] = useState<HospitalAnalyticsSummary>(HOSPITAL_ANALYTICS);
-  const [treatmentOutcomes, setTreatmentOutcomes] = useState<TreatmentOutcomeMetric[]>(TREATMENT_OUTCOMES);
-  const [modelMetrics, setModelMetrics] = useState<ModelPerformanceMetrics>(MODEL_METRICS);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
+  const [patients, setPatients] = useState<PatientRecord[]>([]);
+  const [analytics, setAnalytics] = useState<HospitalAnalyticsSummary>(EMPTY_ANALYTICS);
+  const [treatmentOutcomes, setTreatmentOutcomes] = useState<TreatmentOutcomeMetric[]>([]);
+  const [modelMetrics, setModelMetrics] = useState<ModelPerformanceMetrics>(EMPTY_MODEL_METRICS);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -110,19 +136,6 @@ export default function App() {
     }
   };
 
-  const handleRetrainModel = async () => {
-    try {
-      const res = await fetch('/api/model-retrain', { method: 'POST' });
-      const data = await res.json();
-      if (data.success && data.metrics) {
-        setModelMetrics(data.metrics);
-        fetchAuditLogs();
-      }
-    } catch (err) {
-      console.error('Error retraining model:', err);
-    }
-  };
-
   const handlePatientCreated = (newPatient: PatientRecord) => {
     setPatients((prev) => [newPatient, ...prev]);
     fetchAuditLogs();
@@ -181,6 +194,7 @@ export default function App() {
           userRole={currentUser.role}
           patientCount={patients.length}
           highRiskCount={highRiskCount}
+          modelVersion={modelMetrics.modelVersion}
         />
 
         {/* Tab View Container */}
@@ -227,7 +241,6 @@ export default function App() {
           {activeTab === 'model_ops' && (
             <ModelManagementView
               metrics={modelMetrics}
-              onRetrainModel={handleRetrainModel}
             />
           )}
 

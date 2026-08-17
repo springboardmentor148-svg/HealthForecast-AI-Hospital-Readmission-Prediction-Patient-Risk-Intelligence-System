@@ -11,9 +11,8 @@ export const ResearcherDatasetExplorer: React.FC<ResearcherDatasetExplorerProps>
   const [selectedAge, setSelectedAge] = useState<string>('All');
 
   const handleDownloadDataset = () => {
-    setDownloadNotice('Generating anonymized Diabetes 130-US Hospitals CSV dataset file...');
+    setDownloadNotice('Generating CSV export of the current patient cohort...');
     setTimeout(() => {
-      // Simulate CSV file download
       const headers = 'patient_id,age,gender,race,time_in_hospital,num_lab_procedures,num_medications,a1c_result,insulin_change,readmission_30d\n';
       const rows = patients
         .map(
@@ -26,7 +25,7 @@ export const ResearcherDatasetExplorer: React.FC<ResearcherDatasetExplorerProps>
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Diabetes_130_Hospitals_Anonymized_Cohort.csv';
+      a.download = 'Patient_Cohort_Export.csv';
       a.click();
 
       setDownloadNotice('CSV Dataset downloaded successfully!');
@@ -48,14 +47,11 @@ export const ResearcherDatasetExplorer: React.FC<ResearcherDatasetExplorerProps>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
               <Database className="w-5 h-5 text-amber-600" />
-              Diabetes 130-US Hospitals Dataset & Research Explorer
+              Patient Cohort Research Explorer
             </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-              HIPAA Anonymized
-            </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Access 101,766 clinical encounters across 130 US hospitals for population health research and observational study
+            Browse the current in-platform patient cohort for population health research and observational study
           </p>
         </div>
 
@@ -79,7 +75,7 @@ export const ResearcherDatasetExplorer: React.FC<ResearcherDatasetExplorerProps>
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
           <span className="font-bold text-slate-800 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" /> Anonymized Patient Encounters (N={filtered.length})
+            <ShieldCheck className="w-4 h-4 text-emerald-600" /> Patient Encounters (N={filtered.length})
           </span>
 
           <div className="flex items-center gap-2">

@@ -1,0 +1,13 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.log
+data/
+reports/
+test_payload.json
+curl_test_examples.md
+.git/
+.gitignore

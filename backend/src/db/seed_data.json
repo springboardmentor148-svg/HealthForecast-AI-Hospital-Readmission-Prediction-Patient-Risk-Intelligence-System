@@ -1,0 +1,433 @@
+{
+  "patients": [
+    {
+      "id": "PAT-10829",
+      "medicalRecordNumber": "MRN-8849201",
+      "name": "Robert Vance",
+      "age": "[60-70)",
+      "gender": "Male",
+      "race": "Caucasian",
+      "admissionType": "Emergency",
+      "dischargeDisposition": "Discharged to Home",
+      "admissionSource": "Emergency Room",
+      "timeInHospital": 7,
+      "numLabProcedures": 68,
+      "numProcedures": 2,
+      "numMedications": 24,
+      "numOutpatientVisits": 1,
+      "numInpatientVisits": 3,
+      "numEmergencyVisits": 2,
+      "primaryDiagnosis": "250.02 - Type 2 Diabetes w/ Uncontrolled Hyperglycemia",
+      "secondaryDiagnosis1": "414.01 - Coronary Atherosclerosis of Native Artery",
+      "secondaryDiagnosis2": "401.9 - Essential Hypertension",
+      "glucoseTest": ">300",
+      "a1cResult": ">8",
+      "medications": {
+        "insulin": "Up",
+        "metformin": "Steady",
+        "glipizide": "No",
+        "glyburide": "No",
+        "changeInDiabetesMed": "Ch",
+        "diabetesMedPrescribed": "Yes"
+      },
+      "department": "Endocrinology",
+      "assignedDoctor": "Dr. Sarah Lin, MD",
+      "assignedDoctorId": "u-doc-1",
+      "admissionDate": "2026-07-14",
+      "riskScore": 84,
+      "riskTier": "Critical",
+      "readmissionLikelihood": "<30 Days",
+      "readmissionProbability": 0.84,
+      "dischargeReadinessScore": 42,
+      "lastAssessmentDate": "2026-07-22",
+      "riskFactors": [
+        {
+          "factor": "Multiple Inpatient & ER Visits in Past 12 Mo",
+          "impactPercent": 26,
+          "description": "3 prior hospitalizations and 2 emergency visits",
+          "category": "utilization"
+        },
+        {
+          "factor": "Elevated HbA1c (>8%) and High Glucose (>300 mg/dL)",
+          "impactPercent": 22,
+          "description": "Severe glycemic dysregulation during stay",
+          "category": "lab"
+        },
+        {
+          "factor": "Insulin Dosage Escalation During Hospitalization",
+          "impactPercent": 18,
+          "description": "Dosage increased rapidly indicating acute instability",
+          "category": "medication"
+        },
+        {
+          "factor": "Polypharmacy (>20 Active Medications)",
+          "impactPercent": 12,
+          "description": "24 co-prescribed drugs increasing adverse interaction risk",
+          "category": "medication"
+        },
+        {
+          "factor": "Multimorbidity (Diabetes + CAD + Hypertension)",
+          "impactPercent": 6,
+          "description": "Cardiovascular comorbidity interplay",
+          "category": "clinical"
+        }
+      ],
+      "careRecommendations": [
+        "Schedule outpatient endocrinology consult within 48 hours of discharge",
+        "Deploy home continuous glucose monitor (CGM) with telehealth alert threshold >250 mg/dL",
+        "Clinical pharmacist review for medication reconciliation and regimen simplification",
+        "Diabetes nurse educator home visit on Day 3 post-discharge"
+      ]
+    },
+    {
+      "id": "PAT-10830",
+      "medicalRecordNumber": "MRN-9120482",
+      "name": "Eleanor Bennett",
+      "age": "[70-80)",
+      "gender": "Female",
+      "race": "African American",
+      "admissionType": "Emergency",
+      "dischargeDisposition": "SNF (Skilled Nursing Facility)",
+      "admissionSource": "Physician Referral",
+      "timeInHospital": 9,
+      "numLabProcedures": 74,
+      "numProcedures": 3,
+      "numMedications": 19,
+      "numOutpatientVisits": 0,
+      "numInpatientVisits": 2,
+      "numEmergencyVisits": 1,
+      "primaryDiagnosis": "428.0 - Congestive Heart Failure, Unspecified",
+      "secondaryDiagnosis1": "250.00 - Type 2 Diabetes without Complications",
+      "secondaryDiagnosis2": "585.3 - Chronic Kidney Disease, Stage 3",
+      "glucoseTest": ">200",
+      "a1cResult": ">8",
+      "medications": {
+        "insulin": "Steady",
+        "metformin": "No",
+        "glipizide": "Steady",
+        "glyburide": "No",
+        "changeInDiabetesMed": "No",
+        "diabetesMedPrescribed": "Yes"
+      },
+      "department": "Cardiology",
+      "assignedDoctor": "Dr. Sarah Lin, MD",
+      "assignedDoctorId": "u-doc-1",
+      "admissionDate": "2026-07-12",
+      "riskScore": 78,
+      "riskTier": "High",
+      "readmissionLikelihood": "<30 Days",
+      "readmissionProbability": 0.78,
+      "dischargeReadinessScore": 55,
+      "lastAssessmentDate": "2026-07-21",
+      "riskFactors": [
+        {
+          "factor": "Co-existing Congestive Heart Failure & CKD",
+          "impactPercent": 28,
+          "description": "Cardiorenal syndrome complexity",
+          "category": "clinical"
+        },
+        {
+          "factor": "Prolonged Hospital Stay (9 Days)",
+          "impactPercent": 19,
+          "description": "Protracted recovery period",
+          "category": "utilization"
+        },
+        {
+          "factor": "Sub-optimal Glycemic Control (A1c >8%)",
+          "impactPercent": 17,
+          "description": "Chronic hyperglycemia",
+          "category": "lab"
+        },
+        {
+          "factor": "Transition to Skilled Nursing Facility",
+          "impactPercent": 14,
+          "description": "Care transition vulnerability",
+          "category": "utilization"
+        }
+      ],
+      "careRecommendations": [
+        "Coordinate warm handoff with Skilled Nursing Facility medical director",
+        "Daily weight tracking protocol for early heart failure decompensation detection",
+        "Renal function lab panel scheduled for 7 days post-discharge",
+        "Cardiology follow-up appointment pre-scheduled for Day 10"
+      ]
+    },
+    {
+      "id": "PAT-10831",
+      "medicalRecordNumber": "MRN-3310928",
+      "name": "David Chen",
+      "age": "[50-60)",
+      "gender": "Male",
+      "race": "Asian",
+      "admissionType": "Elective",
+      "dischargeDisposition": "Discharged to Home",
+      "admissionSource": "Physician Referral",
+      "timeInHospital": 3,
+      "numLabProcedures": 32,
+      "numProcedures": 1,
+      "numMedications": 11,
+      "numOutpatientVisits": 3,
+      "numInpatientVisits": 0,
+      "numEmergencyVisits": 0,
+      "primaryDiagnosis": "250.80 - Diabetes w/ Renal Manifestations",
+      "secondaryDiagnosis1": "272.4 - Other Hyperlipidemia",
+      "secondaryDiagnosis2": "",
+      "glucoseTest": "Normal",
+      "a1cResult": "Normal",
+      "medications": {
+        "insulin": "No",
+        "metformin": "Steady",
+        "glipizide": "No",
+        "glyburide": "No",
+        "changeInDiabetesMed": "No",
+        "diabetesMedPrescribed": "Yes"
+      },
+      "department": "Internal Medicine",
+      "assignedDoctor": "Dr. Sarah Lin, MD",
+      "assignedDoctorId": "u-doc-1",
+      "admissionDate": "2026-07-18",
+      "riskScore": 22,
+      "riskTier": "Low",
+      "readmissionLikelihood": "No Readmission",
+      "readmissionProbability": 0.22,
+      "dischargeReadinessScore": 92,
+      "lastAssessmentDate": "2026-07-20",
+      "riskFactors": [
+        {
+          "factor": "Consistent Outpatient Follow-up History",
+          "impactPercent": -18,
+          "description": "3 outpatient visits in past year demonstrating compliance",
+          "category": "utilization"
+        },
+        {
+          "factor": "Normal HbA1c (<7%) & Fasting Glucose",
+          "impactPercent": -15,
+          "description": "Well-controlled diabetes parameters",
+          "category": "lab"
+        },
+        {
+          "factor": "Elective Admission & Short Stay (3 Days)",
+          "impactPercent": -12,
+          "description": "Planned procedure without emergency complications",
+          "category": "utilization"
+        },
+        {
+          "factor": "Stable Monotherapy (Metformin)",
+          "impactPercent": -8,
+          "description": "No acute titration needed",
+          "category": "medication"
+        }
+      ],
+      "careRecommendations": [
+        "Routine outpatient follow-up with primary care in 30 days",
+        "Continue current Metformin 850mg BID dosage",
+        "Standard diabetes self-management nutrition guidance provided"
+      ]
+    },
+    {
+      "id": "PAT-10832",
+      "medicalRecordNumber": "MRN-7721094",
+      "name": "Maria Rodriguez",
+      "age": "[60-70)",
+      "gender": "Female",
+      "race": "Hispanic",
+      "admissionType": "Urgent",
+      "dischargeDisposition": "Discharged to Home with Home Health",
+      "admissionSource": "Clinic Referral",
+      "timeInHospital": 5,
+      "numLabProcedures": 51,
+      "numProcedures": 1,
+      "numMedications": 16,
+      "numOutpatientVisits": 2,
+      "numInpatientVisits": 1,
+      "numEmergencyVisits": 1,
+      "primaryDiagnosis": "250.11 - Diabetes Ketoacidosis Without Coma",
+      "secondaryDiagnosis1": "599.0 - Urinary Tract Infection",
+      "secondaryDiagnosis2": "",
+      "glucoseTest": ">300",
+      "a1cResult": ">8",
+      "medications": {
+        "insulin": "Up",
+        "metformin": "Down",
+        "glipizide": "No",
+        "glyburide": "No",
+        "changeInDiabetesMed": "Ch",
+        "diabetesMedPrescribed": "Yes"
+      },
+      "department": "Emergency",
+      "assignedDoctor": "Dr. Sarah Lin, MD",
+      "assignedDoctorId": "u-doc-1",
+      "admissionDate": "2026-07-16",
+      "riskScore": 61,
+      "riskTier": "Medium",
+      "readmissionLikelihood": ">30 Days",
+      "readmissionProbability": 0.61,
+      "dischargeReadinessScore": 68,
+      "lastAssessmentDate": "2026-07-21",
+      "riskFactors": [
+        {
+          "factor": "Acute DKA Presentation",
+          "impactPercent": 24,
+          "description": "Infection-triggered diabetic ketoacidosis",
+          "category": "clinical"
+        },
+        {
+          "factor": "Medication Regimen Shift (Insulin Up, Metformin Down)",
+          "impactPercent": 16,
+          "description": "Transition to complex basal-bolus regimen",
+          "category": "medication"
+        },
+        {
+          "factor": "Home Health Services Assigned",
+          "impactPercent": -10,
+          "description": "Structured home nursing support reduces 30-day risk",
+          "category": "utilization"
+        }
+      ],
+      "careRecommendations": [
+        "Home Health nurse visit within 24 hours for subcutaneous insulin technique check",
+        "Urinalysis and culture follow-up at 14 days to confirm UTI resolution",
+        "Point-of-care ketone testing strip prescription supplied at discharge"
+      ]
+    },
+    {
+      "id": "PAT-10833",
+      "medicalRecordNumber": "MRN-4820193",
+      "name": "James Walker",
+      "age": "[80-90)",
+      "gender": "Male",
+      "race": "Caucasian",
+      "admissionType": "Emergency",
+      "dischargeDisposition": "Re-admitted to Acute Care",
+      "admissionSource": "Emergency Room",
+      "timeInHospital": 11,
+      "numLabProcedures": 89,
+      "numProcedures": 4,
+      "numMedications": 29,
+      "numOutpatientVisits": 1,
+      "numInpatientVisits": 4,
+      "numEmergencyVisits": 3,
+      "primaryDiagnosis": "707.15 - Diabetic Ulcer of Heel / Foot",
+      "secondaryDiagnosis1": "440.21 - Atherosclerosis of Extremities w/ Intermittent Claudication",
+      "secondaryDiagnosis2": "250.60 - Diabetic Peripheral Angiopathy",
+      "glucoseTest": ">200",
+      "a1cResult": ">8",
+      "medications": {
+        "insulin": "Up",
+        "metformin": "No",
+        "glipizide": "Steady",
+        "glyburide": "No",
+        "changeInDiabetesMed": "Ch",
+        "diabetesMedPrescribed": "Yes"
+      },
+      "department": "General Surgery",
+      "assignedDoctor": "Dr. Sarah Lin, MD",
+      "assignedDoctorId": "u-doc-1",
+      "admissionDate": "2026-07-08",
+      "riskScore": 92,
+      "riskTier": "Critical",
+      "readmissionLikelihood": "<30 Days",
+      "readmissionProbability": 0.92,
+      "dischargeReadinessScore": 28,
+      "lastAssessmentDate": "2026-07-22",
+      "riskFactors": [
+        {
+          "factor": "Diabetic Foot Ulcer w/ Peripheral Vascular Disease",
+          "impactPercent": 32,
+          "description": "High wound infection and amputation threat",
+          "category": "clinical"
+        },
+        {
+          "factor": "Frequent Readmit Cycle (4 Inpatient Stays in 12 Months)",
+          "impactPercent": 28,
+          "description": "Chronic re-hospitalization pattern",
+          "category": "utilization"
+        },
+        {
+          "factor": "Advanced Age ([80-90)) and Frailty",
+          "impactPercent": 15,
+          "description": "Elevated post-discharge vulnerability",
+          "category": "clinical"
+        },
+        {
+          "factor": "Complex Surgical & Wound Care Needs",
+          "impactPercent": 12,
+          "description": "Daily specialized dressing changes required",
+          "category": "clinical"
+        }
+      ],
+      "careRecommendations": [
+        "Inpatient surgical podiatry re-evaluation prior to transfer",
+        "Vascular surgery consult for lower extremity perfusion evaluation",
+        "Wound care specialist home visit protocol or specialized SNF placement",
+        "Intensive glycemic control protocol with endocrinology co-management"
+      ]
+    },
+    {
+      "id": "PAT-10834",
+      "medicalRecordNumber": "MRN-1029384",
+      "name": "Amina Patel",
+      "age": "[40-50)",
+      "gender": "Female",
+      "race": "Asian",
+      "admissionType": "Urgent",
+      "dischargeDisposition": "Discharged to Home",
+      "admissionSource": "Clinic Referral",
+      "timeInHospital": 4,
+      "numLabProcedures": 44,
+      "numProcedures": 0,
+      "numMedications": 14,
+      "numOutpatientVisits": 1,
+      "numInpatientVisits": 0,
+      "numEmergencyVisits": 0,
+      "primaryDiagnosis": "250.00 - Type 2 Diabetes Mellitus",
+      "secondaryDiagnosis1": "272.0 - Pure Hypercholesterolemia",
+      "secondaryDiagnosis2": "",
+      "glucoseTest": "Normal",
+      "a1cResult": ">7",
+      "medications": {
+        "insulin": "No",
+        "metformin": "Steady",
+        "glipizide": "Steady",
+        "glyburide": "No",
+        "changeInDiabetesMed": "No",
+        "diabetesMedPrescribed": "Yes"
+      },
+      "department": "Endocrinology",
+      "assignedDoctor": "Dr. Sarah Lin, MD",
+      "assignedDoctorId": "u-doc-1",
+      "admissionDate": "2026-07-17",
+      "riskScore": 31,
+      "riskTier": "Low",
+      "readmissionLikelihood": "No Readmission",
+      "readmissionProbability": 0.31,
+      "dischargeReadinessScore": 88,
+      "lastAssessmentDate": "2026-07-21",
+      "riskFactors": [
+        {
+          "factor": "Younger Age Bracket ([40-50)) and Zero Prior Hospital Stays",
+          "impactPercent": -18,
+          "description": "First inpatient encounter with low baseline fragility",
+          "category": "clinical"
+        },
+        {
+          "factor": "Moderate A1c Elevation (>7%)",
+          "impactPercent": 12,
+          "description": "Mild glycemic gap requiring dietary adjustment",
+          "category": "lab"
+        },
+        {
+          "factor": "Oral Combination Regimen (Metformin + Glipizide)",
+          "impactPercent": -10,
+          "description": "Stable dual oral therapy",
+          "category": "medication"
+        }
+      ],
+      "careRecommendations": [
+        "Dietitian consultation for carbohydrate counting and meal planning",
+        "Repeat HbA1c testing in 90 days",
+        "Follow-up with primary physician in 3 weeks"
+      ]
+    }
+  ]
+}

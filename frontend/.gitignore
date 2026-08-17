@@ -33,7 +33,7 @@ Thumbs.db
 # Logs
 *.log
 
-# Bun lock file
+# Bun binary lock file (text bun.lock should be committed)
 bun.lockb
 
 # Server bundle (generated from server.ts)

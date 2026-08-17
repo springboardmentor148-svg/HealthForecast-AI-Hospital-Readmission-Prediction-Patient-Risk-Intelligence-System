@@ -1,6 +1,6 @@
 import React from 'react';
 import { TreatmentOutcomeMetric } from '../types';
-import { Pill, Activity, CheckCircle, Award, TrendingDown, Clock, HeartHandshake } from 'lucide-react';
+import { Pill } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface TreatmentEffectivenessViewProps {
@@ -46,11 +46,6 @@ export const TreatmentEffectivenessView: React.FC<TreatmentEffectivenessViewProp
               <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50">
                 <span className="text-slate-500">Avg Stay Duration:</span>
                 <span className="font-bold text-slate-800">{item.avgLengthOfStay} Days</span>
-              </div>
-
-              <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50">
-                <span className="text-slate-500">HbA1c Reduction:</span>
-                <span className="font-bold text-teal-700">↓ {item.a1cReductionAvg}%</span>
               </div>
             </div>
           </div>

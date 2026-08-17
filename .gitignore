@@ -3,3 +3,12 @@ Thumbs.db
 *.log
 .idea/
 .vscode/
+
+# Env files
+.env.local
+
+# Large binary/document files
+*.pdf
+*.pkl
+*.joblib
+*.h5
