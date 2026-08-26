@@ -97,6 +97,7 @@ app.include_router(
     treatments_router,
 )
 
+
 # ============================================================
 # ROOT & HEALTH CHECK
 # ============================================================
@@ -107,6 +108,7 @@ def root():
         "version": settings.APP_VERSION,
         "status": "running",
     }
+
 
 @app.get("/health")
 def health_check():
