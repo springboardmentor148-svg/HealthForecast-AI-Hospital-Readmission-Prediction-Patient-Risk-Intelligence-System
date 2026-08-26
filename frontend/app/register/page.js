@@ -108,7 +108,7 @@ export default function RegisterPage() {
       // --------------------------------------------------------
 
       const response = await fetch(
-        `${apiUrl}/auth/auth/register`,
+        `${apiUrl}/auth/register`,
         {
           method: "POST",
 
