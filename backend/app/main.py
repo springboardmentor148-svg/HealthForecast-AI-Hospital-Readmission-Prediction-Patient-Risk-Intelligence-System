@@ -5,15 +5,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# Explicitly define origins (wildcard "*" fails when credentials are enabled)
+origins = [
+    "https://healthforecast-ai-frontend.onrender.com",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# Your router inclusions below this line...
+# Ensure app.include_router calls stay BELOW add_middleware
 
 from app.config import settings
 
