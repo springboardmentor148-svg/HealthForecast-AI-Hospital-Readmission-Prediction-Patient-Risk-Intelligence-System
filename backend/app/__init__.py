@@ -44,7 +44,8 @@ def create_app(config_name: str | None = None) -> Flask:
                     "predictions",
                     "prediction_history",
                     "treatment_effectiveness",
-                    "activity_logs"
+                    "activity_logs",
+                    "notifications",
                 }
                 missing_tables = required_tables - existing_tables
                 if missing_tables:

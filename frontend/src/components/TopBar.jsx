@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { X, Search, Bell, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePatient } from '../contexts/PatientContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../api/notifications';
 
 const ROUTE_LABELS = {
   '/dashboard': 'Dashboard',
@@ -78,6 +80,42 @@ export default function TopBar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const { isAuthenticated } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const unreadCount = notifications.filter(n => !n.read_status).length;
+
+  const fetchNotifications = async () => {
+    if (!isAuthenticated) return;
+    try {
+      setLoading(true);
+      const data = await getNotifications();
+      setNotifications(data.notifications || []);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+    } else {
+      setNotifications([]);
+    }
+  }, [isAuthenticated, pathname]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchNotifications();
+    };
+    window.addEventListener('refresh-notifications', handleRefresh);
+    return () => {
+      window.removeEventListener('refresh-notifications', handleRefresh);
+    };
+  }, [isAuthenticated]);
 
   // Check scroll container bounds
   const checkScroll = () => {
@@ -294,37 +332,116 @@ export default function TopBar() {
               setShowNotifications(!showNotifications);
               setShowSearch(false);
               setShowCalendar(false);
+              if (!showNotifications) {
+                fetchNotifications();
+              }
             }}
             className={`p-2 rounded-xl transition-all cursor-pointer relative ${
               showNotifications ? 'bg-bg-app text-txt-primary' : 'text-txt-muted hover:text-txt-primary hover:bg-bg-app'
             }`}
           >
             <Bell className="w-4.5 h-4.5" />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-danger rounded-full" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-danger rounded-full" />
+            )}
           </button>
 
           {showNotifications && (
             <div className="absolute right-0 top-10 w-80 bg-surface border border-borderColor rounded-2xl shadow-xl p-4 z-40 space-y-3">
               <div className="flex items-center justify-between border-b border-borderColor/60 pb-2">
-                <span className="text-[12px] font-bold text-txt-primary">Clinical System Alerts</span>
-                <button onClick={() => setShowNotifications(false)} className="text-txt-muted hover:text-txt-primary bg-transparent border-none">
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-bold text-txt-primary">Clinical System Alerts</span>
+                  {unreadCount > 0 && (
+                    <span className="text-[9px] bg-danger/10 text-danger px-1.5 py-0.5 rounded-full font-extrabold">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await markAllNotificationsAsRead();
+                          fetchNotifications();
+                        } catch (err) {
+                          console.error(err);
+                        }
+                      }}
+                      className="text-[10px] text-info hover:text-info-hover bg-transparent border-none cursor-pointer font-bold"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  <button onClick={() => setShowNotifications(false)} className="text-txt-muted hover:text-txt-primary bg-transparent border-none cursor-pointer">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                <div className="p-2.5 bg-danger-bg/20 border border-danger/10 rounded-xl space-y-1">
-                  <span className="text-[12px] font-bold text-danger block">🚨 New High-Risk Alert</span>
-                  <p className="text-[11px] text-txt-primary leading-tight font-semibold">Anthony Nelson flagged at 63.80% readmission risk.</p>
-                </div>
-                <div className="p-2.5 bg-success-bg/20 border border-success/10 rounded-xl space-y-1">
-                  <span className="text-[12px] font-bold text-success block">✅ Deployment Completed</span>
-                  <p className="text-[11px] text-txt-primary leading-tight font-semibold">Weighted Stacking Ensemble v1.2 is active.</p>
-                </div>
-                <div className="p-2.5 bg-[#EDE9FE] border border-[#7A5AF8]/10 rounded-xl space-y-1">
-                  <span className="text-[12px] font-bold text-info block">⚠️ Operational Alert</span>
-                  <p className="text-[11px] text-txt-primary leading-tight font-semibold">Hospital-wide high-risk alerts rate increased (+4.8%).</p>
-                </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-none">
+                {notifications.length > 0 ? (
+                  notifications.map((notif) => {
+                    const isUnread = !notif.read_status;
+                    let typeClass = "bg-[#EDE9FE] border-[#7A5AF8]/10 text-info";
+                    let blockToneClass = "text-[#7A5AF8]";
+                    
+                    if (notif.notification_type === "HIGH_RISK_PREDICTION") {
+                      typeClass = "bg-danger-bg/20 border-danger/10 text-danger";
+                      blockToneClass = "text-danger";
+                    } else if (
+                      notif.notification_type === "TREATMENT_COMPLETED" || 
+                      notif.notification_type === "CSV_IMPORT_COMPLETED"
+                    ) {
+                      typeClass = "bg-success-bg/20 border-success/10 text-success";
+                      blockToneClass = "text-success";
+                    } else if (
+                      notif.notification_type === "PATIENT_UPDATED" || 
+                      notif.notification_type === "CLINICAL_SUPPORT_DRAFT_SAVED"
+                    ) {
+                      typeClass = "bg-[#FEF0C7]/40 border-[#F79009]/10 text-warning";
+                      blockToneClass = "text-[#F79009]";
+                    }
+                    
+                    return (
+                      <div
+                        key={notif.id}
+                        onClick={async () => {
+                          if (isUnread) {
+                            try {
+                              await markNotificationAsRead(notif.id);
+                              fetchNotifications();
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border transition-all duration-150 relative space-y-1 ${typeClass} ${
+                          isUnread ? 'cursor-pointer hover:brightness-95 font-semibold' : 'opacity-65'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[12px] font-bold block ${blockToneClass}`}>
+                            {notif.title}
+                          </span>
+                          {isUnread && (
+                            <span className="w-1.5 h-1.5 bg-danger rounded-full flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-txt-primary leading-tight font-semibold">
+                          {notif.message}
+                        </p>
+                        <span className="text-[9px] text-txt-muted block text-right pt-0.5">
+                          {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-6 text-txt-muted text-[11px] italic font-semibold">
+                    No notifications yet.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -350,7 +467,9 @@ export default function TopBar() {
               <div className="flex items-center justify-between border-b border-borderColor/60 pb-2">
                 <div className="flex flex-col">
                   <span className="text-[12px] font-bold text-txt-primary">Clinical Schedule</span>
-                  <span className="text-[10px] text-txt-muted">Thursday, Jul 23, 2026</span>
+                  <span className="text-[10px] text-txt-muted">
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
                 </div>
                 <button onClick={() => setShowCalendar(false)} className="text-txt-muted hover:text-txt-primary bg-transparent border-none">
                   <X className="w-4 h-4" />
@@ -358,17 +477,8 @@ export default function TopBar() {
               </div>
 
               <div className="space-y-2">
-                <div className="p-2.5 bg-bg-app border border-borderColor rounded-xl space-y-1">
-                  <span className="text-[11px] font-bold text-txt-primary block">Clara Oswald — Follow-up</span>
-                  <span className="text-[10px] text-txt-muted block">Jul 24 at 10:00 AM | Endocrine Outpatient</span>
-                </div>
-                <div className="p-2.5 bg-bg-app border border-borderColor rounded-xl space-y-1">
-                  <span className="text-[11px] font-bold text-txt-primary block">Franklin Myers — Consult</span>
-                  <span className="text-[10px] text-txt-muted block">Jul 24 at 11:30 AM | Nephrology Clinic</span>
-                </div>
-                <div className="p-2.5 bg-bg-app border border-borderColor rounded-xl space-y-1">
-                  <span className="text-[11px] font-bold text-txt-primary block">Discharge Briefing Meeting</span>
-                  <span className="text-[10px] text-txt-muted block">Jul 23 at 2:00 PM | Conference Room B</span>
+                <div className="text-center py-6 text-txt-muted text-[11px]">
+                  No appointments scheduled today.
                 </div>
               </div>
             </div>

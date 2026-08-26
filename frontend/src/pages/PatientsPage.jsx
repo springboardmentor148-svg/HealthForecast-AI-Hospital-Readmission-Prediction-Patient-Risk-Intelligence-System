@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Database, Upload, Download } from 'lucide-react';
+import { Search, Database, Upload, Download, Play, RefreshCw, Check } from 'lucide-react';
 import { usePatient } from '../contexts/PatientContext';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES, ROLE_PERMISSIONS, PERMISSIONS } from '../config/rbac';
@@ -15,10 +15,16 @@ import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PatientFormModal from '../components/PatientFormModal';
 import PatientImportModal from '../components/PatientImportModal';
+import { triggerNotificationRefresh } from '../utils/notifications';
+import {
+  getPendingPredictionsCount,
+  runPendingPredictions,
+  runAllPredictions,
+} from '../api/predictions';
 
 export default function PatientsPage() {
   const navigate = useNavigate();
-  const { currentRole } = useAuth();
+  const { currentRole, user, isAuthReady } = useAuth();
   const {
     patients,
     isPatientsLoading,
@@ -39,9 +45,87 @@ export default function PatientsPage() {
   const [editPatient, setEditPatient] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const hasImportPermission = currentRole === ROLES.SYSTEM_ADMIN;
+  const hasImportPermission = currentRole === ROLES.SYSTEM_ADMIN || currentRole === ROLES.DOCTOR;
 
   const hasEditPermission = ROLE_PERMISSIONS[currentRole]?.includes(PERMISSIONS.EDIT_PATIENTS);
+
+  const hasPredictionPermission = ROLE_PERMISSIONS[currentRole]?.includes(PERMISSIONS.RUN_PREDICTIONS);
+
+  const [pendingCount, setPendingCount] = useState(0);
+  const [isBatchRunning, setIsBatchRunning] = useState(false);
+  const [isPendingConfirmOpen, setIsPendingConfirmOpen] = useState(false);
+  const [isAllConfirmOpen, setIsAllConfirmOpen] = useState(false);
+
+  const loadPendingCount = async () => {
+    if (hasPredictionPermission) {
+      try {
+        const count = await getPendingPredictionsCount();
+        setPendingCount(count);
+      } catch (err) {
+        console.error('Failed to load pending predictions count:', err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadPendingCount();
+  }, [patients, currentRole]);
+
+  const handleRunPending = async () => {
+    setIsBatchRunning(true);
+    try {
+      const res = await runPendingPredictions();
+      setIsPendingConfirmOpen(false);
+      await refreshPatients();
+      triggerNotificationRefresh();
+      if (res.failed > 0) {
+        showToast({
+          message: `Predictions completed with some failures.\nSuccessful: ${res.successful}\nFailed: ${res.failed}`,
+          variant: 'warning',
+        });
+      } else {
+        showToast({
+          message: `Predictions completed successfully.\nProcessed: ${res.processed}\nSuccessful: ${res.successful}\nFailed: ${res.failed}`,
+          variant: 'success',
+        });
+      }
+    } catch (err) {
+      showToast({
+        message: err?.message || 'Failed to run pending predictions.',
+        variant: 'error',
+      });
+    } finally {
+      setIsBatchRunning(false);
+    }
+  };
+
+  const handleRunAll = async () => {
+    setIsBatchRunning(true);
+    try {
+      const res = await runAllPredictions();
+      setIsAllConfirmOpen(false);
+      await refreshPatients();
+      triggerNotificationRefresh();
+      if (res.failed > 0) {
+        showToast({
+          message: `Predictions completed with some failures.\nSuccessful: ${res.successful}\nFailed: ${res.failed}`,
+          variant: 'warning',
+        });
+      } else {
+        showToast({
+          message: `Predictions completed successfully.\nProcessed: ${res.processed}\nSuccessful: ${res.successful}\nFailed: ${res.failed}`,
+          variant: 'success',
+        });
+      }
+    } catch (err) {
+      showToast({
+        message: err?.message || 'Failed to run all predictions.',
+        variant: 'error',
+      });
+    } finally {
+      setIsBatchRunning(false);
+    }
+  };
 
   const diagnosisOptions = [
     { value: 'all', label: 'All Diagnoses' },
@@ -60,8 +144,12 @@ export default function PatientsPage() {
   ];
 
   const filteredRows = patients.filter((patient) => {
-    if (currentRole === ROLES.DOCTOR && patient.assignedDoctor && patient.assignedDoctor !== 'Dr. Sarah Reed') {
-      return false;
+    const assignedDoctorId = patient.assignedDoctorId ?? patient.assigned_doctor_id;
+
+    if (currentRole === ROLES.DOCTOR) {
+      if (!assignedDoctorId || String(assignedDoctorId) !== String(user?.id)) {
+        return false;
+      }
     }
 
     const searchable = [patient.name, patient.patientIdentifier, patient.id].join(' ').toLowerCase();
@@ -243,9 +331,40 @@ export default function PatientsPage() {
     },
   ];
 
+  const isDoctorWithoutAssignedPatients =
+    currentRole === ROLES.DOCTOR && patients.length > 0 && filteredRows.length === 0;
+
+  if (!isAuthReady) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-[20px] font-semibold text-txt-primary">Patient Directory</h1>
+          <p className="text-[14px] text-txt-muted mt-1">Search and manage diabetic patient records.</p>
+        </div>
+        <LoadingSkeleton type="table" count={1} />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-[20px] font-semibold text-txt-primary">Patient Directory</h1>
+          <p className="text-[14px] text-txt-muted mt-1">Search and manage diabetic patient records.</p>
+        </div>
+        <EmptyState
+          title="Access Restricted"
+          description="Please sign in to view the patients directory."
+          className="bg-surface shadow-card border border-borderColor"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-[20px] font-semibold text-txt-primary">Patient Directory</h1>
           <p className="text-[14px] text-txt-muted mt-1">Search and manage diabetic patient records.</p>
@@ -269,6 +388,37 @@ export default function PatientsPage() {
               >
                 <Upload className="w-4 h-4" />
                 <span>Import CSV</span>
+              </Button>
+            </>
+          )}
+          {hasPredictionPermission && (
+            <>
+              <Button
+                onClick={() => setIsPendingConfirmOpen(true)}
+                variant="ghost"
+                disabled={isBatchRunning || pendingCount === 0}
+                className="self-start sm:self-auto font-semibold border border-borderColor hover:bg-bg-app flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {pendingCount > 0 ? (
+                  <>
+                    <Play className="w-4 h-4 text-success fill-success" />
+                    <span>Run Pending Predictions ({pendingCount})</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 text-success" />
+                    <span>No Pending Predictions</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => setIsAllConfirmOpen(true)}
+                variant="ghost"
+                disabled={isBatchRunning || patients.length === 0}
+                className="self-start sm:self-auto font-semibold border border-borderColor hover:bg-bg-app flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-4 h-4 text-info ${isBatchRunning ? 'animate-spin' : ''}`} />
+                <span>Run All Predictions</span>
               </Button>
             </>
           )}
@@ -324,6 +474,20 @@ export default function PatientsPage() {
           description={patientsError}
           className="bg-surface shadow-card border border-borderColor"
         />
+      ) : patients.length === 0 ? (
+        <EmptyState
+          title="Patient Directory Is Empty"
+          description="No patients are currently available from the server."
+          icon={Database}
+          className="bg-surface shadow-card border border-borderColor"
+        />
+      ) : isDoctorWithoutAssignedPatients ? (
+        <EmptyState
+          title="No Patients Assigned to This Account"
+          description="This doctor account currently has no assigned patients. Patients assigned to other clinicians remain hidden by RBAC."
+          icon={Database}
+          className="bg-surface shadow-card border border-borderColor"
+        />
       ) : displayRows.length === 0 ? (
         <EmptyState
           title="No Patients Match Selection"
@@ -360,6 +524,26 @@ export default function PatientsPage() {
         variant="danger"
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
+      />
+
+      <ConfirmDialog
+        isOpen={isPendingConfirmOpen}
+        title="Run Pending Predictions"
+        message="Generate AI predictions for patients who do not have existing predictions? This will analyze only new or unprocessed patients."
+        confirmLabel="Run Predictions"
+        cancelLabel="Cancel"
+        onCancel={() => setIsPendingConfirmOpen(false)}
+        onConfirm={handleRunPending}
+      />
+
+      <ConfirmDialog
+        isOpen={isAllConfirmOpen}
+        title="Run All Predictions"
+        message="Re-run AI predictions for all patients? Existing predictions will be updated and new prediction history entries will be created. This may take some time."
+        confirmLabel="Run All Predictions"
+        cancelLabel="Cancel"
+        onCancel={() => setIsAllConfirmOpen(false)}
+        onConfirm={handleRunAll}
       />
 
       <PatientImportModal

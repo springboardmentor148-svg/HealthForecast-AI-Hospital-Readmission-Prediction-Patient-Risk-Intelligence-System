@@ -20,6 +20,11 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import PatientFormModal from '../components/PatientFormModal';
 import { useToast } from '../components/Toast';
 import { listPatientPredictionHistory } from '../api/predictions';
+import { getClinicalSupport } from '../api/clinicalSupport';
+import TreatmentFormModal from '../components/TreatmentFormModal';
+import { updateTreatmentRecord } from '../api/treatments';
+import { triggerNotificationRefresh } from '../utils/notifications';
+
 
 export default function PatientDetailPage() {
   const navigate = useNavigate();
@@ -39,6 +44,11 @@ export default function PatientDetailPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [predictionHistoryRows, setPredictionHistoryRows] = useState(null);
   const [historyError, setHistoryError] = useState('');
+  const [supportData, setSupportData] = useState(null);
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isTreatmentOpen, setIsTreatmentOpen] = useState(false);
+  const [activeTreatmentToEdit, setActiveTreatmentToEdit] = useState(null);
 
   useEffect(() => {
     let isActive = true;
@@ -72,22 +82,27 @@ export default function PatientDetailPage() {
     return () => {
       isActive = false;
     };
-  }, [getPatientById, id, setSelectedPatient]);
+  }, [getPatientById, id, setSelectedPatient, refreshTrigger]);
 
   useEffect(() => {
     let isActive = true;
 
-    async function loadHistory() {
+    async function loadHistoryAndSupport() {
       if (!id) {
         setPredictionHistoryRows([]);
+        setSupportData(null);
         return;
       }
 
       setHistoryError('');
       try {
-        const response = await listPatientPredictionHistory(id);
+        const [historyRes, supportRes] = await Promise.all([
+          listPatientPredictionHistory(id),
+          getClinicalSupport(id).catch(() => null)
+        ]);
         if (!isActive) return;
-        setPredictionHistoryRows(response.predictions || []);
+        setPredictionHistoryRows(historyRes?.predictions || []);
+        setSupportData(supportRes);
       } catch (error) {
         if (!isActive) return;
         setHistoryError(error?.message || 'Unable to load prediction history.');
@@ -95,12 +110,13 @@ export default function PatientDetailPage() {
       }
     }
 
-    loadHistory();
+    loadHistoryAndSupport();
 
     return () => {
       isActive = false;
     };
-  }, [id]);
+  }, [id, refreshTrigger]);
+
 
   if (isLoading) {
     return <LoadingSkeleton type="card" count={2} />;
@@ -129,31 +145,7 @@ export default function PatientDetailPage() {
 
   const patient = selectedPatient;
 
-  const getRecommendations = (band) => {
-    switch (band) {
-      case 'high':
-        return [
-          'Arrange priority outpatient endocrine consultation within 3-7 days post-discharge.',
-          'Initiate intensive capillary blood glucose monitoring logs (4x daily) and sliding scale insulin adjustments.',
-          'Conduct immediate diabetic education review with patient and primary caregiver on hypoglycemic emergency signs.',
-        ];
-      case 'moderate':
-        return [
-          'Schedule regular clinical follow-up visit within 10-14 days post-discharge.',
-          'Review patient medication compliance logs and optimize oral glycemic agent dosages (e.g. Metformin).',
-          'Refer to outpatient diabetic dietary and physical therapy counseling for lifestyle modifications.',
-        ];
-      case 'low':
-      default:
-        return [
-          'Schedule routine primary care check-up in 30 days.',
-          'Continue current home maintenance medication plan as prescribed.',
-          'Instruct patient to contact endocrine clinic immediately if blood glucose readings exceed 250 mg/dL.',
-        ];
-    }
-  };
-
-  const recommendations = getRecommendations(patient.riskBand);
+  const recommendations = supportData?.recommendations || [];
   const medications = Array.isArray(patient.medications) ? patient.medications : [];
   const predictionHistory = Array.isArray(predictionHistoryRows)
     ? predictionHistoryRows
@@ -164,6 +156,19 @@ export default function PatientDetailPage() {
           return dateB - dateA;
         })
       : [];
+
+  const handleTreatmentSubmit = async (payload) => {
+    if (!activeTreatmentToEdit?.id) return;
+    try {
+      await updateTreatmentRecord(activeTreatmentToEdit.id, payload);
+      showToast({ message: 'Treatment updated successfully.', variant: 'success' });
+      triggerNotificationRefresh();
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      showToast({ message: error.message || 'Failed to update treatment.', variant: 'error' });
+      throw error;
+    }
+  };
 
   const handleEditSubmit = async (payload) => {
     try {
@@ -187,6 +192,8 @@ export default function PatientDetailPage() {
       throw error;
     }
   };
+
+  const activeTreatment = (patient?.treatments || []).find(t => t.status === 'active');
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -432,6 +439,119 @@ export default function PatientDetailPage() {
               This score indicates the likelihood of patient readmission within a 30-day window based on ensemble variable markers.
             </div>
           </div>
+
+          {/* Current Active Treatment Section */}
+          <div className="bg-surface border border-borderColor rounded-2xl p-5 shadow-card space-y-4">
+            <div className="w-full border-b border-borderColor/60 pb-2 flex items-center gap-2">
+              <ClipboardList className="w-4.5 h-4.5 text-info" />
+              <h3 className="text-[15px] font-bold text-txt-primary">Current Active Treatment</h3>
+            </div>
+
+            {activeTreatment ? (
+              <div className="space-y-4 text-[13px] font-semibold text-txt-primary">
+                <div>
+                  <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Protocol / Treatment Name</span>
+                  <span className="block text-[13px] font-bold text-txt-primary">{activeTreatment.treatment_name}</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Started</span>
+                    <span className="block text-[12px] font-mono">{activeTreatment.start_date}</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Source</span>
+                    <span className="block text-[12px] capitalize font-mono text-info">{activeTreatment.source?.replace('_', ' ')}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Assigned Doctor</span>
+                  <span className="block text-[12px]">{activeTreatment.approved_by || patient.assigned_doctor_name || 'N/A'}</span>
+                </div>
+
+                {activeTreatment.notes && (
+                  <div>
+                    <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Notes</span>
+                    <p className="bg-bg-app border border-borderColor p-3 rounded-xl text-[12px] font-medium leading-relaxed max-h-36 overflow-y-auto">
+                      {activeTreatment.notes}
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  onClick={() => {
+                    setActiveTreatmentToEdit(activeTreatment);
+                    setIsTreatmentOpen(true);
+                  }}
+                  variant="primary"
+                  className="w-full font-bold py-2 mt-2"
+                >
+                  View / Update Treatment
+                </Button>
+              </div>
+            ) : (
+              <EmptyState
+                title="No Active Treatment"
+                description="This patient is not currently enrolled in any active treatment protocols."
+                className="bg-bg-app border border-borderColor/60 py-6"
+              />
+            )}
+          </div>
+
+          {/* AI Treatment Outcome Forecast Section */}
+          <div className="bg-surface border border-borderColor rounded-2xl p-5 shadow-card space-y-4">
+            <div className="w-full border-b border-borderColor/60 pb-2 flex items-center gap-2">
+              <Sparkles className="w-4.5 h-4.5 text-[#7A5AF8]" />
+              <h3 className="text-[15px] font-bold text-txt-primary">AI Treatment Outcome Forecast</h3>
+            </div>
+
+            {activeTreatment && activeTreatment.predicted_treatment_effectiveness !== undefined && activeTreatment.predicted_treatment_effectiveness !== null ? (
+              <div className="space-y-4 text-[13px] font-semibold text-txt-primary">
+                <div>
+                  <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Recommended Treatment (Forecast)</span>
+                  <span className="block text-[13px] font-bold text-txt-primary">{activeTreatment.treatment_name}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Predicted Effectiveness (AI Prediction)</span>
+                    <span className="block text-[14px] font-bold text-success">{Number(activeTreatment.predicted_treatment_effectiveness).toFixed(1)}%</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Estimated Recovery (Estimated)</span>
+                    <span className="block text-[14px] font-bold text-info">{Number(activeTreatment.predicted_recovery_days).toFixed(1)} days</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Expected Response (Forecast)</span>
+                    <Badge tone={activeTreatment.expected_response_category === 'excellent' || activeTreatment.expected_response_category === 'good' ? 'success' : 'warning'} className="text-[10px] font-bold py-0.5 uppercase tracking-wider">
+                      {activeTreatment.expected_response_category}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">AI Confidence (AI Prediction)</span>
+                    <span className="block text-[13px] font-mono text-txt-primary">{Number(activeTreatment.treatment_confidence).toFixed(1)}%</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Forecast Generated At (Estimated)</span>
+                  <span className="block text-[11px] font-mono text-txt-muted">
+                    {activeTreatment.forecast_generated_at ? new Date(activeTreatment.forecast_generated_at).toLocaleString() : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                title="No Forecast Available"
+                description="This patient does not have an active treatment outcome forecast. Run a readmission prediction to generate one."
+                className="bg-bg-app border border-borderColor/60 py-6"
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -441,6 +561,16 @@ export default function PatientDetailPage() {
         patient={patient}
         onClose={() => setIsEditOpen(false)}
         onSubmit={handleEditSubmit}
+      />
+
+      <TreatmentFormModal
+        isOpen={isTreatmentOpen}
+        treatment={activeTreatmentToEdit}
+        onClose={() => {
+          setIsTreatmentOpen(false);
+          setActiveTreatmentToEdit(null);
+        }}
+        onSubmit={handleTreatmentSubmit}
       />
 
       <ConfirmDialog

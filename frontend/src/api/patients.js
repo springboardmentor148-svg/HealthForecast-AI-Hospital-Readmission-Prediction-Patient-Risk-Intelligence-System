@@ -45,6 +45,7 @@ export function mapPatientToUi(patient) {
     primaryDiagnosis: patient.primary_diagnosis || '',
     secondaryDiagnosis: patient.secondary_diagnosis || '',
     lastAdmissionDate: patient.discharge_date || patient.admission_date || '',
+    assignedDoctorId: patient.assigned_doctor_id ?? null,
     assignedDoctor: patient.assigned_doctor_name || '',
     priorDiagnosesCount: patient.prior_diagnoses_count ?? 0,
     medications: normalizeMedications(patient.medications),
@@ -86,7 +87,7 @@ function buildQueryString(params = {}) {
 }
 
 export function buildPatientPayload(formState) {
-  return {
+  const payload = {
     patient_identifier: formState.patientIdentifier,
     full_name: formState.fullName,
     age_at_admission: toNumber(formState.ageAtAdmission),
@@ -102,11 +103,25 @@ export function buildPatientPayload(formState) {
     medications: normalizeMedications(formState.medications),
     follow_up_schedule: formState.followUpSchedule,
     discharge_plan: formState.dischargePlan,
-    risk_band: formState.riskBand,
-    readmission_probability: toNumber(formState.readmissionProbability),
-    assigned_doctor_id: toNumber(formState.assignedDoctorId),
     is_active: formState.isActive,
   };
+
+  const riskBand = typeof formState.riskBand === 'string' ? formState.riskBand.trim() : '';
+  if (riskBand) {
+    payload.risk_band = riskBand;
+  }
+
+  const readmissionProbability = toNumber(formState.readmissionProbability);
+  if (readmissionProbability !== null) {
+    payload.readmission_probability = readmissionProbability;
+  }
+
+  const assignedDoctorId = toNumber(formState.assignedDoctorId);
+  if (assignedDoctorId !== null) {
+    payload.assigned_doctor_id = assignedDoctorId;
+  }
+
+  return payload;
 }
 
 export async function listPatients(params = {}) {

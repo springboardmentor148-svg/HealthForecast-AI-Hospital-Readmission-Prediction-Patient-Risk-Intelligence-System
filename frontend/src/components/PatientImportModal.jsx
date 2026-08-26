@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Upload, AlertCircle, CheckCircle, HelpCircle, X, Download } from 'lucide-react';
 import { validateImportPatients, importPatients } from '../api/patients';
+import { triggerNotificationRefresh } from '../utils/notifications';
 import Button from './Button';
 
 export default function PatientImportModal({ isOpen, onClose, onImportSuccess }) {
@@ -72,6 +73,7 @@ export default function PatientImportModal({ isOpen, onClose, onImportSuccess })
       } else {
         setStats(res);
         setStep('summary');
+        triggerNotificationRefresh();
         if (onImportSuccess) {
           onImportSuccess();
         }

@@ -31,19 +31,25 @@ export default function AnalyticsPage() {
   const doctorRiskDist = doctor.risk_distribution || [];
   const researcherTrend = researcher.trend || [];
   const researcherGlycemicDist = researcher.glycemic_distribution || [];
-  const adminTrend = executive.trend || [];
   const adminPieData = executive.admissions_by_department || [];
   const adminDeptBenchmarks = executive.department_benchmarks || [];
 
+  // Departmental Performance Benchmarks table columns.
+  // "Improvement Index" has been removed — it required historical treatment data that
+  // is not consistently available per department.
+  // Replaced with "High-Risk Patients" — a direct count from the risk_band field
+  // (high | critical) per patient, set by the prediction pipeline.
   const adminColumns = [
     { key: 'dept', label: 'Department / Clinic Specialty' },
     { key: 'readmit', label: '30-Day Readmit Rate' },
     { key: 'stay', label: 'Mean Length of Stay' },
     {
-      key: 'improved',
-      label: 'Improvement Index',
+      key: 'high_risk',
+      label: 'High-Risk Patients',
       render: (row) => (
-        <span className="font-semibold text-txt-primary">{row.improved}</span>
+        <span className={`font-bold ${row.high_risk > 0 ? 'text-danger' : 'text-txt-primary'}`}>
+          {row.high_risk}
+        </span>
       ),
     },
     { key: 'total', label: 'Total Cohort Size' },
@@ -242,6 +248,7 @@ export default function AnalyticsPage() {
     );
   }
 
+  // ── Executive / Admin / System Administrator view ─────────────────────────
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -260,6 +267,7 @@ export default function AnalyticsPage() {
         </Button>
       </div>
 
+      {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <StatCard
           title="Hospital-Wide Patients"
@@ -284,48 +292,79 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-        <div className="lg:col-span-2 bg-surface border border-borderColor rounded-2xl p-5 shadow-card space-y-4">
-          <div>
-            <h3 className="text-[15px] font-semibold text-txt-primary">Hospital-Wide Readmission Trend</h3>
-            <p className="text-[12px] text-txt-muted">Quarterly hospital-wide 30-day readmission performance curve.</p>
-          </div>
-          <div className="h-60 flex-1">
-            {adminTrend.length > 0 ? (
-              <LineChart data={adminTrend} dataKey="rate" xAxisKey="name" color="#7A5AF8" />
-            ) : (
-              <EmptyState
-                title="No executive trend data yet"
-                description="Trend analytics will appear once hospital operations data is available."
-                className="max-w-none h-full"
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="lg:col-span-1 bg-surface border border-borderColor rounded-2xl p-5 shadow-card space-y-4 flex flex-col justify-between">
+      {/* ── Admissions by Department — full width, expanded from 1/3 to full ─ */}
+      {/* The Hospital-Wide Readmission Trend chart has been removed because the
+          quarterly trend data was derived from prediction timestamps and does not
+          represent a defensible historical readmission series. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <div className="bg-surface border border-borderColor rounded-2xl p-5 shadow-card space-y-4 flex flex-col">
           <div>
             <h3 className="text-[15px] font-semibold text-txt-primary">Admissions by Department</h3>
-            <p className="text-[12px] text-txt-muted">Distribution ratio of clinical admissions.</p>
+            <p className="text-[12px] text-txt-muted">
+              Patient distribution across clinical specialties, derived from assigned-doctor department records.
+            </p>
           </div>
-          <div className="h-48">
+          <div className="flex-1 min-h-[280px]">
             {adminPieData.length > 0 ? (
               <DonutChart data={adminPieData} />
             ) : (
               <EmptyState
                 title="No admissions data yet"
-                description="Department distribution will appear here once admissions are available."
+                description="Department distribution will appear here once patients are assigned to doctors."
                 className="max-w-none h-full"
               />
             )}
           </div>
         </div>
+
+        {/* Department summary cards — quick-scan view of top departments */}
+        <div className="bg-surface border border-borderColor rounded-2xl p-5 shadow-card space-y-3 flex flex-col">
+          <div>
+            <h3 className="text-[15px] font-semibold text-txt-primary">Department Summary</h3>
+            <p className="text-[12px] text-txt-muted">
+              Patient count and high-risk count per department.
+            </p>
+          </div>
+          {adminDeptBenchmarks.length > 0 ? (
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {adminDeptBenchmarks.slice(0, 6).map((row) => (
+                <div
+                  key={row.dept}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-bg-app border border-borderColor/60 hover:border-borderColor transition-colors"
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[12px] font-bold text-txt-primary truncate">{row.dept}</span>
+                    <span className="text-[10px] text-txt-muted font-medium">{row.total} patient{row.total !== 1 ? 's' : ''} · readmit {row.readmit}</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                    {row.high_risk > 0 && (
+                      <span className="text-[10px] font-bold text-danger bg-danger-bg px-2 py-0.5 rounded-lg">
+                        {row.high_risk} high risk
+                      </span>
+                    )}
+                    <span className="text-[11px] font-semibold text-txt-muted">{row.stay}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No department data yet"
+              description="Department summary will populate once patients are assigned."
+              className="bg-bg-app border border-borderColor flex-1"
+            />
+          )}
+        </div>
       </div>
 
+      {/* ── Departmental Performance Benchmarks table ──────────────────────── */}
       <div className="bg-surface border border-borderColor rounded-2xl p-5 shadow-card space-y-4">
         <div>
           <h3 className="text-[15px] font-semibold text-txt-primary">Departmental Performance Benchmarks</h3>
-          <p className="text-[12px] text-txt-muted">Operational clinical metrics compared across clinical specialties</p>
+          <p className="text-[12px] text-txt-muted">
+            Operational clinical metrics compared across specialties.
+            High-Risk Patients is a direct count of patients flagged as high or critical risk by the prediction pipeline.
+          </p>
         </div>
         {adminDeptBenchmarks.length > 0 ? (
           <DataTable columns={adminColumns} rows={adminDeptBenchmarks} />

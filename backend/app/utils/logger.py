@@ -1,10 +1,13 @@
-from __future__ import annotations
-
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+import time
+from collections import deque
 
-from flask import request
+from flask import request, g
+
+START_TIME = time.time()
+REQUEST_TIMES = deque(maxlen=100)
 
 
 def configure_logging(app):
@@ -41,7 +44,16 @@ def configure_logging(app):
 
 
 def register_request_logging(app):
+    @app.before_request
+    def start_timer():
+        g.start_time = time.time()
+
     @app.after_request
     def log_request(response):
-        app.logger.info("%s %s %s", request.method, request.path, response.status_code)
+        elapsed = 0.0
+        if hasattr(g, 'start_time'):
+            elapsed = (time.time() - g.start_time) * 1000.0
+            REQUEST_TIMES.append(elapsed)
+        app.logger.info("%s %s %s (%.2fms)", request.method, request.path, response.status_code, elapsed)
         return response
+

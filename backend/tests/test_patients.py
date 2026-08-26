@@ -143,3 +143,62 @@ def test_patient_list_search_filter_sort_and_pagination(client):
     assert page_body["pagination"]["page"] == 1
     assert page_body["pagination"]["per_page"] == 2
     assert page_body["pagination"]["total"] == 3
+
+
+def test_manual_patient_creation_doctor_assignment(client, app):
+    from app.models import Patient
+    
+    # 1. Doctor creates patient -> Should assign to Doctor
+    client.post("/api/v1/auth/register", json={
+        "full_name": "Doctor One",
+        "email": "doc1@example.com",
+        "password": "StrongPass123!",
+        "role": "doctor",
+        "department": "Cardiology",
+    })
+    login_res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "doc1@example.com", "password": "StrongPass123!"},
+    )
+    res_json = login_res.get_json()
+    doc1_token = res_json["access_token"]
+    doc1_id = res_json["user"]["id"]
+
+    create_res = client.post(
+        "/api/v1/patients",
+        json=patient_payload(identifier="PAT-DOC-ASSIGN1", full_name="Alice Brown"),
+        headers={"Authorization": f"Bearer {doc1_token}"},
+    )
+    assert create_res.status_code == 201
+    created_pat = create_res.get_json()["patient"]
+    assert created_pat["assigned_doctor_id"] == doc1_id
+
+    # Verify in DB
+    with app.app_context():
+        p = Patient.query.filter_by(patient_identifier="PAT-DOC-ASSIGN1").first()
+        assert p is not None
+        assert p.assigned_doctor_id == doc1_id
+
+    # 2. Admin creates patient -> Should NOT assign to Admin (should be None or from payload)
+    client.post("/api/v1/auth/register", json={
+        "full_name": "Admin One",
+        "email": "admin1@example.com",
+        "password": "StrongPass123!",
+        "role": "system_administrator",
+        "department": "Administration",
+    })
+    admin_login_res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin1@example.com", "password": "StrongPass123!"},
+    )
+    admin_token = admin_login_res.get_json()["access_token"]
+
+    create_res2 = client.post(
+        "/api/v1/patients",
+        json=patient_payload(identifier="PAT-ADMIN-ASSIGN1", full_name="Bob Miller"),
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert create_res2.status_code == 201
+    created_pat2 = create_res2.get_json()["patient"]
+    assert created_pat2["assigned_doctor_id"] is None
+

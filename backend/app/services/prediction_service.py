@@ -283,10 +283,43 @@ def run_prediction(payload: dict[str, Any], created_by_id: int | None = None) ->
         prediction_type=PredictionType.binary,
     )
     db.session.add(history)
+    db.session.flush()
+
+    from .forecast_service import generate_treatment_forecast
+    from ..models import TreatmentEffectiveness
+    forecast = generate_treatment_forecast(patient.id)
+    active_treatment = TreatmentEffectiveness.query.filter_by(patient_id=patient.id, status="active").first()
+    if active_treatment:
+        active_treatment.predicted_treatment_effectiveness = forecast.get("predicted_treatment_effectiveness")
+        active_treatment.predicted_recovery_days = forecast.get("predicted_recovery_days")
+        active_treatment.expected_response_category = forecast.get("expected_response_category")
+        active_treatment.treatment_confidence = forecast.get("treatment_confidence")
+        active_treatment.forecast_generated_at = forecast.get("forecast_generated_at")
 
     patient.risk_band = prediction_output.risk_band
     patient.readmission_probability = Decimal(str(prediction_output.probability))
     patient.last_prediction_at = datetime.now(timezone.utc)
+
+    from .notification_service import broadcast_notification
+    is_high_risk = prediction.predicted_risk_band in (RiskBand.high, RiskBand.critical)
+    prob_pct = float(prediction.predicted_readmission_probability) * 100
+    
+    if is_high_risk:
+        broadcast_notification(
+            title="🚨 High-Risk Readmission Alert",
+            message=f"{patient_name} flagged at {prob_pct:.2f}% readmission risk ({prediction.predicted_risk_band.value} band).",
+            notification_type="HIGH_RISK_PREDICTION",
+            related_entity="Prediction",
+            related_entity_id=prediction.id
+        )
+    else:
+        broadcast_notification(
+            title="🔮 Risk Prediction Generated",
+            message=f"Readmission prediction run completed for {patient_name} ({prob_pct:.2f}% probability, {prediction.predicted_risk_band.value}).",
+            notification_type="PREDICTION_GENERATED",
+            related_entity="Prediction",
+            related_entity_id=prediction.id
+        )
 
     try:
         db.session.commit()
@@ -298,11 +331,32 @@ def run_prediction(payload: dict[str, Any], created_by_id: int | None = None) ->
     db.session.refresh(history)
     db.session.refresh(patient)
 
+    from .user_service import log_user_activity
+    log_user_activity(
+        user_id=created_by_id,
+        action="run_prediction",
+        target_type="Prediction",
+        target_id=prediction.id,
+        metadata={
+            "patient_id": patient.id,
+            "patient_name": patient_name,
+            "readmission_probability": float(prediction.predicted_readmission_probability),
+        },
+    )
+
+
     return {
         "prediction": _serialize_prediction(prediction),
         "history": _serialize_history(history),
         "patient": serialize_patient(patient),
         "analysis": prediction_output.analysis,
+        "treatment_forecast": {
+            "predicted_treatment_effectiveness": float(forecast.get("predicted_treatment_effectiveness")) if forecast.get("predicted_treatment_effectiveness") is not None else None,
+            "predicted_recovery_days": float(forecast.get("predicted_recovery_days")) if forecast.get("predicted_recovery_days") is not None else None,
+            "expected_response_category": forecast.get("expected_response_category").value if forecast.get("expected_response_category") else None,
+            "treatment_confidence": float(forecast.get("treatment_confidence")) if forecast.get("treatment_confidence") is not None else None,
+            "forecast_generated_at": forecast.get("forecast_generated_at").isoformat() if forecast.get("forecast_generated_at") else None,
+        }
     }
 
 
@@ -325,3 +379,19 @@ def fetch_prediction(prediction_id: int) -> Prediction | None:
 
 def serialize_prediction_detail(prediction: Prediction) -> dict[str, Any]:
     return _serialize_prediction(prediction)
+
+
+def get_unique_model_versions() -> list[str]:
+    """
+    Retrieves a list of unique model versions from prediction_history,
+    sorted alphabetically, excluding null values.
+    """
+    results = (
+        db.session.query(PredictionHistory.model_version)
+        .filter(PredictionHistory.model_version.isnot(None))
+        .distinct()
+        .order_by(PredictionHistory.model_version.asc())
+        .all()
+    )
+    return [r[0] for r in results]
+

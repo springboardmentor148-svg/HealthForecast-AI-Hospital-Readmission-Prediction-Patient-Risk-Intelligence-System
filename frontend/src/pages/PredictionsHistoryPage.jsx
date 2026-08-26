@@ -10,6 +10,7 @@ import DataTable from '../components/DataTable';
 import EmptyState from '../components/EmptyState';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import { listPredictionHistory } from '../api/predictions';
+import { getModelVersions } from '../api/models';
 
 function getInitials(name = '') {
   return name
@@ -65,6 +66,24 @@ export default function PredictionsHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [availableVersions, setAvailableVersions] = useState([]);
+
+  useEffect(() => {
+    let isActive = true;
+    async function loadVersions() {
+      try {
+        const versions = await getModelVersions();
+        if (!isActive) return;
+        setAvailableVersions(versions || []);
+      } catch (error) {
+        console.error('Failed to load model versions:', error);
+      }
+    }
+    loadVersions();
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -133,8 +152,12 @@ export default function PredictionsHistoryPage() {
 
   const modelOptions = [
     { value: 'all', label: 'All Models' },
-    { value: 'v1.2', label: 'v1.2' },
+    ...availableVersions.map((version) => ({
+      value: version,
+      label: version,
+    })),
   ];
+
 
   const sortOptions = [
     { value: 'prediction_date', label: 'Timestamp' },

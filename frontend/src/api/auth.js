@@ -23,3 +23,25 @@ export function meRequest(token) {
     auth: true,
   });
 }
+
+export function forgotPasswordRequest(email) {
+  return apiRequest('/auth/forgot-password', {
+    method: 'POST',
+    auth: false,
+    body: { email },
+  });
+}
+
+export function updateMeRequest(payload) {
+  const backendPayload = {};
+  if (payload.full_name) backendPayload.full_name = payload.full_name;
+  if (payload.department) backendPayload.department = payload.department;
+  if (payload.phone) backendPayload.phone = payload.phone;
+  if (payload.password) backendPayload.password = payload.password;
+
+  return apiRequest('/users/me', {
+    method: 'PATCH',
+    body: backendPayload,
+  });
+}
+

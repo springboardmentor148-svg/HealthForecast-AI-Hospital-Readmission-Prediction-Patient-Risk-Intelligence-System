@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..errors import APIError
 from ..services.patient_service import (
@@ -12,7 +12,7 @@ from ..services.patient_service import (
     serialize_patient,
     update_patient,
 )
-from ..models import UserRole
+from ..models import User, UserRole
 from ..utils.access_control import require_roles
 from ..services.prediction_service import list_predictions_for_patient
 
@@ -59,7 +59,14 @@ def create_patient_route():
     if not isinstance(payload, dict):
         raise APIError("JSON request body is required", 400)
 
-    patient = create_patient(payload)
+    user_id = int(get_jwt_identity())
+    current_user = User.query.get(user_id)
+
+    creator_doctor_id = None
+    if current_user and current_user.role == UserRole.doctor:
+        creator_doctor_id = current_user.id
+
+    patient = create_patient(payload, creator_doctor_id=creator_doctor_id)
     return _json_response({"patient": serialize_patient(patient)}, 201)
 
 
@@ -87,7 +94,7 @@ def delete_patient_route(patient_id: str):
 
 @bp.post("/import/validate")
 @jwt_required()
-@require_roles(UserRole.system_administrator)
+@require_roles(UserRole.doctor, UserRole.system_administrator)
 def validate_import_route():
     from ..services.patient_importer import PatientCSVImporter
 
@@ -106,7 +113,7 @@ def validate_import_route():
 
 @bp.post("/import")
 @jwt_required()
-@require_roles(UserRole.system_administrator)
+@require_roles(UserRole.doctor, UserRole.system_administrator)
 def import_patients_route():
     from ..services.patient_importer import PatientCSVImporter
 
@@ -118,8 +125,26 @@ def import_patients_route():
     if not file.filename.lower().endswith(".csv"):
         raise APIError("Only CSV files are allowed", 400)
 
+    user_id = int(get_jwt_identity())
+    current_user = User.query.get(user_id)
+
+    assigned_doctor_id = None
+    if current_user and current_user.role == UserRole.doctor:
+        assigned_doctor_id = current_user.id
+
     importer = PatientCSVImporter()
-    res = importer.import_csv(file.stream)
+    res = importer.import_csv(file.stream, assigned_doctor_id=assigned_doctor_id)
+    
+    if res.get("success") and res.get("imported", 0) > 0:
+        from ..services.user_service import log_user_activity
+        log_user_activity(
+            user_id=user_id,
+            action="import_patients",
+            target_type="Batch",
+            target_id=res.get("imported"),
+            metadata={"count": res.get("imported")},
+        )
+
     return jsonify(res)
 
 

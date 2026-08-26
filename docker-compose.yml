@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: healthforecast_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-healthforecast_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-healthforecast_ai}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: healthforecast_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-healthforecast-super-secret-key-2026}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-healthforecast-jwt-secret-2026}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-healthforecast_ai}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    # Keep port 5000 private inside the container network as requested.
+    # The browser will only interact with the backend via the frontend container proxy.
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: healthforecast_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  postgres_data:

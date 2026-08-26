@@ -5,6 +5,7 @@ from flask_jwt_extended import jwt_required
 
 from ..models import UserRole
 from ..services.insights_service import build_model_summary
+from ..services.prediction_service import get_unique_model_versions
 from ..utils.access_control import require_roles
 
 bp = Blueprint("models", __name__)
@@ -25,3 +26,16 @@ def health():
 )
 def summary():
     return jsonify(build_model_summary())
+
+
+@bp.get("/versions")
+@jwt_required()
+@require_roles(
+    UserRole.doctor,
+    UserRole.hospital_administrator,
+    UserRole.healthcare_researcher,
+    UserRole.system_administrator,
+)
+def get_versions():
+    return jsonify({"versions": get_unique_model_versions()})
+

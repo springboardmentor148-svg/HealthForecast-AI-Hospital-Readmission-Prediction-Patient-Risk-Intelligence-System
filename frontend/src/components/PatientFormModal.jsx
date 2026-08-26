@@ -22,6 +22,7 @@ const admissionOptions = [
 ];
 
 const riskOptions = [
+  { value: '', label: 'Not set' },
   { value: 'low', label: 'Low' },
   { value: 'moderate', label: 'Moderate' },
   { value: 'high', label: 'High' },
@@ -46,7 +47,7 @@ function getInitialState(patient) {
       medications: '',
       followUpSchedule: '',
       dischargePlan: '',
-      riskBand: 'low',
+      riskBand: '',
       readmissionProbability: '',
       assignedDoctorId: '',
       isActive: true,
@@ -69,7 +70,7 @@ function getInitialState(patient) {
     medications: Array.isArray(patient.medications) ? patient.medications.join(', ') : '',
     followUpSchedule: patient.follow_up_schedule || patient.followUpSchedule || '',
     dischargePlan: patient.discharge_plan || patient.dischargePlan || '',
-    riskBand: patient.risk_band || patient.riskBand || 'low',
+    riskBand: patient.risk_band || patient.riskBand || '',
     readmissionProbability: patient.readmission_probability ?? patient.readmissionProbability ?? '',
     assignedDoctorId: patient.assigned_doctor_id ?? patient.assignedDoctorId ?? '',
     isActive: patient.is_active ?? true,

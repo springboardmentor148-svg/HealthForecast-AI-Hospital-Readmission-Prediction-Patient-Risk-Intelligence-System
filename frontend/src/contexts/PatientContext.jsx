@@ -8,6 +8,7 @@ import {
   listPatients,
   updatePatient,
 } from '../api/patients';
+import { triggerNotificationRefresh } from '../utils/notifications';
 
 const PatientContext = createContext();
 
@@ -31,10 +32,10 @@ export function PatientProvider({ children }) {
     setIsPatientsLoading(true);
     setPatientsError('');
     try {
-      const nextPatients = await listPatients(params);
-      setPatients(nextPatients);
-      syncSelectedPatient(nextPatients, selectedPatient);
-      return nextPatients;
+      const loadedPatients = await listPatients(params);
+      setPatients(loadedPatients);
+      syncSelectedPatient(loadedPatients, selectedPatient);
+      return loadedPatients;
     } catch (error) {
       setPatientsError(error?.message || 'Unable to load patients.');
       throw error;
@@ -80,6 +81,7 @@ export function PatientProvider({ children }) {
     const created = await createPatient(payload);
     await loadPatients();
     setSelectedPatient(created);
+    triggerNotificationRefresh();
     return created;
   };
 
@@ -87,6 +89,7 @@ export function PatientProvider({ children }) {
     const updated = await updatePatient(patientId, payload);
     setSelectedPatient(updated);
     await loadPatients();
+    triggerNotificationRefresh();
     return updated;
   };
 

@@ -6,8 +6,9 @@ Flask-CORS
 python-dotenv
 psycopg2-binary
 gunicorn
-numpy
-scikit-learn
+numpy==1.26.4
+scikit-learn==1.6.1
 xgboost
 lightgbm
 catboost
+shap==0.46.0

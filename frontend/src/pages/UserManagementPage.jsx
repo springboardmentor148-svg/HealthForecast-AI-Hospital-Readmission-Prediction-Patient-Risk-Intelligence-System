@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StatCard, 
   DataTable, 
@@ -7,6 +7,7 @@ import {
   Select, 
   Input,
   ConfirmDialog,
+  LoadingSkeleton,
   useToast
 } from '../components';
 import { 
@@ -21,23 +22,14 @@ import {
   ChevronUp 
 } from 'lucide-react';
 import { ROLES, ROLE_PERMISSIONS, PERMISSIONS } from '../config/rbac';
-
-// Mock platform users dataset (10 records)
-const initialUsers = [
-  { id: '1', name: 'Sarah Reed', email: 's.reed@forecast.ai', initials: 'SR', role: 'Doctor', dept: 'Endocrinology', status: 'active', lastLogin: '2026-07-22' },
-  { id: '2', name: 'Albert Luan', email: 'a.luan@forecast.ai', initials: 'AL', role: 'Doctor', dept: 'Internal Medicine', status: 'active', lastLogin: '2026-07-21' },
-  { id: '3', name: 'Marcus Sterling', email: 'm.sterling@forecast.ai', initials: 'MS', role: 'Hospital Administrator', dept: 'Hospital-wide', status: 'active', lastLogin: '2026-07-22' },
-  { id: '4', name: 'Elena Rostova', email: 'e.rostova@forecast.ai', initials: 'ER', role: 'Healthcare Researcher', dept: 'Anonymized Research Pool', status: 'active', lastLogin: '2026-07-19' },
-  { id: '5', name: 'Thomas Vance', email: 't.vance@forecast.ai', initials: 'TV', role: 'System Administrator', dept: 'Platform', status: 'active', lastLogin: '2026-07-22' },
-  { id: '6', name: 'Clara Jenkins', email: 'c.jenkins@forecast.ai', initials: 'CJ', role: 'Doctor', dept: 'Cardiology', status: 'active', lastLogin: '2026-07-20' },
-  { id: '7', name: 'Victor Vance', email: 'v.vance@forecast.ai', initials: 'VV', role: 'Healthcare Researcher', dept: 'Anonymized Research Pool', status: 'pending', lastLogin: 'Never' },
-  { id: '8', name: 'Simon Templar', email: 's.templar@forecast.ai', initials: 'ST', role: 'Hospital Administrator', dept: 'Hospital-wide', status: 'inactive', lastLogin: '2026-06-30' },
-  { id: '9', name: 'Raymond Reddington', email: 'r.red@forecast.ai', initials: 'RR', role: 'Doctor', dept: 'Emergency Care', status: 'active', lastLogin: '2026-07-18' },
-  { id: '10', name: 'Julianna Margulies', email: 'j.marg@forecast.ai', initials: 'JM', role: 'Healthcare Researcher', dept: 'Anonymized Research Pool', status: 'pending', lastLogin: 'Never' }
-];
+import { listUsers, createUser, updateUser } from '../api/users';
+import { triggerNotificationRefresh } from '../utils/notifications';
 
 export default function UserManagementPage() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const { showToast } = useToast();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({
@@ -82,21 +74,46 @@ export default function UserManagementPage() {
     return map[dept] || dept;
   };
 
-  // Convert date format e.g. 2026-07-22 to 22 Jul 2026
+  // Convert date format dynamically
   const formatLastLogin = (dateStr) => {
-    if (dateStr === 'Never') return 'Never';
-    const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (dateMatch) {
-      const [_, year, month, day] = dateMatch;
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthName = months[parseInt(month, 10) - 1];
-      return `${parseInt(day, 10)} ${monthName} ${year}`;
+    if (!dateStr || dateStr === 'Never') return 'Never';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return dateStr;
     }
-    return dateStr;
   };
 
+  useEffect(() => {
+    let isActive = true;
+    async function loadUserDirectory() {
+      setIsLoading(true);
+      setError('');
+      try {
+        const data = await listUsers();
+        if (isActive) {
+          setUsers(data);
+        }
+      } catch (err) {
+        if (isActive) {
+          setError(err.message || 'Failed to load user directory.');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+    loadUserDirectory();
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   // Invite user submit handler
-  const handleInviteUser = (e) => {
+  const handleInviteUser = async (e) => {
     e.preventDefault();
     if (!inviteName || !inviteEmail) {
       showToast({ message: 'Please fill out name and email.', variant: 'error' });
@@ -110,27 +127,27 @@ export default function UserManagementPage() {
       [ROLES.SYSTEM_ADMIN]: 'Platform'
     };
 
-    const newUser = {
-      id: String(users.length + 1),
-      name: inviteName,
-      email: inviteEmail,
-      initials: inviteName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
-      role: inviteRole,
-      dept: deptMap[inviteRole] || 'General',
-      status: 'pending',
-      lastLogin: 'Never'
-    };
-
-    setUsers([...users, newUser]);
-    setShowInviteModal(false);
-    setInviteName('');
-    setInviteEmail('');
-    setInviteRole(ROLES.DOCTOR);
-    showToast({ message: `Invitation sent successfully to ${newUser.email}`, variant: 'success' });
+    try {
+      const created = await createUser({
+        name: inviteName,
+        email: inviteEmail,
+        role: inviteRole,
+        dept: deptMap[inviteRole] || 'General Medicine',
+      });
+      setUsers([...users, created]);
+      setShowInviteModal(false);
+      setInviteName('');
+      setInviteEmail('');
+      setInviteRole(ROLES.DOCTOR);
+      showToast({ message: `Invitation sent successfully to ${created.email}`, variant: 'success' });
+      triggerNotificationRefresh();
+    } catch (err) {
+      showToast({ message: err.message || 'Failed to invite user.', variant: 'error' });
+    }
   };
 
   // Edit Role update submit handler
-  const handleUpdateRole = (e) => {
+  const handleUpdateRole = async (e) => {
     e.preventDefault();
     if (!editingUser || !selectedRole) return;
 
@@ -141,27 +158,25 @@ export default function UserManagementPage() {
       [ROLES.SYSTEM_ADMIN]: 'Platform'
     };
 
-    const updated = users.map(u => {
-      if (u.id === editingUser.id) {
-        return { 
-          ...u, 
-          role: selectedRole,
-          dept: deptMap[selectedRole] || u.dept
-        };
-      }
-      return u;
-    });
-
-    setUsers(updated);
-    setEditingUser(null);
-    showToast({ message: `Account role profile for ${editingUser.name} updated to ${selectedRole}.`, variant: 'success' });
+    try {
+      const updatedUser = await updateUser(editingUser.id, {
+        role: selectedRole,
+        dept: deptMap[selectedRole] || editingUser.dept,
+      });
+      const updated = users.map(u => (u.id === editingUser.id ? updatedUser : u));
+      setUsers(updated);
+      setEditingUser(null);
+      showToast({ message: `Account role profile for ${editingUser.name} updated to ${selectedRole}.`, variant: 'success' });
+    } catch (err) {
+      showToast({ message: err.message || 'Failed to update user role.', variant: 'error' });
+    }
   };
 
   const handleDeactivate = (userId, userName) => {
     const targetUser = users.find(u => u.id === userId);
     if (!targetUser) return;
     
-    const isCurrentlyActive = targetUser.status === 'active';
+    const isCurrentlyActive = targetUser.isActive;
     const actionLabel = isCurrentlyActive ? 'Deactivate' : 'Activate';
     const dialogVariant = isCurrentlyActive ? 'danger' : 'default';
     
@@ -173,21 +188,22 @@ export default function UserManagementPage() {
       cancelLabel: 'Cancel',
       variant: dialogVariant,
       onConfirm: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        const updated = users.map(u => {
-          if (u.id === userId) {
-            return { ...u, status: u.status === 'active' ? 'inactive' : 'active' };
-          }
-          return u;
-        });
-        setUsers(updated);
-        showToast({ message: `Account for ${userName} has been successfully ${isCurrentlyActive ? 'deactivated' : 'activated'}.`, variant: 'success' });
-        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          const updatedUser = await updateUser(userId, {
+            is_active: !isCurrentlyActive,
+          });
+          const updated = users.map(u => (u.id === userId ? updatedUser : u));
+          setUsers(updated);
+          showToast({ message: `Account for ${userName} has been successfully ${isCurrentlyActive ? 'deactivated' : 'activated'}.`, variant: 'success' });
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        } catch (err) {
+          showToast({ message: err.message || 'Failed to update user status.', variant: 'error' });
+        }
       }
     });
   };
 
-  const handleResetPassword = (email, userName) => {
+  const handleResetPassword = (userId, email, userName) => {
     setConfirmDialog({
       isOpen: true,
       title: 'Reset User Password',
@@ -196,19 +212,24 @@ export default function UserManagementPage() {
       cancelLabel: 'Cancel',
       variant: 'danger',
       onConfirm: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 450));
-        showToast({ message: `Reset password email link successfully dispatched to ${email}`, variant: 'success' });
-        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          await updateUser(userId, { password: 'TemporaryPassword123!' });
+          showToast({ message: `Reset password completed and password temporarily set for ${userName}`, variant: 'success' });
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        } catch (err) {
+          showToast({ message: err.message || 'Failed to reset password.', variant: 'error' });
+        }
       }
     });
   };
+
 
   const getPermissionsPreview = (role) => {
     switch (role) {
       case ROLES.DOCTOR:
         return {
-          can: ['View patient directory (assigned)', 'Access medical history (assigned)', 'Run readmission predictions', 'View treatment effectiveness reports'],
-          cannot: ['Edit/Add patients', 'View hospital-wide analytics', 'Export research datasets', 'Manage user directory', 'Configure model parameters']
+          can: ['View patient directory (assigned)', 'Access medical history (assigned)', 'Add/Edit patient records (assigned)', 'Run readmission predictions', 'View treatment effectiveness reports'],
+          cannot: ['View hospital-wide analytics', 'Export research datasets', 'Manage user directory', 'Configure model parameters']
         };
       case ROLES.ADMINISTRATOR:
         return {
@@ -392,6 +413,33 @@ export default function UserManagementPage() {
   const totalUsersCount = users.length;
   const activeCount = users.filter(u => u.status === 'active').length;
   const pendingCount = users.filter(u => u.status === 'pending').length;
+
+  if (isLoading && totalUsersCount === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-[20px] font-semibold text-txt-primary">User Management</h1>
+          <p className="text-[14px] text-txt-muted mt-1">Loading user directory...</p>
+        </div>
+        <LoadingSkeleton type="stat" count={4} />
+        <LoadingSkeleton type="table" count={1} />
+      </div>
+    );
+  }
+
+  if (error && totalUsersCount === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-[20px] font-semibold text-txt-primary">User Management</h1>
+          <p className="text-[14px] text-txt-muted mt-1">Unable to load user directory.</p>
+        </div>
+        <div className="bg-surface border border-borderColor rounded-2xl p-8 text-center text-danger font-semibold">
+          Error: {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" onClick={() => setOpenMenuUserId(null)}>

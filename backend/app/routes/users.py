@@ -7,7 +7,15 @@ from ..errors import APIError
 from ..extensions import db
 from ..models import UserRole
 from ..services.auth_service import serialize_user
-from ..services.user_service import create_user, get_user, list_users, serialize_user_detail, update_profile, update_user
+from ..services.user_service import (
+    create_user,
+    get_user,
+    list_user_activity,
+    list_users,
+    serialize_user_detail,
+    update_profile,
+    update_user,
+)
 from ..utils.access_control import require_roles
 
 bp = Blueprint("users", __name__)
@@ -58,6 +66,28 @@ def me():
     identity = get_jwt_identity()
     user = _resolve_user(identity)
     return _json_response({"user": serialize_user_detail(user)})
+
+
+@bp.get("/me/activity")
+@jwt_required()
+def me_activity():
+    identity = get_jwt_identity()
+    user = _resolve_user(identity)
+    
+    try:
+        page = int(request.args.get("page", 1))
+        per_page = int(request.args.get("per_page", 20))
+        if page < 1:
+            page = 1
+        if per_page < 1 or per_page > 100:
+            per_page = 20
+    except (TypeError, ValueError):
+        page = 1
+        per_page = 20
+        
+    activities = list_user_activity(user.id, page=page, per_page=per_page)
+    return _json_response({"activities": activities})
+
 
 
 @bp.route("/me", methods=["PATCH", "PUT"])

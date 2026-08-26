@@ -470,6 +470,33 @@ def serialize_patient(patient: Patient) -> dict[str, Any]:
             }
         )
 
+    treatments = []
+    for tr in sorted(
+        patient.treatment_effectiveness,
+        key=lambda record: record.start_date,
+        reverse=True,
+    ):
+        treatments.append(
+            {
+                "id": tr.id,
+                "treatment_name": tr.treatment_name,
+                "treatment_type": tr.treatment_type,
+                "start_date": tr.start_date.isoformat(),
+                "end_date": tr.end_date.isoformat() if tr.end_date else None,
+                "outcome_score": float(tr.outcome_score) if tr.outcome_score is not None else None,
+                "effectiveness_level": tr.effectiveness_level.value if tr.effectiveness_level else None,
+                "notes": tr.notes,
+                "status": tr.status,
+                "source": tr.source,
+                "approved_by": tr.approver.full_name if tr.approver else None,
+                "predicted_treatment_effectiveness": float(tr.predicted_treatment_effectiveness) if tr.predicted_treatment_effectiveness is not None else None,
+                "predicted_recovery_days": float(tr.predicted_recovery_days) if tr.predicted_recovery_days is not None else None,
+                "expected_response_category": tr.expected_response_category.value if tr.expected_response_category else None,
+                "treatment_confidence": float(tr.treatment_confidence) if tr.treatment_confidence is not None else None,
+                "forecast_generated_at": tr.forecast_generated_at.isoformat() if tr.forecast_generated_at else None,
+            }
+        )
+
     return {
         "id": patient.id,
         "patient_identifier": patient.patient_identifier,
@@ -497,6 +524,7 @@ def serialize_patient(patient: Patient) -> dict[str, Any]:
         "assigned_doctor_name": assigned_doctor_name,
         "is_active": patient.is_active,
         "prediction_history": prediction_history,
+        "treatments": treatments,
     }
 
 
@@ -514,7 +542,7 @@ def get_patient(patient_id: int) -> Patient | None:
     return db.session.get(Patient, patient_id)
 
 
-def create_patient(payload: dict[str, Any]) -> Patient:
+def create_patient(payload: dict[str, Any], creator_doctor_id: int | None = None) -> Patient:
     errors = _collect_patient_validation_errors(payload, require_required_fields=True)
     if errors:
         raise APIError("Validation failed", 400, {"fields": errors})
@@ -524,7 +552,11 @@ def create_patient(payload: dict[str, Any]) -> Patient:
     gender = _parse_enum(payload.get("gender"), Gender, "gender") or Gender.unknown
     admission_type = _parse_enum(payload.get("admission_type"), AdmissionType, "admission_type") or AdmissionType.other
     risk_band = _parse_enum(payload.get("risk_band"), RiskBand, "risk_band") or RiskBand.low
-    assigned_doctor = _resolve_assigned_doctor(payload.get("assigned_doctor_id"))
+    
+    if creator_doctor_id is not None:
+        assigned_doctor = db.session.get(User, creator_doctor_id)
+    else:
+        assigned_doctor = _resolve_assigned_doctor(payload.get("assigned_doctor_id"))
 
     if Patient.query.filter_by(patient_identifier=patient_identifier).first() is not None:
         raise APIError("patient_identifier is already registered", 409, {"fields": {"patient_identifier": "patient_identifier is already registered"}})
@@ -557,12 +589,33 @@ def create_patient(payload: dict[str, Any]) -> Patient:
         raise APIError("Validation failed", 400, {"fields": {"discharge_date": "discharge_date must be on or after admission_date"}})
 
     db.session.add(patient)
+    db.session.flush()
+    
+    from .notification_service import broadcast_notification
+    broadcast_notification(
+        title="👤 Patient Record Created",
+        message=f"Patient {patient.first_name} {patient.last_name} ({patient.patient_identifier}) has been added to the registry.",
+        notification_type="PATIENT_CREATED",
+        related_entity="Patient",
+        related_entity_id=patient.id
+    )
+
     try:
         db.session.commit()
     except IntegrityError as exc:
         db.session.rollback()
         raise APIError("Unable to save patient", 409) from exc
+
+    from .user_service import log_user_activity
+    log_user_activity(
+        action="create_patient",
+        target_type="Patient",
+        target_id=patient.id,
+        metadata={"patient_name": f"{patient.first_name} {patient.last_name}".strip()},
+    )
+
     return patient
+
 
 
 def update_patient(patient: Patient, payload: dict[str, Any]) -> Patient:
@@ -637,15 +690,36 @@ def update_patient(patient: Patient, payload: dict[str, Any]) -> Patient:
     if patient.admission_date and patient.discharge_date and patient.discharge_date < patient.admission_date:
         raise APIError("Validation failed", 400, {"fields": {"discharge_date": "discharge_date must be on or after admission_date"}})
 
+    from .notification_service import broadcast_notification
+    broadcast_notification(
+        title="✏️ Patient Record Updated",
+        message=f"Patient {patient.first_name} {patient.last_name} ({patient.patient_identifier}) dossier updated.",
+        notification_type="PATIENT_UPDATED",
+        related_entity="Patient",
+        related_entity_id=patient.id
+    )
+
     try:
         db.session.commit()
     except IntegrityError as exc:
         db.session.rollback()
         raise APIError("Unable to save patient", 409) from exc
+
+    from .user_service import log_user_activity
+    log_user_activity(
+        action="update_patient",
+        target_type="Patient",
+        target_id=patient.id,
+        metadata={"patient_name": f"{patient.first_name} {patient.last_name}".strip()},
+    )
+
     return patient
 
 
 def delete_patient(patient: Patient) -> None:
+    patient_name = f"{patient.first_name} {patient.last_name}".strip()
+    patient_id = patient.id
+
     prediction_ids = [prediction.id for prediction in patient.predictions]
     if prediction_ids:
         PredictionHistory.query.filter(PredictionHistory.prediction_id.in_(prediction_ids)).delete(synchronize_session=False)
@@ -660,3 +734,12 @@ def delete_patient(patient: Patient) -> None:
     except IntegrityError as exc:
         db.session.rollback()
         raise APIError("Unable to delete patient", 409) from exc
+
+    from .user_service import log_user_activity
+    log_user_activity(
+        action="delete_patient",
+        target_type="Patient",
+        target_id=patient_id,
+        metadata={"patient_name": patient_name},
+    )
+

@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
+import time
 from typing import Any
+
 
 from flask import current_app
 from sqlalchemy import desc
 
+from ..utils.logger import REQUEST_TIMES, START_TIME
+
 from ..models import (
+    ClinicalSupportPlan,
     Patient,
     Prediction,
     PredictionHistory,
@@ -15,8 +20,40 @@ from ..models import (
     TreatmentEffectiveness,
     TreatmentEffectivenessLevel,
     User,
+    UserRole,
 )
 from .patient_service import serialize_patient
+from ..errors import APIError
+from ..extensions import db
+
+
+def create_treatment_from_plan(patient: Patient, plan: ClinicalSupportPlan, approved_by_user_id: int) -> TreatmentEffectiveness:
+    if not plan.treatment_name:
+        raise APIError("Treatment name is missing from the approved Clinical Support plan", 400)
+
+    from .forecast_service import generate_treatment_forecast
+    forecast = generate_treatment_forecast(patient.id)
+
+    treatment = TreatmentEffectiveness(
+        patient_id=patient.id,
+        treatment_name=plan.treatment_name,
+        treatment_type="Clinical Support Protocol",
+        start_date=datetime.now(timezone.utc).date(),
+        status="active",
+        effectiveness_level=None,
+        outcome_score=None,
+        notes=plan.draft_notes,
+        approved_by=approved_by_user_id,
+        source="clinical_support",
+        predicted_treatment_effectiveness=forecast.get("predicted_treatment_effectiveness"),
+        predicted_recovery_days=forecast.get("predicted_recovery_days"),
+        expected_response_category=forecast.get("expected_response_category"),
+        treatment_confidence=forecast.get("treatment_confidence"),
+        forecast_generated_at=forecast.get("forecast_generated_at")
+    )
+    db.session.add(treatment)
+    return treatment
+
 
 
 def _patient_name(patient: Patient | None) -> str | None:
@@ -95,6 +132,24 @@ def _prediction_trend(predictions: list[Prediction]) -> list[dict[str, Any]]:
         high_count = sum(1 for item in group if item.predicted_risk_band in (RiskBand.high, RiskBand.critical))
         trend.append({"name": label, "rate": round((high_count / total) * 100 if total else 0, 2)})
     return trend[-6:]
+
+
+def _quarterly_prediction_trend(predictions: list[Prediction]) -> list[dict[str, Any]]:
+    buckets: dict[str, list[Prediction]] = defaultdict(list)
+    for prediction in predictions:
+        if not prediction.predicted_at:
+            continue
+        quarter = (prediction.predicted_at.month - 1) // 3 + 1
+        key = f"Q{quarter}-{prediction.predicted_at.strftime('%y')}"
+        buckets[key].append(prediction)
+
+    trend = []
+    for label, group in sorted(buckets.items(), key=lambda item: item[1][0].predicted_at):
+        total = len(group)
+        high_count = sum(1 for item in group if item.predicted_risk_band in (RiskBand.high, RiskBand.critical))
+        trend.append({"name": label, "rate": round((high_count / total) * 100 if total else 0, 2)})
+    return trend[-6:]
+
 
 
 def _activity_feed(patients: list[Patient], predictions: list[Prediction]) -> list[dict[str, Any]]:
@@ -207,20 +262,67 @@ def build_dashboard_summary() -> dict[str, Any]:
     }
 
 
-def _view_for_role(patients: list[Patient], predictions: list[Prediction], users: list[User]) -> dict[str, Any]:
+def _view_for_role(patients: list[Patient], predictions: list[Prediction], users: list[User], current_user: User | None = None) -> dict[str, Any]:
     average_probability = round(
         sum(_safe_float(patient.readmission_probability) for patient in patients) / len(patients),
         2,
     ) if patients else 0.0
+
+    loaded = _loaded_model_summary()
+    active_model_f1 = loaded.get("f1_score", "No data available") if loaded else "No data available"
+
+    # Dynamic admissions by department
+    dept_counts: dict[str, int] = Counter()
+    for patient in patients:
+        dept = patient.assigned_doctor.department if patient.assigned_doctor and patient.assigned_doctor.department else "Other"
+        dept_counts[dept] += 1
+    
+    colors = ["#7A5AF8", "#F670C7", "#F79009", "#12B76A", "#53B1FD", "#F04438"]
+    admissions_by_department = [
+        {"name": dept, "value": count, "color": colors[idx % len(colors)]}
+        for idx, (dept, count) in enumerate(dept_counts.items())
+    ]
+
+    # Dynamic benchmarks
+    dept_patients: dict[str, list[Patient]] = defaultdict(list)
+    for patient in patients:
+        dept = patient.assigned_doctor.department if patient.assigned_doctor and patient.assigned_doctor.department else "Other"
+        dept_patients[dept].append(patient)
+
+    department_benchmarks = []
+    for dept, dept_pats in dept_patients.items():
+        if dept == "Other" and len(dept_pats) == 0:
+            continue
+
+        dept_prob = [float(p.readmission_probability) for p in dept_pats if p.readmission_probability is not None]
+        avg_readmit = sum(dept_prob) / len(dept_prob) if dept_prob else 0.0
+
+        dept_stay = [p.time_in_hospital for p in dept_pats if p.time_in_hospital is not None]
+        avg_stay = sum(dept_stay) / len(dept_stay) if dept_stay else 0.0
+
+        # High-risk patients: count of patients in this dept whose risk_band is high or critical.
+        # Derived directly from the risk_band field on each Patient record (set by the prediction pipeline).
+        high_risk_count = sum(
+            1 for p in dept_pats if p.risk_band in (RiskBand.high, RiskBand.critical)
+        )
+
+        department_benchmarks.append({
+            "dept": dept,
+            "readmit": f"{avg_readmit:.1f}%",
+            "stay": f"{avg_stay:.1f} days",
+            "high_risk": high_risk_count,
+            "total": len(dept_pats),
+        })
+    department_benchmarks.sort(key=lambda x: x["total"], reverse=True)
 
     return {
         "doctor": {
             "stat_cards": {
                 "my_cohort_active_files": len(patients),
                 "my_high_risk_alerts": sum(1 for patient in patients if patient.risk_band in (RiskBand.high, RiskBand.critical)),
-                "active_model_f1": "28.99%",
+                "active_model_f1": active_model_f1,
             },
-            "trend": [{"name": "May", "rate": 16.2}, {"name": "Jun", "rate": 14.5}, {"name": "Jul", "rate": 11.8}],
+            "trend": _prediction_trend(predictions),
             "risk_distribution": _risk_distribution(patients),
         },
         "researcher": {
@@ -230,7 +332,12 @@ def _view_for_role(patients: list[Patient], predictions: list[Prediction], users
                 "trained_models_index": len({(pred.model_name, pred.model_version) for pred in predictions}),
             },
             "trend": [
-                {"name": (predicted_at := prediction.predicted_at).strftime("%Y") if predicted_at else "Unknown", "rate": _safe_float(prediction.predicted_readmission_probability)}
+                {
+                    "name": (predicted_at := prediction.predicted_at).strftime("%Y")
+                    if prediction.predicted_at
+                    else "Unknown",
+                    "rate": _safe_float(prediction.predicted_readmission_probability),
+                }
                 for prediction in predictions[:3]
             ][::-1],
             "glycemic_distribution": [
@@ -245,18 +352,9 @@ def _view_for_role(patients: list[Patient], predictions: list[Prediction], users
                 "average_stay": round(sum(patient.time_in_hospital for patient in patients) / len(patients), 1) if patients else 0.0,
                 "flagged_alerts": sum(1 for patient in patients if patient.risk_band in (RiskBand.high, RiskBand.critical)),
             },
-            "trend": [{"name": "Q1-26", "rate": 18.4}, {"name": "Q2-26", "rate": 16.2}, {"name": "Q3-26", "rate": 14.8}, {"name": "Q4-26", "rate": 11.8}],
-            "admissions_by_department": [
-                {"name": "Internal Medicine", "value": sum(1 for patient in patients if patient.assigned_doctor and patient.assigned_doctor.department == "Internal Medicine"), "color": "#7A5AF8"},
-                {"name": "Cardiology", "value": sum(1 for patient in patients if patient.assigned_doctor and patient.assigned_doctor.department == "Cardiology"), "color": "#F670C7"},
-                {"name": "Endocrinology", "value": sum(1 for patient in patients if patient.assigned_doctor and patient.assigned_doctor.department == "Endocrinology"), "color": "#F79009"},
-                {"name": "Other", "value": sum(1 for patient in patients if not patient.assigned_doctor or patient.assigned_doctor.department not in {"Internal Medicine", "Cardiology", "Endocrinology"}), "color": "#12B76A"},
-            ],
-            "department_benchmarks": [
-                {"dept": "Internal Medicine", "readmit": f"{average_probability:.1f}%", "stay": "5.2 days", "improved": "70%", "total": sum(1 for patient in patients if patient.assigned_doctor and patient.assigned_doctor.department == "Internal Medicine")},
-                {"dept": "Cardiology", "readmit": f"{average_probability + 2:.1f}%", "stay": "6.4 days", "improved": "74%", "total": sum(1 for patient in patients if patient.assigned_doctor and patient.assigned_doctor.department == "Cardiology")},
-                {"dept": "Endocrinology", "readmit": f"{average_probability - 1:.1f}%", "stay": "5.8 days", "improved": "78%", "total": sum(1 for patient in patients if patient.assigned_doctor and patient.assigned_doctor.department == "Endocrinology")},
-            ],
+            "trend": _quarterly_prediction_trend(predictions),
+            "admissions_by_department": admissions_by_department,
+            "department_benchmarks": department_benchmarks,
         },
         "users": {
             "total": len(users),
@@ -264,95 +362,138 @@ def _view_for_role(patients: list[Patient], predictions: list[Prediction], users
     }
 
 
-def build_analytics_overview() -> dict[str, Any]:
+def build_analytics_overview(current_user: User | None = None) -> dict[str, Any]:
     patients = Patient.query.order_by(Patient.id.desc()).all()
     predictions = Prediction.query.order_by(desc(Prediction.predicted_at), desc(Prediction.id)).all()
     users = User.query.order_by(User.id.asc()).all()
-    return _view_for_role(patients, predictions, users)
+
+    # Filter data dynamically for doctors to show only their cohort
+    if current_user and current_user.role == UserRole.doctor:
+        patients = [p for p in patients if p.assigned_doctor_id == current_user.id]
+        predictions = [pr for pr in predictions if pr.patient and pr.patient.assigned_doctor_id == current_user.id]
+
+    return _view_for_role(patients, predictions, users, current_user)
 
 
-def _treatment_bucket(level: TreatmentEffectivenessLevel | None) -> str:
-    if level in (TreatmentEffectivenessLevel.good, TreatmentEffectivenessLevel.excellent):
-        return "improved"
-    if level == TreatmentEffectivenessLevel.fair:
-        return "unchanged"
-    return "worsened"
+def build_treatment_overview(current_user: User | None = None) -> dict[str, Any]:
+    """Return a database-backed treatment analytics overview.
 
+    All displayed metrics are derived exclusively from actual recorded treatment data:
+    outcome_score, effectiveness_level, status, start_date, end_date, treatment_type.
+    AI forecast columns are preserved in the DB but intentionally excluded from analytics.
+    """
+    query = TreatmentEffectiveness.query
+    if current_user and current_user.role == UserRole.doctor:
+        query = query.join(Patient).filter(Patient.assigned_doctor_id == current_user.id)
 
-def build_treatment_overview() -> dict[str, Any]:
-    records = TreatmentEffectiveness.query.order_by(desc(TreatmentEffectiveness.start_date), desc(TreatmentEffectiveness.id)).all()
-    rows = []
-    grouped: dict[str, Counter] = defaultdict(Counter)
-    recovery_trend: list[dict[str, Any]] = []
-    efficacy_by_treatment: dict[str, list[float]] = defaultdict(list)
+    records = query.order_by(
+        desc(TreatmentEffectiveness.start_date), desc(TreatmentEffectiveness.id)
+    ).all()
 
-    for record in records:
-        grouped[record.treatment_name][_treatment_bucket(record.effectiveness_level)] += 1
-        efficacy_by_treatment[record.treatment_name].append(_safe_float(record.outcome_score))
-        recovery_trend.append(
-            {
-                "name": record.start_date.isoformat(),
-                "score": _safe_float(record.outcome_score),
-            }
-        )
-        rows.append(
-            {
-                "id": record.id,
-                "patient_id": record.patient_id,
-                "patient_name": _patient_name(record.patient),
-                "patient_identifier": record.patient.patient_identifier if record.patient else None,
-                "treatment": record.treatment_name,
-                "treatment_type": record.treatment_type,
-                "start_date": _iso(record.start_date),
-                "end_date": _iso(record.end_date),
-                "outcome_score": _safe_float(record.outcome_score),
-                "effectiveness_level": record.effectiveness_level.value if record.effectiveness_level else None,
-                "notes": record.notes,
-            }
-        )
+    # ── KPI 1: Treatment Success Rate ──────────────────────────────────────────
+    # % of completed treatments rated 'good' or 'excellent'
+    completed = [r for r in records if r.status == "completed" and r.effectiveness_level is not None]
+    successful = [
+        r for r in completed
+        if r.effectiveness_level in (TreatmentEffectivenessLevel.good, TreatmentEffectivenessLevel.excellent)
+    ]
+    if completed:
+        treatment_success_rate = round((len(successful) / len(completed)) * 100, 1)
+    else:
+        treatment_success_rate = None
 
-    summary_rows = []
-    for treatment_name, counts in grouped.items():
-        total = sum(counts.values()) or 1
-        summary_rows.append(
-            {
-                "treatment": treatment_name,
-                "improved": f"{round((counts['improved'] / total) * 100, 0):.0f}%",
-                "unchanged": f"{round((counts['unchanged'] / total) * 100, 0):.0f}%",
-                "worsened": f"{round((counts['worsened'] / total) * 100, 0):.0f}%",
-                "total": total,
-            }
-        )
-    summary_rows.sort(key=lambda item: item["total"], reverse=True)
+    # ── KPI 2: Average Treatment Duration ──────────────────────────────────────
+    # avg (end_date - start_date) in days for completed records with valid dates
+    durations: list[int] = []
+    for r in completed:
+        if r.end_date and r.start_date and r.end_date >= r.start_date:
+            durations.append((r.end_date - r.start_date).days)
+    avg_duration_days = round(sum(durations) / len(durations), 1) if durations else None
 
-    medication_efficacy = [
-        {"name": treatment_name, "efficacy": round(sum(values) / len(values), 2)}
-        for treatment_name, values in efficacy_by_treatment.items()
-        if values
+    # ── KPI 3: Active Treatments ────────────────────────────────────────────────
+    active_count = sum(1 for r in records if r.status == "active")
+
+    # ── Graph 1: Outcome Distribution by effectiveness_level ───────────────────
+    level_colors = {
+        "poor": "#F04438",
+        "fair": "#F79009",
+        "good": "#12B76A",
+        "excellent": "#7A5AF8",
+    }
+    level_counts: dict[str, int] = Counter()
+    for r in records:
+        if r.effectiveness_level:
+            level_counts[r.effectiveness_level.value] += 1
+
+    outcome_distribution = [
+        {
+            "name": level.capitalize(),
+            "value": level_counts.get(level, 0),
+            "color": level_colors.get(level, "#667085"),
+        }
+        for level in ("poor", "fair", "good", "excellent")
+        if level_counts.get(level, 0) > 0
     ]
 
-    overall_success_rate = round(
-        (sum(1 for record in records if record.effectiveness_level in (TreatmentEffectivenessLevel.good, TreatmentEffectivenessLevel.excellent)) / len(records)) * 100,
-        2,
-    ) if records else 0.0
+    # ── Graph 2: Avg Outcome Score by Treatment Type ───────────────────────────
+    type_scores: dict[str, list[float]] = defaultdict(list)
+    for r in records:
+        if r.outcome_score is not None:
+            key = (r.treatment_type or "Unspecified").strip() or "Unspecified"
+            type_scores[key].append(float(r.outcome_score))
 
-    average_days = round(
-        sum(
-            max(0, (record.end_date - record.start_date).days) if record.end_date else 0
-            for record in records
-        ) / len(records),
-        1,
-    ) if records else 0.0
+    avg_score_by_type = sorted(
+        [
+            {"name": t_type, "avg_score": round(sum(scores) / len(scores), 1)}
+            for t_type, scores in type_scores.items()
+            if scores
+        ],
+        key=lambda x: x["avg_score"],
+        reverse=True,
+    )[:8]
+
+    # ── Records: serialize for table view ─────────────────────────────────────
+    rows: list[dict[str, Any]] = []
+    for r in records:
+        patient_name = _patient_name(r.patient)
+        patient_identifier = r.patient.patient_identifier if r.patient else None
+        patient_id = r.patient_id
+
+        # Anonymize for Healthcare Researcher
+        if current_user and current_user.role == UserRole.healthcare_researcher:
+            patient_name = "Anonymized Patient"
+            patient_identifier = "ANON-#####"
+            patient_id = 99999
+
+        rows.append(
+            {
+                "id": r.id,
+                "patient_id": patient_id,
+                "patient_name": patient_name,
+                "patient_identifier": patient_identifier,
+                "treatment": r.treatment_name,
+                "treatment_type": r.treatment_type,
+                "start_date": _iso(r.start_date),
+                "end_date": _iso(r.end_date),
+                "outcome_score": float(r.outcome_score) if r.outcome_score is not None else None,
+                "effectiveness_level": r.effectiveness_level.value if r.effectiveness_level else None,
+                "notes": r.notes,
+                "status": r.status,
+                "approved_by": r.approver.full_name if r.approver else None,
+                "source": r.source,
+            }
+        )
 
     return {
         "stats": {
-            "overall_success_rate": overall_success_rate,
-            "average_days_to_recovery": average_days,
-            "efficacy_index": round(sum(_safe_float(record.outcome_score) for record in records) / len(records), 2) if records else 0.0,
+            "treatment_success_rate": treatment_success_rate,
+            "avg_duration_days": avg_duration_days,
+            "active_count": active_count,
+            "total_count": len(records),
+            "completed_count": len(completed),
         },
-        "recovery_trend": recovery_trend[:6],
-        "medication_efficacy": medication_efficacy[:6],
-        "outcomes": summary_rows,
+        "outcome_distribution": outcome_distribution,
+        "avg_score_by_type": avg_score_by_type,
         "records": rows,
     }
 
@@ -363,9 +504,12 @@ def build_clinical_support(patient: Patient) -> dict[str, Any]:
     mitigation = []
     risk_band = patient.risk_band.value if patient.risk_band else "low"
 
-    if risk_band == "high":
+    coordination = ""
+    directives = ""
+
+    if risk_band in ("high", "critical"):
         recommendations = [
-            f"Initiate priority clinical case management for {patient.primary_diagnosis} readmission mitigation.",
+            f"Initiate priority clinical case management for {patient.primary_diagnosis or 'diabetes'} readmission mitigation.",
             "Perform complete review of active glycemic agents and insulin sliding scales.",
             "Schedule home health nurse evaluations and post-discharge clinic scheduling within 3 days.",
         ]
@@ -374,6 +518,8 @@ def build_clinical_support(patient: Patient) -> dict[str, Any]:
             {"type": "Primary Care Outpatient", "timeframe": "Within 7 days", "priority": "moderate", "notes": "Care transition evaluation"},
             {"type": "Home Nurse Evaluation", "timeframe": "Within 48 hours", "priority": "high", "notes": "Insulin compliance"},
         ]
+        coordination = "Configure direct warm handoff to endocrine care coordinators. Schedule home nurse post-discharge insulin technique check within 48 hours."
+        directives = "Patient instructed on glucose monitoring twice daily. Inpatient sliding scale insulin discontinued; transition to basal-bolus home regimen."
     elif risk_band == "moderate":
         recommendations = [
             "Recommend standard outpatient clinic glycemic checks and review glucose self-monitoring logs.",
@@ -384,6 +530,8 @@ def build_clinical_support(patient: Patient) -> dict[str, Any]:
             {"type": "Endocrinology Outpatient", "timeframe": "Within 7 days", "priority": "moderate", "notes": "HbA1c optimization plan"},
             {"type": "Dietary & Nutrition Consult", "timeframe": "Within 14 days", "priority": "low", "notes": "Carb intake counseling"},
         ]
+        coordination = "Schedule a diabetes educator follow-up. Review insulin/medication plan and confirm clinic appointment in 7 days."
+        directives = "Review glucose self-monitoring logs twice weekly. Adjust oral medications if fasting blood glucose exceeds 140 mg/dL."
     else:
         recommendations = [
             "Provide general lifestyle counseling and routine primary care follow-up.",
@@ -392,6 +540,8 @@ def build_clinical_support(patient: Patient) -> dict[str, Any]:
         follow_up = [
             {"type": "Primary Care Outpatient", "timeframe": "Within 30 days", "priority": "low", "notes": "Routine glycemic tracking"},
         ]
+        coordination = "Arrange primary care outpatient clinic follow-up within 10-14 days. Review home blood glucose monitoring records during checkup."
+        directives = "Resume home baseline oral diabetes agents. Instruct patient on warning flags of hypo/hyperglycemia."
 
     meds_count = len(patient.medications or [])
     stay_days = patient.time_in_hospital or 0
@@ -424,16 +574,62 @@ def build_clinical_support(patient: Patient) -> dict[str, Any]:
             }
         )
 
+    plan = ClinicalSupportPlan.query.filter_by(patient_id=patient.id).first()
+    plan_data = None
+    if plan:
+        plan_data = {
+            "is_approved": plan.is_approved,
+            "status": plan.status,
+            "treatment_name": plan.treatment_name,
+            "approved_by": plan.approver.full_name if plan.approver else None,
+            "approved_at": plan.approved_at.isoformat() if plan.approved_at else None,
+            "draft_notes": plan.draft_notes,
+            "updated_at": plan.updated_at.isoformat() if plan.updated_at else None,
+            "updated_by": plan.updater.full_name if plan.updater else None,
+        }
+
+    forecast_data = None
+    tr = TreatmentEffectiveness.query.filter_by(patient_id=patient.id).order_by(TreatmentEffectiveness.start_date.desc(), TreatmentEffectiveness.id.desc()).first()
+    if tr and tr.predicted_treatment_effectiveness is not None:
+        forecast_data = {
+            "predicted_treatment_effectiveness": float(tr.predicted_treatment_effectiveness),
+            "predicted_recovery_days": float(tr.predicted_recovery_days),
+            "expected_response_category": tr.expected_response_category.value if tr.expected_response_category else None,
+            "treatment_confidence": float(tr.treatment_confidence),
+            "treatment_name": tr.treatment_name,
+            "forecast_generated_at": tr.forecast_generated_at.isoformat() if tr.forecast_generated_at else None
+        }
+    else:
+        from .forecast_service import generate_treatment_forecast
+        preview = generate_treatment_forecast(patient.id)
+        if preview:
+            forecast_data = {
+                "predicted_treatment_effectiveness": preview.get("predicted_treatment_effectiveness"),
+                "predicted_recovery_days": preview.get("predicted_recovery_days"),
+                "expected_response_category": preview.get("expected_response_category").value if preview.get("expected_response_category") else None,
+                "treatment_confidence": preview.get("treatment_confidence"),
+                "treatment_name": plan.treatment_name if plan and plan.treatment_name else "Standard Care Protocol",
+                "forecast_generated_at": preview.get("forecast_generated_at").isoformat() if preview.get("forecast_generated_at") else None
+            }
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
     return {
         "patient": serialize_patient(patient),
         "recommendations": recommendations,
         "follow_up": follow_up,
         "mitigation": mitigation,
+        "coordination": coordination,
+        "directives": directives,
         "summary": {
             "risk_band": risk_band,
             "prediction_count": len(patient.prediction_history),
             "latest_prediction": patient.last_prediction_at.isoformat() if patient.last_prediction_at else None,
         },
+        "plan": plan_data,
+        "forecast": forecast_data,
     }
 
 
@@ -463,14 +659,25 @@ def build_model_summary() -> dict[str, Any]:
                 fn += 1
 
         denominator = len(actuals) or 1
-        accuracy = round(((tp + tn) / denominator) * 100, 2) if actuals else round(min(99.0, 55.0 + total), 2)
-        precision_rate = (tp / (tp + fp)) if (tp + fp) else 0.0
-        recall_rate = (tp / (tp + fn)) if (tp + fn) else 0.0
-        f1_rate = (2 * precision_rate * recall_rate / (precision_rate + recall_rate)) if (precision_rate + recall_rate) else 0.0
-        precision = round(precision_rate * 100, 2)
-        recall = round(recall_rate * 100, 2)
-        f1 = round(f1_rate * 100, 2)
-        roc_auc = round(min(99.0, accuracy + 1.2), 2)
+        if actuals:
+            accuracy = round(((tp + tn) / denominator) * 100, 2)
+            precision_rate = (tp / (tp + fp)) if (tp + fp) else 0.0
+            recall_rate = (tp / (tp + fn)) if (tp + fn) else 0.0
+            f1_rate = (2 * precision_rate * recall_rate / (precision_rate + recall_rate)) if (precision_rate + recall_rate) else 0.0
+            precision = round(precision_rate * 100, 2)
+            recall = round(recall_rate * 100, 2)
+            f1 = round(f1_rate * 100, 2)
+            roc_auc = round(min(99.0, accuracy + 1.2), 2)
+        else:
+            if loaded_model is not None:
+                accuracy = _safe_float(str(loaded_model.get("accuracy_value") or loaded_model.get("accuracy", "0")).replace("%", ""))
+                roc_auc = _safe_float(str(loaded_model.get("roc_auc_value") or loaded_model.get("roc_auc", "0")).replace("%", ""))
+                precision = _safe_float(str(loaded_model.get("precision_value") or loaded_model.get("precision", "0")).replace("%", ""))
+                recall = _safe_float(str(loaded_model.get("recall_value") or loaded_model.get("recall", "0")).replace("%", ""))
+                f1 = _safe_float(str(loaded_model.get("f1_value") or loaded_model.get("f1_score", "0")).replace("%", ""))
+            else:
+                accuracy = roc_auc = precision = recall = f1 = 0.0
+
         last_trained = items[0].predicted_at.isoformat() if items and items[0].predicted_at else None
 
         version_rows.append(
@@ -522,16 +729,26 @@ def build_model_summary() -> dict[str, Any]:
             performance_trend.append({"name": row["model_version"] or row["model_name"], "rocAuc": row["roc_auc_value"], "accuracy": row["accuracy_value"]})
 
     active = loaded_model or (version_rows[0] if version_rows else None)
+
+    uptime_percent = 100.0
+    avg_response_time = round(sum(REQUEST_TIMES) / len(REQUEST_TIMES), 1) if REQUEST_TIMES else "No data available"
+    elapsed = time.time() - START_TIME
+    if elapsed < 60:
+        last_check = f"{int(elapsed)} seconds ago"
+    else:
+        last_check = f"{int(elapsed // 60)} minutes ago"
+
     return {
         "current_model": active,
         "model_versions": version_rows,
         "performance_trend": performance_trend or ([{"name": active["model_version"] or active["model_name"], "rocAuc": active["roc_auc_value"], "accuracy": active["accuracy_value"]}] if active else []),
         "deployment_health": {
-            "average_response_time_ms": 142,
-            "uptime_percent": 99.8,
+            "average_response_time_ms": avg_response_time,
+            "uptime_percent": uptime_percent,
             "predictions_served_today": sum(1 for prediction in predictions if prediction.predicted_at and prediction.predicted_at.date() == datetime.now(timezone.utc).date()),
-            "last_health_check": "10 minutes ago",
+            "last_health_check": last_check,
         },
         "model_loaded": loaded_model is not None,
         "model_load_error": current_app.extensions.get("ml_model_load_error"),
     }
+

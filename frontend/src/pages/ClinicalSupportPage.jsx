@@ -15,14 +15,26 @@ import Select from '../components/Select';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import DataTable from '../components/DataTable';
+import LoadingSkeleton from '../components/LoadingSkeleton';
+import { getClinicalSupport, saveClinicalSupportDraft, approveClinicalSupport } from '../api/clinicalSupport';
+import { useToast } from '../components/Toast';
+import { triggerNotificationRefresh } from '../utils/notifications';
 
 export default function ClinicalSupportPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { selectedPatient, setSelectedPatient, patients, getPatientById } = usePatient();
   const { currentRole } = useAuth();
-  const [isApproved, setIsApproved] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const { showToast } = useToast();
+
+  const [draftNotes, setDraftNotes] = useState('');
+  const [isSavedLoading, setIsSavedLoading] = useState(false);
+  const [isApproveLoading, setIsApproveLoading] = useState(false);
+
+  const [supportData, setSupportData] = useState(null);
+  const [isSupportLoading, setIsSupportLoading] = useState(false);
+  const [supportError, setSupportError] = useState('');
+
 
   // If id is in route path but no patient in context, prefill it
   useEffect(() => {
@@ -36,22 +48,43 @@ export default function ClinicalSupportPage() {
     if (selectedId) {
       getPatientById(selectedId)
         .then(() => {
-          setIsApproved(false);
-          setIsSaved(false);
+          setDraftNotes('');
           navigate(`/clinical-support?id=${selectedId}`);
         })
         .catch(() => {});
     }
   };
 
-  const handleApprove = () => {
-    setIsApproved(true);
-    setTimeout(() => setIsApproved(false), 3000);
+  const handleApprove = async () => {
+    if (!selectedPatient) return;
+    setIsApproveLoading(true);
+    try {
+      await approveClinicalSupport(selectedPatient.id);
+      showToast({ message: 'Clinical support plan approved successfully.', variant: 'success' });
+      triggerNotificationRefresh();
+      const refreshed = await getClinicalSupport(selectedPatient.id);
+      setSupportData(refreshed);
+    } catch (err) {
+      showToast({ message: err.message || 'Failed to approve recommendations plan.', variant: 'error' });
+    } finally {
+      setIsApproveLoading(false);
+    }
   };
 
-  const handleSaveDraft = () => {
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+  const handleSaveDraft = async () => {
+    if (!selectedPatient) return;
+    setIsSavedLoading(true);
+    try {
+      await saveClinicalSupportDraft(selectedPatient.id, draftNotes);
+      showToast({ message: 'Clinical support plan draft saved successfully.', variant: 'success' });
+      triggerNotificationRefresh();
+      const refreshed = await getClinicalSupport(selectedPatient.id);
+      setSupportData(refreshed);
+    } catch (err) {
+      showToast({ message: err.message || 'Failed to save draft plan.', variant: 'error' });
+    } finally {
+      setIsSavedLoading(false);
+    }
   };
 
   const isResearcher = currentRole === ROLES.RESEARCHER;
@@ -64,87 +97,38 @@ export default function ClinicalSupportPage() {
     avatarInitials: isResearcher ? 'AP' : selectedPatient.avatarInitials
   } : null;
 
-  // 2. Resolve risk-tiered care recommendations
-  const getRecommendations = (patient) => {
-    if (!patient) return [];
-    if (patient.riskBand === 'high') {
-      return [
-        `Initiate priority clinical case management for ${patient.primaryDiagnosis} readmission mitigation.`,
-        'Perform complete review of active glycemic agents and insulin sliding scales.',
-        'Schedule home health nurse evaluations and post-discharge clinic scheduling within 3 days.'
-      ];
-    } else if (patient.riskBand === 'moderate') {
-      return [
-        'Recommend standard outpatient clinic glycemic checks and review glucose self-monitoring logs.',
-        'Arrange dietitian nutrition management consultation.',
-        'Provide educational materials concerning hyperglycemia identification.'
-      ];
-    } else {
-      return [
-        'Provide general lifestyle counseling and routine primary care follow-up.',
-        'Instruct patient on baseline oral medications adherence checkups.'
-      ];
+  // Fetch clinical support recommendations from API
+  useEffect(() => {
+    if (!selectedPatient) {
+      setSupportData(null);
+      setDraftNotes('');
+      return;
     }
-  };
-
-  // 3. Resolve Structured Follow-up Planning details
-  const getFollowUpPlanning = (patient) => {
-    if (!patient) return [];
-    if (patient.riskBand === 'high') {
-      return [
-        { type: 'Endocrinology Clinic', timeframe: 'Within 3 days', priority: 'high', notes: 'Urgent glycemic check' },
-        { type: 'Primary Care Outpatient', timeframe: 'Within 7 days', priority: 'moderate', notes: 'Overall care transition evaluation' },
-        { type: 'Home Nurse Evaluation', timeframe: 'Within 48 hours', priority: 'high', notes: 'Insulin injection compliance' }
-      ];
-    } else if (patient.riskBand === 'moderate') {
-      return [
-        { type: 'Endocrinology Outpatient', timeframe: 'Within 7 days', priority: 'moderate', notes: 'HbA1c optimization plan' },
-        { type: 'Dietary & Nutrition Consult', timeframe: 'Within 14 days', priority: 'low', notes: 'Weight and carb intake counseling' }
-      ];
-    } else {
-      return [
-        { type: 'Primary Care Outpatient', timeframe: 'Within 30 days', priority: 'low', notes: 'Routine glycemic index tracking' }
-      ];
-    }
-  };
-
-  // 4. Resolve Risk Mitigation suggestions
-  const getMitigationSuggestions = (patient) => {
-    if (!patient) return [];
-    const medsCount = patient.medications ? patient.medications.length : 3;
-    const stayDays = patient.timeInHospital || 4;
-    
-    const suggestions = [
-      {
-        title: 'Schedule Glycemic Logs Check-in',
-        rationale: 'Elevated A1C indicates sub-optimal glycemic control. Monitor daily pre-meal readings.'
+    let isActive = true;
+    async function fetchSupportData() {
+      setIsSupportLoading(true);
+      setSupportError('');
+      try {
+        const res = await getClinicalSupport(selectedPatient.id);
+        if (isActive) {
+          setSupportData(res);
+          setDraftNotes(res?.plan?.draft_notes || '');
+        }
+      } catch (err) {
+        if (isActive) {
+          setSupportError(err.message || 'Failed to fetch clinical support recommendations.');
+        }
+      } finally {
+        if (isActive) {
+          setIsSupportLoading(false);
+        }
       }
-    ];
-
-    if (medsCount >= 4) {
-      suggestions.push({
-        title: `Consolidate Medication Load (${medsCount} active drugs)`,
-        rationale: 'High polypharmacy indices are strongly correlated with patient compliance errors and readmission risks.'
-      });
     }
-
-    if (stayDays > 5) {
-      suggestions.push({
-        title: 'Review Functional Status Post-Discharge',
-        rationale: `Extended stay of ${stayDays} days elevates clinical deconditioning risk. Assess physical therapy support options.`
-      });
-    }
-
-    // Default fallback mitigation
-    if (suggestions.length < 3) {
-      suggestions.push({
-        title: 'Patient Medication Reconciliation',
-        rationale: 'Review patient understanding of discharge prescriptions to minimize post-discharge errors.'
-      });
-    }
-
-    return suggestions;
-  };
+    fetchSupportData();
+    return () => {
+      isActive = false;
+    };
+  }, [selectedPatient]);
 
   // Follow-up Table columns
   const followUpColumns = [
@@ -170,9 +154,10 @@ export default function ClinicalSupportPage() {
     }))
   ];
 
-  const recommendationsList = getRecommendations(activePatient);
-  const followUpRows = getFollowUpPlanning(activePatient);
-  const mitigationList = getMitigationSuggestions(activePatient);
+  const recommendationsList = supportData?.recommendations || [];
+  const followUpRows = supportData?.follow_up || [];
+  const mitigationList = supportData?.mitigation || [];
+
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -295,11 +280,7 @@ export default function ClinicalSupportPage() {
                   Follow-Up Coordination Directives
                 </span>
                 <div className="bg-bg-app border border-borderColor p-4 rounded-xl text-[13px] text-txt-primary font-semibold leading-relaxed">
-                  {activePatient.riskBand === 'high' ? (
-                    'Configure direct warm handoff to endocrine care coordinators. Schedule home nurse post-discharge insulin technique check within 48 hours.'
-                  ) : (
-                    'Arrange primary care outpatient clinic follow-up within 10-14 days. Review home blood glucose monitoring records during checkup.'
-                  )}
+                  {supportData?.coordination || 'No data available'}
                 </div>
               </div>
 
@@ -308,47 +289,116 @@ export default function ClinicalSupportPage() {
                   Clinical Care Directives
                 </span>
                 <div className="bg-bg-app border border-borderColor p-4 rounded-xl text-[13px] text-txt-primary font-semibold leading-relaxed">
-                  {activePatient.riskBand === 'high' ? (
-                    'Patient instructed on glucose monitoring twice daily. Inpatient sliding scale insulin discontinued; transition to basal-bolus home regimen.'
-                  ) : (
-                    'Resume home baseline oral diabetes agents. Instruct patient on warning flags of hypo/hyperglycemia.'
-                  )}
+                  {supportData?.directives || 'No data available'}
                 </div>
               </div>
             </div>
           </div>
 
+
+          {/* AI Treatment Outcome Forecast summary */}
+          {supportData?.forecast && (
+            <div className="bg-[#F9F5FF] border border-[#E9D7FE] rounded-2xl p-5 shadow-card space-y-4">
+              <div className="flex items-center gap-1.5 text-[#7A5AF8]">
+                <Sparkles className="w-4.5 h-4.5" />
+                <h3 className="text-[15px] font-bold">Treatment Outcome Forecast</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-[13px] font-semibold text-txt-primary">
+                <div>
+                  <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Recommended Care Protocol</span>
+                  <span className="block text-[12px] font-bold text-txt-primary">{supportData.forecast.treatment_name}</span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Forecasted Outcome Score</span>
+                  <span className="block text-[14px] font-bold text-success">{Number(supportData.forecast.predicted_treatment_effectiveness).toFixed(1)}%</span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Estimated Recovery Time</span>
+                  <span className="block text-[14px] font-bold text-info">{Number(supportData.forecast.predicted_recovery_days).toFixed(1)} days</span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Prediction Confidence</span>
+                  <span className="block text-[14px] font-bold text-[#7A5AF8]">{Number(supportData.forecast.treatment_confidence).toFixed(1)}%</span>
+                </div>
+              </div>
+              <div>
+                <span className="text-[11px] text-txt-muted block uppercase tracking-wider font-bold mb-0.5">Forecast Generated At</span>
+                <span className="block text-[11px] font-mono text-txt-muted">
+                  {supportData.forecast.forecast_generated_at ? new Date(supportData.forecast.forecast_generated_at).toLocaleString() : 'N/A'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* 6. Clinician Draft Notes */}
+          <div className="bg-surface border border-borderColor rounded-2xl p-5 shadow-card space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-borderColor/60 pb-2">
+              <div>
+                <h3 className="text-[15px] font-semibold text-txt-primary">
+                  Clinician Draft Notes
+                </h3>
+                <p className="text-[12px] text-txt-muted mt-1">
+                  Add clinical annotations, custom notes, or deconditioning alerts for this patient's support plan.
+                </p>
+              </div>
+              {supportData?.plan?.updated_by && (
+                <span className="text-[11px] text-txt-muted self-start sm:self-auto font-medium">
+                  Last updated by <strong className="text-txt-primary">{supportData.plan.updated_by}</strong> on {new Date(supportData.plan.updated_at).toLocaleString()}
+                </span>
+              )}
+            </div>
+            <textarea
+              value={draftNotes}
+              onChange={(e) => setDraftNotes(e.target.value)}
+              placeholder={supportData?.plan?.is_approved ? "Plan is approved. Draft notes are locked." : "Type your clinical support plan notes here..."}
+              rows={4}
+              disabled={isResearcher || supportData?.plan?.is_approved}
+              className="w-full bg-bg-app border border-borderColor rounded-xl p-3 text-[13px] text-txt-primary focus:outline-none focus:ring-1 focus:ring-info/50 disabled:opacity-75 disabled:cursor-not-allowed font-medium"
+            />
+          </div>
+
           {/* Gated Action Buttons Panel */}
           <div className="bg-surface border border-borderColor rounded-2xl p-4 shadow-card flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Button
-                onClick={handleApprove}
-                disabled={isApproved || isResearcher}
-                variant="primary"
-                className="font-bold px-6 py-2"
-              >
-                {isApproved ? (
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-success-bg" /> Approved
-                  </span>
-                ) : (
-                  'Approve Recommendations Plan'
-                )}
-              </Button>
+              {supportData?.plan?.is_approved ? (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Badge tone="success" className="font-bold px-4 py-2 text-[12px] uppercase">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-success-bg" /> Approved
+                    </span>
+                  </Badge>
+                  {supportData.plan.approved_by && (
+                    <span className="text-[12px] text-txt-muted font-medium">
+                      Approved by <strong className="text-txt-primary">{supportData.plan.approved_by}</strong> on {new Date(supportData.plan.approved_at).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleApprove}
+                    disabled={isApproveLoading || isResearcher}
+                    variant="primary"
+                    className="font-bold px-6 py-2"
+                  >
+                    {isApproveLoading ? 'Approving...' : 'Approve Recommendations Plan'}
+                  </Button>
 
-              <Button
-                onClick={handleSaveDraft}
-                disabled={isSaved || isResearcher}
-                variant="ghost"
-                className="font-bold border border-borderColor hover:bg-bg-app"
-              >
-                {isSaved ? 'Draft Saved' : 'Save Draft Plan'}
-              </Button>
+                  <Button
+                    onClick={handleSaveDraft}
+                    disabled={isSavedLoading || isResearcher}
+                    variant="ghost"
+                    className="font-bold border border-borderColor hover:bg-bg-app"
+                  >
+                    {isSavedLoading ? 'Saving...' : 'Save Draft Plan'}
+                  </Button>
+                </>
+              )}
             </div>
 
             {isResearcher && (
               <span className="text-[11px] text-danger font-semibold flex items-center gap-1">
-                <ShieldAlert className="w-4 h-4" />
+                <ShieldAlert className="w-4.5 h-4.5" />
                 Action restricted: Researchers cannot approve clinical plans.
               </span>
             )}

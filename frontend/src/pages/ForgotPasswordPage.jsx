@@ -19,6 +19,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Footer from '../components/Footer';
 import { useToast } from '../components/Toast';
+import { forgotPasswordRequest } from '../api/auth';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -26,14 +27,20 @@ export default function ForgotPasswordPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { showToast } = useToast();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
       showToast({ message: 'Please fill out your registered email address.', variant: 'error' });
       return;
     }
-    setIsSubmitted(true);
+    try {
+      await forgotPasswordRequest(email);
+      setIsSubmitted(true);
+    } catch (err) {
+      showToast({ message: err?.message || 'Unable to submit password reset request.', variant: 'error' });
+    }
   };
+
 
   // RENDER FORGOT PASSWORD SUCCESS CARD
   if (isSubmitted) {

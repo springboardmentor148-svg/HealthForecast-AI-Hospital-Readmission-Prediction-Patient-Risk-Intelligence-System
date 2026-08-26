@@ -61,6 +61,18 @@ def logout():
     return _json_response({"message": "Logged out successfully"})
 
 
+@bp.post("/forgot-password")
+def forgot_password():
+    payload = request.get_json(silent=True) or {}
+    email = str(payload.get("email") or "").strip().lower()
+    if not email:
+        raise APIError("Email address is required", 400)
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        raise APIError("No account registered with this email address.", 404)
+    return jsonify({"message": "Instructions sent successfully."})
+
+
 def db_user_lookup(user_id: int | str | None) -> User | None:
     if user_id is None:
         return None
@@ -69,3 +81,4 @@ def db_user_lookup(user_id: int | str | None) -> User | None:
     except (TypeError, ValueError):
         return None
     return db.session.get(User, numeric_user_id)
+

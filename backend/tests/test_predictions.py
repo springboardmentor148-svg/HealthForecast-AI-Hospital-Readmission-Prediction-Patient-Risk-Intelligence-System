@@ -156,3 +156,72 @@ def test_prediction_history_filters_and_pagination(client):
     )
     assert patient_history_response.status_code == 200
     assert patient_history_response.get_json()["predictions"][0]["patient_id"] == patient_two.get_json()["patient"]["id"]
+
+
+def test_batch_predictions_workflow(client, app):
+    headers = auth_header(client)
+
+    # 1. Create two patients
+    p1 = client.post("/api/v1/patients", json=patient_payload("PAT-Batch1", "Patient One"), headers=headers).get_json()["patient"]
+    p2 = client.post("/api/v1/patients", json=patient_payload("PAT-Batch2", "Patient Two"), headers=headers).get_json()["patient"]
+
+    # Verify pending count is 2
+    count_res = client.get("/api/v1/predictions/pending-count", headers=headers)
+    assert count_res.status_code == 200
+    assert count_res.get_json()["pending_count"] == 2
+
+    # 2. Run pending predictions
+    run_pending_res = client.post("/api/v1/predictions/run-pending", headers=headers)
+    assert run_pending_res.status_code == 200
+    res_pending = run_pending_res.get_json()
+    assert res_pending["processed"] == 2
+    assert res_pending["successful"] == 2
+    assert res_pending["failed"] == 0
+
+    # Verify pending count is now 0
+    count_res2 = client.get("/api/v1/predictions/pending-count", headers=headers)
+    assert count_res2.get_json()["pending_count"] == 0
+
+    # Run pending predictions again, should process 0
+    run_pending_res2 = client.post("/api/v1/predictions/run-pending", headers=headers)
+    assert run_pending_res2.get_json()["processed"] == 0
+
+    # 3. Run all predictions
+    run_all_res = client.post("/api/v1/predictions/run-all", headers=headers)
+    assert run_all_res.status_code == 200
+    res_all = run_all_res.get_json()
+    assert res_all["processed"] == 2
+    assert res_all["successful"] == 2
+    assert res_all["failed"] == 0
+
+    # Verify that prediction history now has 4 entries (2 from pending, 2 from all)
+    history_res = client.get("/api/v1/predictions", headers=headers)
+    assert history_res.get_json()["pagination"]["total"] == 4
+
+
+from unittest.mock import patch
+from app.services.prediction_service import run_prediction
+
+def test_batch_predictions_error_handling(client, app):
+    headers = auth_header(client)
+
+    # Create two patients
+    p1 = client.post("/api/v1/patients", json=patient_payload("PAT-Err1", "Patient ErrOne"), headers=headers).get_json()["patient"]
+    p2 = client.post("/api/v1/patients", json=patient_payload("PAT-Err2", "Patient ErrTwo"), headers=headers).get_json()["patient"]
+
+    original_run = run_prediction
+    
+    def mock_run(payload, created_by_id=None):
+        if payload["patient_id"] == p1["id"]:
+            raise Exception("Simulated prediction error")
+        return original_run(payload, created_by_id=created_by_id)
+
+    with patch("app.routes.predictions.run_prediction", side_effect=mock_run):
+        res = client.post("/api/v1/predictions/run-pending", headers=headers)
+        assert res.status_code == 200
+        body = res.get_json()
+        assert body["processed"] == 2
+        assert body["successful"] == 1
+        assert body["failed"] == 1
+        assert body["failed_patient_ids"] == [p1["id"]]
+

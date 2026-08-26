@@ -7,6 +7,7 @@ import Input from '../components/Input';
 import Select from '../components/Select';
 import { useToast } from '../components/Toast';
 import { runPrediction } from '../api/predictions';
+import { triggerNotificationRefresh } from '../utils/notifications';
 
 export default function PredictPage() {
   const navigate = useNavigate();
@@ -110,6 +111,7 @@ export default function PredictPage() {
       }
 
       await refreshPatients();
+      triggerNotificationRefresh();
       navigate(`/predictions/${result.prediction.id}`);
     } catch (error) {
       const message = error?.message || 'Unable to run prediction.';

@@ -105,3 +105,20 @@ export async function runPrediction(payload) {
   });
   return normalizeRunResult(response);
 }
+
+export async function getPendingPredictionsCount() {
+  const response = await apiRequest('/predictions/pending-count');
+  return response?.pending_count ?? 0;
+}
+
+export async function runPendingPredictions() {
+  return await apiRequest('/predictions/run-pending', {
+    method: 'POST',
+  });
+}
+
+export async function runAllPredictions() {
+  return await apiRequest('/predictions/run-all', {
+    method: 'POST',
+  });
+}

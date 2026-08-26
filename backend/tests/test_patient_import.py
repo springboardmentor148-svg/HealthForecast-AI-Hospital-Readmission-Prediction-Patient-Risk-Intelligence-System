@@ -6,7 +6,7 @@ from app.models import Patient, UserRole
 from tests.test_auth import register_payload
 
 
-def test_import_endpoints_require_system_admin(client):
+def test_import_endpoints_allow_doctor_and_admin(client):
     # Register Doctor
     client.post("/api/v1/auth/register", json=register_payload(email="doc@example.com"))
     doc_login = client.post(
@@ -29,25 +29,25 @@ def test_import_endpoints_require_system_admin(client):
 
     csv_data = b"patient_identifier,first_name,last_name,gender,admission_type,primary_diagnosis\n"
 
-    # Test Validation endpoint with Doctor -> Should be 403
+    # Test Validation endpoint with Doctor -> Should be allowed
     res = client.post(
         "/api/v1/patients/import/validate",
         data={"file": (BytesIO(csv_data), "test.csv")},
         content_type="multipart/form-data",
         headers={"Authorization": f"Bearer {doc_token}"},
     )
-    assert res.status_code == 403
+    assert res.status_code in {200, 400}
 
-    # Test Import endpoint with Doctor -> Should be 403
+    # Test Import endpoint with Doctor -> Should be allowed
     res = client.post(
         "/api/v1/patients/import",
         data={"file": (BytesIO(csv_data), "test.csv")},
         content_type="multipart/form-data",
         headers={"Authorization": f"Bearer {doc_token}"},
     )
-    assert res.status_code == 403
+    assert res.status_code in {200, 400}
 
-    # Test Validation endpoint with Admin -> Should be 200/400 (not 403)
+    # Test Validation endpoint with Admin -> Should be allowed
     res = client.post(
         "/api/v1/patients/import/validate",
         data={"file": (BytesIO(csv_data), "test.csv")},
@@ -55,6 +55,7 @@ def test_import_endpoints_require_system_admin(client):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert res.status_code in {200, 400}
+
 
 
 def test_csv_validation_and_preview(client):
@@ -160,3 +161,43 @@ def test_csv_import_execution(client, app):
     assert payload["success"] is True
     assert payload["imported"] == 0
     assert payload["skipped"] == 2
+
+
+def test_doctor_patient_import_assignment(client, app):
+    # Register and login Doctor
+    client.post(
+        "/api/v1/auth/register",
+        json=register_payload(email="doctor_imp@example.com")
+        | {"role": "doctor", "full_name": "Doctor Imp"},
+    )
+    doc_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "doctor_imp@example.com", "password": "StrongPass123!"},
+    )
+    res_json = doc_login.get_json()
+    doc_token = res_json["access_token"]
+    doc_id = res_json["user"]["id"]
+
+    # Valid import CSV
+    good_csv = (
+        b"patient_identifier,first_name,last_name,age_at_admission,gender,admission_type,primary_diagnosis,medications\n"
+        b"EMP-DOCIMP1,Alice,Brown,32,female,elective,Type 2 Diabetes,Metformin\n"
+    )
+
+    res = client.post(
+        "/api/v1/patients/import",
+        data={"file": (BytesIO(good_csv), "test.csv")},
+        content_type="multipart/form-data",
+        headers={"Authorization": f"Bearer {doc_token}"},
+    )
+    assert res.status_code == 200
+    payload = res.get_json()
+    assert payload["success"] is True
+    assert payload["imported"] == 1
+
+    # Verify patient has doctor assigned in DB
+    with app.app_context():
+        p = Patient.query.filter_by(patient_identifier="EMP-DOCIMP1").first()
+        assert p is not None
+        assert p.assigned_doctor_id == doc_id
+

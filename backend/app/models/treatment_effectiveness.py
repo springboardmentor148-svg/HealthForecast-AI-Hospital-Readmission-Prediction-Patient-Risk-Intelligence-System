@@ -19,7 +19,7 @@ class TreatmentEffectiveness(TimestampMixin, db.Model):
     treatment_type = db.Column(db.String(100), nullable=True, index=True)
     start_date = db.Column(db.Date, nullable=False, index=True)
     end_date = db.Column(db.Date, nullable=True, index=True)
-    outcome_score = db.Column(db.Numeric(5, 2), nullable=False)
+    outcome_score = db.Column(db.Numeric(5, 2), nullable=True)
     effectiveness_level = db.Column(
         db.Enum(
             TreatmentEffectivenessLevel,
@@ -27,13 +27,40 @@ class TreatmentEffectiveness(TimestampMixin, db.Model):
             native_enum=False,
             validate_strings=True,
         ),
-        nullable=False,
+        nullable=True,
     )
     notes = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="active")
+    approved_by = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    source = db.Column(db.String(50), nullable=True)
+
+    # AI Forecast columns
+    predicted_treatment_effectiveness = db.Column(db.Numeric(5, 2), nullable=True)
+    predicted_recovery_days = db.Column(db.Numeric(5, 2), nullable=True)
+    expected_response_category = db.Column(
+        db.Enum(
+            TreatmentEffectivenessLevel,
+            name="expected_response_category_enum",
+            native_enum=False,
+            validate_strings=True,
+        ),
+        nullable=True,
+    )
+    treatment_confidence = db.Column(db.Numeric(5, 2), nullable=True)
+    forecast_generated_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     patient = db.relationship(
         "Patient",
         back_populates="treatment_effectiveness",
+        lazy="joined",
+    )
+    approver = db.relationship(
+        "User",
+        foreign_keys=[approved_by],
         lazy="joined",
     )
 

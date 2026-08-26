@@ -3,6 +3,7 @@ from __future__ import annotations
 from .analytics import bp as analytics_bp
 from .auth import bp as auth_bp
 from .clinical_support import bp as clinical_support_bp
+from .notifications import bp as notifications_bp
 from .patients import bp as patients_bp
 from .predictions import bp as predictions_bp
 from .models import bp as models_bp
@@ -19,3 +20,4 @@ def register_blueprints(app):
     app.register_blueprint(treatments_bp, url_prefix="/api/v1/treatments")
     app.register_blueprint(models_bp, url_prefix="/api/v1/models")
     app.register_blueprint(clinical_support_bp, url_prefix="/api/v1/clinical-support")
+    app.register_blueprint(notifications_bp, url_prefix="/api/v1/notifications")

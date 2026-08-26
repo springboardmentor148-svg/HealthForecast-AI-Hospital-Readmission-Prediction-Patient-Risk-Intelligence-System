@@ -3,8 +3,10 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+import time
 from ..errors import APIError
-from ..models import UserRole
+from ..models import UserRole, Patient, Prediction
+from ..extensions import db
 from ..services.prediction_service import (
     fetch_prediction,
     list_prediction_history,
@@ -69,3 +71,127 @@ def _resolve_prediction(prediction_id: str):
     if prediction is None:
         raise APIError("Prediction not found", 404)
     return prediction
+
+
+@bp.get("/pending-count")
+@jwt_required()
+@require_roles(UserRole.doctor, UserRole.hospital_administrator, UserRole.system_administrator)
+def get_pending_predictions_count():
+    count = Patient.query.filter(~Patient.predictions.any()).count()
+    return jsonify({"pending_count": count})
+
+
+@bp.post("/run-pending")
+@jwt_required()
+@require_roles(UserRole.doctor, UserRole.hospital_administrator, UserRole.system_administrator)
+def run_pending_predictions():
+    identity = get_jwt_identity()
+    created_by_id = None
+    try:
+        created_by_id = int(identity) if identity is not None else None
+    except (TypeError, ValueError):
+        created_by_id = None
+
+    patients = Patient.query.filter(~Patient.predictions.any()).all()
+    
+    processed = len(patients)
+    successful = 0
+    failed = 0
+    failed_patient_ids = []
+    start_time = time.perf_counter()
+
+    for p in patients:
+        try:
+            payload = {
+                "patient_id": p.id,
+                "prior_inpatient": 0,
+                "prior_emergency": 0,
+                "medications_count": len(p.medications) if p.medications else 0,
+                "time_in_hospital": p.time_in_hospital,
+                "diagnoses_count": p.prior_diagnoses_count,
+                "a1c_result": "None",
+                "insulin_usage": "No",
+            }
+            run_prediction(payload, created_by_id=created_by_id)
+            successful += 1
+        except Exception:
+            db.session.rollback()
+            failed += 1
+            failed_patient_ids.append(p.id)
+
+    duration = time.perf_counter() - start_time
+    return jsonify({
+        "processed": processed,
+        "successful": successful,
+        "failed": failed,
+        "failed_patient_ids": failed_patient_ids,
+        "duration_seconds": round(duration, 2)
+    })
+
+
+@bp.post("/run-all")
+@jwt_required()
+@require_roles(UserRole.doctor, UserRole.hospital_administrator, UserRole.system_administrator)
+def run_all_predictions():
+    identity = get_jwt_identity()
+    created_by_id = None
+    try:
+        created_by_id = int(identity) if identity is not None else None
+    except (TypeError, ValueError):
+        created_by_id = None
+
+    patients = Patient.query.all()
+    
+    processed = len(patients)
+    successful = 0
+    failed = 0
+    failed_patient_ids = []
+    start_time = time.perf_counter()
+
+    for p in patients:
+        try:
+            latest_pred = (
+                Prediction.query.filter_by(patient_id=p.id)
+                .order_by(Prediction.predicted_at.desc())
+                .first()
+            )
+            
+            if latest_pred and latest_pred.features_snapshot and "inputs" in latest_pred.features_snapshot:
+                inputs = latest_pred.features_snapshot["inputs"]
+                payload = {
+                    "patient_id": p.id,
+                    "prior_inpatient": inputs.get("prior_inpatient", 0),
+                    "prior_emergency": inputs.get("prior_emergency", 0),
+                    "medications_count": inputs.get("medications_count", len(p.medications) if p.medications else 0),
+                    "time_in_hospital": inputs.get("time_in_hospital", p.time_in_hospital),
+                    "diagnoses_count": inputs.get("diagnoses_count", p.prior_diagnoses_count),
+                    "a1c_result": inputs.get("a1c_result", "None"),
+                    "insulin_usage": inputs.get("insulin_usage", "No"),
+                }
+            else:
+                payload = {
+                    "patient_id": p.id,
+                    "prior_inpatient": 0,
+                    "prior_emergency": 0,
+                    "medications_count": len(p.medications) if p.medications else 0,
+                    "time_in_hospital": p.time_in_hospital,
+                    "diagnoses_count": p.prior_diagnoses_count,
+                    "a1c_result": "None",
+                    "insulin_usage": "No",
+                }
+            
+            run_prediction(payload, created_by_id=created_by_id)
+            successful += 1
+        except Exception:
+            db.session.rollback()
+            failed += 1
+            failed_patient_ids.append(p.id)
+
+    duration = time.perf_counter() - start_time
+    return jsonify({
+        "processed": processed,
+        "successful": successful,
+        "failed": failed,
+        "failed_patient_ids": failed_patient_ids,
+        "duration_seconds": round(duration, 2)
+    })

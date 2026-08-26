@@ -288,7 +288,7 @@ class PatientCSVImporter:
             "validation_errors": validation_errors,
         }
 
-    def import_csv(self, file_stream) -> dict[str, Any]:
+    def import_csv(self, file_stream, assigned_doctor_id: int | None = None) -> dict[str, Any]:
         """
         Validates the CSV and inserts all valid records into the database in batches.
         Resilient: if a batch fails, retries row-by-row for that batch.
@@ -428,6 +428,7 @@ class PatientCSVImporter:
                     risk_band=RiskBand.low,
                     readmission_probability=Decimal("0.0"),
                     is_active=True,
+                    assigned_doctor_id=assigned_doctor_id,
                 )
                 patients_to_insert.append((row_num, patient))
                 csv_identifiers.add(identifier)
@@ -462,6 +463,16 @@ class PatientCSVImporter:
                             "row": row_num,
                             "reason": f"Database insertion failure: {row_exc!s}",
                         })
+
+        if imported > 0:
+            from .notification_service import broadcast_notification
+            broadcast_notification(
+                title="📥 Patients Imported",
+                message=f"Successfully imported {imported} patients from CSV registry file.",
+                notification_type="CSV_IMPORT_COMPLETED",
+                related_entity=None,
+                related_entity_id=None
+            )
 
         return {
             "success": True,

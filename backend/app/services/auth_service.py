@@ -92,7 +92,9 @@ def serialize_user(user: User) -> dict[str, Any]:
         "department": user.department,
         "phone": user.phone,
         "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
     }
+
 
 
 def register_user(payload: dict[str, Any]) -> User:
@@ -118,6 +120,17 @@ def register_user(payload: dict[str, Any]) -> User:
         last_login_at=None,
     )
     db.session.add(user)
+    db.session.flush()
+
+    from .notification_service import broadcast_notification
+    broadcast_notification(
+        title="👤 User Account Registered",
+        message=f"User {user.full_name} ({user.username}) registered with role {user.role.value}.",
+        notification_type="USER_REGISTERED",
+        related_entity="User",
+        related_entity_id=user.id
+    )
+
     try:
         db.session.commit()
     except IntegrityError as exc:
@@ -146,6 +159,16 @@ def authenticate_user(email: Any, password: Any) -> User:
     except IntegrityError as exc:
         db.session.rollback()
         raise APIError("Unable to update login timestamp", 500) from exc
+
+    from .user_service import log_user_activity
+    log_user_activity(
+        user_id=user.id,
+        action="login",
+        target_type="User",
+        target_id=user.id,
+        metadata={},
+    )
+
     return user
 
 

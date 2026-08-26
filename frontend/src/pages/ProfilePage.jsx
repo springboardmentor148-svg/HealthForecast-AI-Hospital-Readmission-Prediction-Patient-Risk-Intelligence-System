@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { meRequest } from '../api/auth';
+import { meRequest, updateMeRequest } from '../api/auth';
+import { getMyActivity } from '../api/users';
 import { useAnalytics } from '../contexts/AnalyticsContext';
 import { normalizeAuthUser } from '../utils/auth';
 import { 
@@ -33,12 +34,72 @@ import {
   Activity
 } from 'lucide-react';
 
+function formatActivityTime(timestampStr) {
+  if (!timestampStr) return '—';
+  try {
+    const date = new Date(timestampStr);
+    if (isNaN(date.getTime())) return timestampStr;
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) {
+      return 'Just now';
+    }
+    if (diffMins < 60) {
+      return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    }
+    if (diffHours < 24) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    }
+
+    // Check if yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.getDate() === yesterday.getDate() &&
+                        date.getMonth() === yesterday.getMonth() &&
+                        date.getFullYear() === yesterday.getFullYear();
+
+    // Format time part
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const timeStr = `${hours}:${minutes} ${ampm}`;
+
+    if (isYesterday) {
+      return `Yesterday, ${timeStr}`;
+    }
+
+    if (diffDays < 7) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    }
+
+    // Absolute date for older records
+    const day = date.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year} • ${timeStr}`;
+  } catch (err) {
+    return timestampStr;
+  }
+}
+
 export default function ProfilePage() {
   const { currentRole, user: authUser, token, setUser } = useAuth();
   const { modelSummary } = useAnalytics();
   const { showToast } = useToast();
 
   const [profileUser, setProfileUser] = useState(authUser);
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [activitiesError, setActivitiesError] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -62,6 +123,33 @@ export default function ProfilePage() {
     };
   }, [token, setUser]);
 
+  useEffect(() => {
+    let isActive = true;
+    async function fetchActivities() {
+      if (!token) return;
+      setActivitiesLoading(true);
+      setActivitiesError(false);
+      try {
+        const data = await getMyActivity();
+        if (!isActive) return;
+        setActivities(data);
+      } catch (err) {
+        console.error('Failed to fetch user activity:', err);
+        if (isActive) {
+          setActivitiesError(true);
+        }
+      } finally {
+        if (isActive) {
+          setActivitiesLoading(false);
+        }
+      }
+    }
+    fetchActivities();
+    return () => {
+      isActive = false;
+    };
+  }, [token]);
+
   const activeUser = profileUser || authUser;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -74,21 +162,41 @@ export default function ProfilePage() {
     setIsEditing(true);
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!editName.trim()) {
       showToast({ message: 'Name field cannot be empty.', variant: 'error' });
       return;
     }
-    const updatedUser = {
-      ...activeUser,
-      full_name: editName,
-      phone: editPhone
-    };
-    setProfileUser(updatedUser);
-    setUser(updatedUser);
-    setIsEditing(false);
-    showToast({ message: 'Profile details updated successfully.', variant: 'success' });
+    try {
+      const response = await updateMeRequest({
+        full_name: editName,
+        phone: editPhone
+      });
+      const normalized = normalizeAuthUser(response.user);
+      setProfileUser(normalized);
+      setUser(normalized);
+      setIsEditing(false);
+      showToast({ message: 'Profile details updated successfully.', variant: 'success' });
+    } catch (err) {
+      showToast({ message: err.message || 'Failed to update profile.', variant: 'error' });
+    }
   };
+
+  const handleChangePassword = async () => {
+    const newPassword = window.prompt("Enter your new password (minimum 8 characters):");
+    if (newPassword === null) return;
+    if (newPassword.trim().length < 8) {
+      showToast({ message: "Password must be at least 8 characters long.", variant: "error" });
+      return;
+    }
+    try {
+      await updateMeRequest({ password: newPassword.trim() });
+      showToast({ message: "Password updated successfully.", variant: "success" });
+    } catch (err) {
+      showToast({ message: err.message || "Failed to change password.", variant: "error" });
+    }
+  };
+
 
   // Controlled UI placeholders state
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
@@ -101,48 +209,23 @@ export default function ProfilePage() {
   const [notifPredictions, setNotifPredictions] = useState(false);
   const [notifReports, setNotifReports] = useState(true);
 
-  // Dynamic user details based on role selector context
-  const getUserDetails = (role) => {
-    const details = {
-      name: activeUser?.full_name || 'Dr. Sarah Reed',
-      email: activeUser?.email || 's.reed@forecast.ai',
-      phone: activeUser?.phone || '+1 (555) 019-2831',
-      empId: activeUser?.id ? `EMP-${activeUser.id}` : 'EMP-9201',
-      hospital: 'Metropolitan Diabetes Center',
-      status: 'Active',
-      joined: '12 Mar 2025',
-      lastLogin: 'Today, 10:24 AM',
-      username: activeUser?.username || activeUser?.email?.split('@')[0] || 'sreed_forecast',
-      dept: 'Endocrinology'
+  // Dynamic user details based on database user
+  const getUserDetails = () => {
+    return {
+      name: activeUser?.full_name || '—',
+      email: activeUser?.email || '—',
+      phone: activeUser?.phone || 'Not configured',
+      empId: activeUser?.id ? `EMP-${activeUser.id}` : '—',
+      hospital: 'No hospital configured',
+      status: (activeUser?.is_active ?? true) ? 'Active' : 'Inactive',
+      joined: activeUser?.created_at ? new Date(activeUser.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No data available',
+      lastLogin: activeUser?.last_login_at ? new Date(activeUser.last_login_at).toLocaleString() : 'Never',
+      username: activeUser?.username || activeUser?.email?.split('@')[0] || '—',
+      dept: activeUser?.department || '—'
     };
-
-    if (role === 'System Administrator') {
-      if (!activeUser) {
-        details.name = 'Thomas Vance';
-        details.email = 't.vance@forecast.ai';
-        details.username = 'tvance_admin';
-      }
-      details.dept = 'Information Technology';
-    } else if (role === 'Hospital Administrator') {
-      if (!activeUser) {
-        details.name = 'Marcus Sterling';
-        details.email = 'm.sterling@forecast.ai';
-        details.username = 'msterling_ops';
-      }
-      details.dept = 'Hospital Operations';
-    } else if (role === 'Healthcare Researcher') {
-      if (!activeUser) {
-        details.name = 'Elena Rostova';
-        details.email = 'e.rostova@forecast.ai';
-        details.username = 'erostova_research';
-      }
-      details.dept = 'Anonymized Research Pool';
-    }
-
-    return details;
   };
 
-  const user = getUserDetails(currentRole);
+  const user = getUserDetails();
 
   const getPermissions = (role) => {
     switch (role) {
@@ -380,7 +463,7 @@ export default function ProfilePage() {
                 <span className="text-txt-muted text-[11px] block mt-0.5">Change password and auth key tokens.</span>
               </div>
               <Button 
-                onClick={() => showToast({ message: 'Password reset placeholder.', variant: 'info' })}
+                onClick={handleChangePassword}
                 variant="ghost" 
                 className="text-[11px] font-bold border border-borderColor rounded-lg px-3 py-1.5 hover:bg-bg-app"
               >
@@ -412,36 +495,21 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-2.5 bg-bg-app/40 border border-borderColor/40 rounded-xl">
                   <div className="space-y-0.5">
-                    <span className="text-txt-primary block font-bold">Chrome Mac OS (Current)</span>
-                    <span className="text-txt-muted text-[10px] block font-mono">127.0.0.1 • Active now</span>
+                    <span className="text-txt-primary block font-bold">Current Browser Session</span>
+                    <span className="text-txt-muted text-[10px] block font-mono">
+                      {user.lastLogin !== 'Never' ? `Last Login: ${user.lastLogin}` : 'Active now'}
+                    </span>
                   </div>
                   <span className="text-[10px] text-success font-bold uppercase tracking-wider bg-success-bg/25 px-2 py-0.5 rounded-full">
                     Online
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2.5 bg-bg-app/40 border border-borderColor/40 rounded-xl">
-                  <div className="space-y-0.5">
-                    <span className="text-txt-primary block font-bold">Firefox Windows 11</span>
-                    <span className="text-txt-muted text-[10px] block font-mono">192.168.1.105 • 2 days ago</span>
-                  </div>
-                  <button 
-                    onClick={() => showToast({ message: 'Session token revoked successfully.', variant: 'success' })}
-                    className="text-[10px] font-bold text-danger hover:underline bg-transparent border-none cursor-pointer"
-                  >
-                    Revoke
-                  </button>
+                <div className="text-center p-3.5 bg-bg-app/20 border border-borderColor/20 border-dashed rounded-xl text-txt-muted text-[11px]">
+                  No other active sessions detected.
                 </div>
               </div>
-              
-              <div className="pt-2 flex justify-end">
-                <button
-                  onClick={() => showToast({ message: 'All other session keys revoked successfully.', variant: 'success' })}
-                  className="text-[11px] text-info hover:underline bg-transparent border-none font-bold cursor-pointer"
-                >
-                  Logout Other Devices
-                </button>
-              </div>
             </div>
+
           </div>
         </div>
 
@@ -603,39 +671,35 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-4 pl-2.5">
-          <div className="relative border-l border-borderColor pl-6 space-y-5">
-            <div className="relative">
-              <span className="absolute -left-[30px] top-0 w-3 h-3 rounded-full bg-info border border-surface shadow-sm" />
-              <div className="space-y-0.5">
-                <span className="text-[13px] font-bold text-txt-primary block">Viewed Patient Dossier #82014</span>
-                <span className="text-[10px] text-txt-muted block">2 minutes ago • Clinical Portal Session</span>
-              </div>
+          {activitiesLoading ? (
+            <div className="text-center py-6 text-txt-muted text-[13px] font-semibold">
+              Loading recent activity...
             </div>
-
-            <div className="relative">
-              <span className="absolute -left-[30px] top-0 w-3 h-3 rounded-full bg-info border border-surface shadow-sm" />
-              <div className="space-y-0.5">
-                <span className="text-[13px] font-bold text-txt-primary block">Generated Readmission Prediction</span>
-                <span className="text-[10px] text-txt-muted block">18 minutes ago • Predict workflow module</span>
-              </div>
+          ) : activitiesError ? (
+            <div className="text-center py-6 text-danger text-[13px] font-semibold">
+              Failed to load recent activity history.
             </div>
-
-            <div className="relative">
-              <span className="absolute -left-[30px] top-0 w-3 h-3 rounded-full bg-info border border-surface shadow-sm" />
-              <div className="space-y-0.5">
-                <span className="text-[13px] font-bold text-txt-primary block">Updated Treatment Notes (Patient #82014)</span>
-                <span className="text-[10px] text-txt-muted block">Yesterday, 4:15 PM • Clinical Support documentation</span>
-              </div>
+          ) : activities.length === 0 ? (
+            <div className="text-center py-8 text-txt-muted text-[13px] border border-dashed border-borderColor rounded-xl font-semibold">
+              No recent activity recorded for this account.
             </div>
-
-            <div className="relative">
-              <span className="absolute -left-[30px] top-0 w-3 h-3 rounded-full bg-info border border-surface shadow-sm" />
-              <div className="space-y-0.5">
-                <span className="text-[13px] font-bold text-txt-primary block">Downloaded Analytics Report</span>
-                <span className="text-[10px] text-txt-muted block">3 days ago • Population Health metrics export</span>
-              </div>
+          ) : (
+            <div className="relative border-l border-borderColor pl-6 space-y-5">
+              {activities.map((act) => (
+                <div key={act.id} className="relative">
+                  <span className="absolute -left-[30px] top-0 w-3 h-3 rounded-full bg-info border border-surface shadow-sm" />
+                  <div className="space-y-0.5">
+                    <span className="text-[13px] font-bold text-txt-primary block">
+                      {act.description}
+                    </span>
+                    <span className="text-[10px] text-txt-muted block">
+                      {formatActivityTime(act.created_at)} • {act.module || 'System Portal Session'}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
