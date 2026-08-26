@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth
+from app.routers import auth
 
 app = FastAPI(title="HealthForecast AI")
 
