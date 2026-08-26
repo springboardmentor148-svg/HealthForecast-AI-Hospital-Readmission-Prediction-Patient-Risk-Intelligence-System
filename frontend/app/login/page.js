@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL ||
-        "https://healthforecast-ai-hospital-readmission-mj5q.onrender.com";
+        "https://healthforecast-ai-hospital-readmission-mj5q.onrender.com/auth";
 
       const response = await fetch(
         `${apiUrl}/login`,

@@ -11,7 +11,7 @@ import { getToken } from "./auth";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://healthforecast-ai-hospital-readmission-mj5q.onrender.com/";
+  "https://healthforecast-ai-hospital-readmission-mj5q.onrender.com/auth";
 
 // ============================================================
 // COMMON API REQUEST
