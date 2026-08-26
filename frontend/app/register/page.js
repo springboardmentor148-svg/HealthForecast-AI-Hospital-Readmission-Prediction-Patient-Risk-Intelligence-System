@@ -92,7 +92,7 @@ export default function RegisterPage() {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL ||
-        "http://localhost:8000";
+        "https://healthforecast-ai-hospital-readmission-mj5q.onrender.com";
 
       // --------------------------------------------------------
       // DEBUG: CHECK DATA SENT TO BACKEND

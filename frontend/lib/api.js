@@ -6,12 +6,12 @@
 import { getToken } from "./auth";
 
 // ============================================================
-// API BASE URL
+// API BASE 
 // ============================================================
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://healthforecast-ai-hospital-readmission-mj5q.onrender.com/auth";
+  "https://healthforecast-ai-hospital-readmission-mj5q.onrender.com";
 
 // ============================================================
 // COMMON API REQUEST
