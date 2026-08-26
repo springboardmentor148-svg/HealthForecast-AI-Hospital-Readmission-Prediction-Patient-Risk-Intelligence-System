@@ -2,17 +2,13 @@ from fastapi import FastAPI
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+# Disable automatic trailing slash redirects to prevent 307 CORS drops
+app = FastAPI(redirect_slashes=False)
 
-# Add CORS Middleware before adding routes
+# Place CORSMiddleware IMMEDIATELY after app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://healthforecast-ai-frontend.onrender.com",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "*"
-    ],
+    allow_origins=["*"],  # Allows requests from any origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
