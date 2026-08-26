@@ -228,7 +228,7 @@ export default function ResearchReportsPage() {
     minHeight: "100vh",
     background: "#f4f7fb",
     padding: "40px",
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "Georgia, Times New Roman, serif",
   },
 
   container: {

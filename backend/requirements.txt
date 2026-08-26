@@ -60,3 +60,4 @@ xgboost
 catboost
 
 joblib
+email-validator

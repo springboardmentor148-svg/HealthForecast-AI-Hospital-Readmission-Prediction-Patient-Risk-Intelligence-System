@@ -3,9 +3,20 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 
-# Import database engine and Base models to auto-create missing tables
+
+# ============================================================
+# DATABASE
+# ============================================================
+
 from app.database.postgres import engine, Base
-import app.models  # Ensures all model definitions are registered
+
+# Register all SQLAlchemy models
+import app.models
+
+
+# ============================================================
+# ROUTES
+# ============================================================
 
 from app.routes.auth import router as auth_router
 from app.routes.patients import router as patients_router
@@ -16,10 +27,13 @@ from app.routes.models import router as models_router
 from app.routes.treatments import router as treatments_router
 from app.routes.users import router as users_router
 
+
 # ============================================================
-# AUTO-CREATE DATABASE TABLES ON STARTUP
+# AUTO-CREATE DATABASE TABLES
 # ============================================================
+
 Base.metadata.create_all(bind=engine)
+
 
 # ============================================================
 # CREATE APPLICATION
@@ -28,16 +42,23 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="AI-Based Hospital Management and Health Risk Prediction System",
+    description=(
+        "AI-Based Hospital Management and "
+        "Health Risk Prediction System"
+    ),
 )
 
+
 # ============================================================
-# CORS (Allows both local testing and Render live frontend)
+# CORS
 # ============================================================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,7 +66,7 @@ app.add_middleware(
 
 
 # ============================================================
-# ROUTERS
+# AUTHENTICATION
 # ============================================================
 
 app.include_router(
@@ -54,9 +75,19 @@ app.include_router(
     tags=["Authentication"],
 )
 
+
+# ============================================================
+# USERS
+# ============================================================
+
 app.include_router(
     users_router,
 )
+
+
+# ============================================================
+# PATIENTS
+# ============================================================
 
 app.include_router(
     patients_router,
@@ -64,27 +95,55 @@ app.include_router(
     tags=["Patients"],
 )
 
+
+# ============================================================
+# PREDICTIONS
+# ============================================================
+
 app.include_router(
     predictions_router,
     prefix="/predictions",
     tags=["Predictions"],
 )
 
+
+# ============================================================
+# ANALYTICS
+# ============================================================
+
 app.include_router(
     analytics_router,
-    prefix="/analytics",
     tags=["Analytics"],
 )
 
+
+# ============================================================
+# ROLE BASED ACCESS CONTROL
+#
+# admin.py already contains:
+#
+#     prefix="/admin"
+#
+# Therefore DO NOT add another prefix here.
+# ============================================================
+
 app.include_router(
     admin_router,
-    prefix="/admin",
-    tags=["Admin"],
 )
+
+
+# ============================================================
+# MODELS
+# ============================================================
 
 app.include_router(
     models_router,
 )
+
+
+# ============================================================
+# TREATMENTS
+# ============================================================
 
 app.include_router(
     treatments_router,

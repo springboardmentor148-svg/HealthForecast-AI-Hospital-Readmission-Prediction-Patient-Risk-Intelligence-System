@@ -361,7 +361,7 @@ export default function HospitalAdminPatientsPage() {
 
             <Link
 
-              href="/hospital_admin"
+              href="/hospital_admin/analytics"
 
               style={styles.backButton}
 
@@ -439,15 +439,14 @@ export default function HospitalAdminPatientsPage() {
 
           <Link
 
-            href="/hospital_admin"
+            href="/hospital_admin/analytics"
 
             style={styles.backButton}
 
           >
 
-            ← Hospital Admin Dashboard
-
-          </Link>
+            ← Hospital Admin Analytics        
+            </Link>
 
         </div>
 
@@ -902,13 +901,13 @@ export default function HospitalAdminPatientsPage() {
 
           <Link
 
-            href="/hospital_admin"
+            href="/hospital_admin/analytics"
 
             style={styles.backButton}
 
           >
 
-            ← Back to Hospital Admin Dashboard
+            ← Back to Hospital admin analytics
 
           </Link>
 

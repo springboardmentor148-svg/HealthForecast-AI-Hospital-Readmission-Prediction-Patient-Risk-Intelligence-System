@@ -4,26 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { getTreatments } from "../../../lib/api";
-
-
 // ============================================================
 // HOSPITAL ADMIN - TREATMENT MANAGEMENT
 // ============================================================
-
 export default function HospitalAdminTreatmentsPage() {
-
   // ============================================================
   // STATE
   // ============================================================
-
   const [treatments, setTreatments] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
-
   const [search, setSearch] = useState("");
-
   const [statusFilter, setStatusFilter] = useState("all");
 
 
@@ -494,7 +485,7 @@ export default function HospitalAdminTreatmentsPage() {
 
           <Link
 
-            href="/hospital_admin"
+            href="/hospital_admin/analytics"
 
             style={styles.backButton}
 

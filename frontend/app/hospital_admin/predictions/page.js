@@ -442,7 +442,7 @@ export default function HospitalAdminPredictionsPage() {
 
           <Link
 
-            href="/hospital-admin"
+            href="/hospital_admin/analytics"
 
             style={styles.backButton}
 

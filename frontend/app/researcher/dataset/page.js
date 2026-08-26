@@ -5,9 +5,17 @@ import Link from "next/link";
 import { getPatients } from "../../../lib/api";
 
 export default function ResearchDatasetPage() {
+  // ============================================================
+  // STATE
+  // ============================================================
+
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // ============================================================
+  // LOAD PATIENT DATA
+  // ============================================================
 
   useEffect(() => {
     loadPatients();
@@ -21,19 +29,28 @@ export default function ResearchDatasetPage() {
 
       if (Array.isArray(response)) {
         list = response;
-      } else if (Array.isArray(response.data)) {
+      } else if (Array.isArray(response?.data)) {
         list = response.data;
-      } else if (Array.isArray(response.patients)) {
+      } else if (Array.isArray(response?.patients)) {
         list = response.patients;
       }
 
       setPatients(list);
     } catch (err) {
-      console.error("Failed to load research dataset:", err);
+      console.error(
+        "Failed to load research dataset:",
+        err
+      );
+
+      setPatients([]);
     } finally {
       setLoading(false);
     }
   }
+
+  // ============================================================
+  // FILTER PATIENTS
+  // ============================================================
 
   const filteredPatients = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -50,7 +67,9 @@ export default function ResearchDatasetPage() {
           ""
       ).toLowerCase();
 
-      const age = String(patient.age ?? "").toLowerCase();
+      const age = String(
+        patient.age ?? ""
+      ).toLowerCase();
 
       const gender = String(
         patient.gender ?? ""
@@ -79,45 +98,65 @@ export default function ResearchDatasetPage() {
     });
   }, [patients, search]);
 
-  const maleCount = filteredPatients.filter(
-    (patient) =>
-      String(patient.gender ?? "").toLowerCase() === "male"
-  ).length;
+  // ============================================================
+  // SUMMARY CARD VALUES
+  // ============================================================
 
-  const femaleCount = filteredPatients.filter(
-    (patient) =>
-      String(patient.gender ?? "").toLowerCase() === "female"
-  ).length;
+  const totalResearchRecords =
+    filteredPatients.length;
+
+  const maleCount =
+    filteredPatients.filter(
+      (patient) =>
+        String(
+          patient.gender ?? ""
+        ).toLowerCase() === "male"
+    ).length;
+
+  const femaleCount =
+    filteredPatients.filter(
+      (patient) =>
+        String(
+          patient.gender ?? ""
+        ).toLowerCase() === "female"
+    ).length;
+
+  // ============================================================
+  // EXPORT CSV
+  // ============================================================
 
   function exportCSV() {
     if (!filteredPatients.length) {
       return;
     }
 
-    const rows = filteredPatients.map((patient) => ({
-      PatientID:
-        patient.patient_code ??
-        patient.patient_id ??
-        patient.id ??
-        "",
+    const rows = filteredPatients.map(
+      (patient) => ({
+        PatientID:
+          patient.patient_code ??
+          patient.patient_id ??
+          patient.id ??
+          "",
 
-      Age:
-        patient.age ?? "",
+        Age:
+          patient.age ?? "",
 
-      Gender:
-        patient.gender ?? "",
+        Gender:
+          patient.gender ?? "",
 
-      Race:
-        patient.race ?? "",
+        Race:
+          patient.race ?? "",
 
-      MedicalHistory:
-        patient.medical_history ?? "",
+        MedicalHistory:
+          patient.medical_history ?? "",
 
-      AdmissionHistory:
-        patient.admission_history ?? "",
-    }));
+        AdmissionHistory:
+          patient.admission_history ?? "",
+      })
+    );
 
-    const headers = Object.keys(rows[0]);
+    const headers =
+      Object.keys(rows[0]);
 
     const csvRows = [
       headers.join(","),
@@ -125,7 +164,8 @@ export default function ResearchDatasetPage() {
       ...rows.map((row) =>
         headers
           .map((header) => {
-            const value = row[header] ?? "";
+            const value =
+              row[header] ?? "";
 
             return `"${String(value)
               .replace(/"/g, '""')
@@ -135,22 +175,27 @@ export default function ResearchDatasetPage() {
       ),
     ];
 
-    const csv = csvRows.join("\n");
+    const csv =
+      csvRows.join("\n");
 
     const blob = new Blob(
       [csv],
       {
-        type: "text/csv;charset=utf-8;",
+        type:
+          "text/csv;charset=utf-8;",
       }
     );
 
-    const url = URL.createObjectURL(blob);
+    const url =
+      URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
+    const link =
+      document.createElement("a");
 
     link.href = url;
 
-    link.download = "Anonymized_Research_Dataset.csv";
+    link.download =
+      "Anonymized_Research_Dataset.csv";
 
     document.body.appendChild(link);
 
@@ -161,6 +206,10 @@ export default function ResearchDatasetPage() {
     URL.revokeObjectURL(url);
   }
 
+  // ============================================================
+  // LOADING
+  // ============================================================
+
   if (loading) {
     return (
       <div style={styles.loading}>
@@ -169,15 +218,24 @@ export default function ResearchDatasetPage() {
     );
   }
 
+  // ============================================================
+  // PAGE
+  // ============================================================
+
   return (
     <main style={styles.main}>
+
       <div style={styles.container}>
 
-        {/* HEADER */}
+        {/* ======================================================
+            HEADER
+        ====================================================== */}
+
         <div style={styles.header}>
 
           <div>
-            <div style={styles.eyebrow}>
+
+            <div style={styles.brand}>
               HEALTHFORECAST AI
             </div>
 
@@ -186,9 +244,10 @@ export default function ResearchDatasetPage() {
             </h1>
 
             <p style={styles.subtitle}>
-              Explore anonymized patient information for
-              population-level healthcare research.
+              Explore anonymized patient information
+              for population-level healthcare research.
             </p>
+
           </div>
 
           <Link
@@ -200,64 +259,72 @@ export default function ResearchDatasetPage() {
 
         </div>
 
-        {/* SUMMARY CARDS */}
+        {/* ======================================================
+            THREE SUMMARY CARDS
+        ====================================================== */}
+
         <div style={styles.summaryGrid}>
 
+          {/* TOTAL RECORDS */}
+
           <div style={styles.summaryCard}>
-            <div style={styles.summaryLabel}>
+
+            <div style={styles.summaryCardTitle}>
               Total Records
             </div>
 
-            <div style={styles.summaryValue}>
-              {filteredPatients.length}
+            <div
+              style={styles.summaryCardValue}
+            >
+              {totalResearchRecords}
             </div>
 
-            <div style={styles.summaryDescription}>
-              Available patient records
-            </div>
           </div>
 
+          {/* MALE */}
+
           <div style={styles.summaryCard}>
-            <div style={styles.summaryLabel}>
+
+            <div style={styles.summaryCardTitle}>
               Male
             </div>
 
             <div
               style={{
-                ...styles.summaryValue,
+                ...styles.summaryCardValue,
                 color: "#2563eb",
               }}
             >
               {maleCount}
             </div>
 
-            <div style={styles.summaryDescription}>
-              Male patient records
-            </div>
           </div>
 
+          {/* FEMALE */}
+
           <div style={styles.summaryCard}>
-            <div style={styles.summaryLabel}>
+
+            <div style={styles.summaryCardTitle}>
               Female
             </div>
 
             <div
               style={{
-                ...styles.summaryValue,
+                ...styles.summaryCardValue,
                 color: "#db2777",
               }}
             >
               {femaleCount}
             </div>
 
-            <div style={styles.summaryDescription}>
-              Female patient records
-            </div>
           </div>
 
         </div>
 
-        {/* TOOLBAR */}
+        {/* ======================================================
+            TOOLBAR
+        ====================================================== */}
+
         <div style={styles.toolbar}>
 
           <div style={styles.searchWrapper}>
@@ -287,20 +354,27 @@ export default function ResearchDatasetPage() {
 
         </div>
 
-        {/* DATASET CARD */}
+        {/* ======================================================
+            DATASET CARD
+        ====================================================== */}
+
         <div style={styles.datasetCard}>
+
+          {/* DATASET HEADER */}
 
           <div style={styles.datasetHeader}>
 
             <div>
+
               <h2 style={styles.datasetTitle}>
                 Patient Research Records
               </h2>
 
               <p style={styles.datasetSubtitle}>
-                Personally identifiable information is
-                excluded from this research view.
+                Personally identifiable information
+                is excluded from this research view.
               </p>
+
             </div>
 
             <div style={styles.recordBadge}>
@@ -309,7 +383,10 @@ export default function ResearchDatasetPage() {
 
           </div>
 
-          {/* TABLE */}
+          {/* ==================================================
+              TABLE
+          ================================================== */}
+
           <div style={styles.tableWrapper}>
 
             <table style={styles.table}>
@@ -375,18 +452,28 @@ export default function ResearchDatasetPage() {
                         style={styles.tableRow}
                       >
 
+                        {/* PATIENT ID */}
+
                         <td style={styles.td}>
-                          <span style={styles.patientId}>
+
+                          <span
+                            style={styles.patientId}
+                          >
                             {patient.patient_code ??
                               patient.patient_id ??
                               patient.id ??
                               "-"}
                           </span>
+
                         </td>
+
+                        {/* AGE */}
 
                         <td style={styles.td}>
                           {patient.age ?? "-"}
                         </td>
+
+                        {/* GENDER */}
 
                         <td style={styles.td}>
 
@@ -394,10 +481,12 @@ export default function ResearchDatasetPage() {
                             style={
                               String(
                                 patient.gender ?? ""
-                              ).toLowerCase() === "male"
+                              ).toLowerCase() ===
+                              "male"
                                 ? styles.badgeMale
                                 : String(
-                                    patient.gender ?? ""
+                                    patient.gender ??
+                                      ""
                                   ).toLowerCase() ===
                                   "female"
                                 ? styles.badgeFemale
@@ -409,14 +498,20 @@ export default function ResearchDatasetPage() {
 
                         </td>
 
+                        {/* RACE */}
+
                         <td style={styles.td}>
                           {patient.race ?? "-"}
                         </td>
+
+                        {/* MEDICAL HISTORY */}
 
                         <td style={styles.td}>
                           {patient.medical_history ??
                             "-"}
                         </td>
+
+                        {/* ADMISSION HISTORY */}
 
                         <td style={styles.td}>
                           {patient.admission_history ??
@@ -438,32 +533,35 @@ export default function ResearchDatasetPage() {
 
         </div>
 
-        {/* FOOTER */}
+        {/* ======================================================
+            FOOTER
+        ====================================================== */}
+
         <div style={styles.footer}>
           HealthForecast AI • Anonymized Research Environment
         </div>
 
       </div>
+
     </main>
   );
 }
 
-
-/* ============================================================
-   STYLES
-============================================================ */
+// ============================================================
+// STYLES
+// ============================================================
 
 const styles = {
 
-  /* =========================================================
-     MAIN PAGE
-  ========================================================= */
+  // ==========================================================
+  // MAIN PAGE
+  // ==========================================================
 
   main: {
     minHeight: "100vh",
     background: "#f4f7fb",
-    padding: "40px",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    padding: "35px 40px",
+    fontFamily: "Times New Roman",
     color: "#111827",
   },
 
@@ -472,89 +570,114 @@ const styles = {
     margin: "0 auto",
   },
 
-  /* =========================================================
-     HEADER
-  ========================================================= */
+  // ==========================================================
+  // HEADER
+  // ==========================================================
 
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: "38px",
+    padding: "0 5px",
     flexWrap: "wrap",
     gap: "20px",
   },
 
+  brand: {
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
+    fontSize: "17px",
+    fontWeight: "500",
+    color: "#1e293b",
+    letterSpacing: "0.5px",
+    marginBottom: "3px",
+  },
+
   title: {
-    fontFamily: 'Georgia, "Times New Roman", serif',
-    fontSize: "34px",
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
+    fontSize: "42px",
     fontWeight: "700",
     color: "#102a43",
     margin: "0 0 8px 0",
-    letterSpacing: "0.2px",
+    letterSpacing: "-0.8px",
+    lineHeight: "1.15",
   },
 
   subtitle: {
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontSize: "17px",
     fontWeight: "400",
-    color: "#5f7892",
+    color: "#607d9b",
     margin: 0,
-    lineHeight: 1.6,
+    lineHeight: "1.6",
   },
 
   dashboardButton: {
     background: "#2563eb",
     color: "#ffffff",
     textDecoration: "none",
-    padding: "11px 22px",
-    borderRadius: "7px",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    padding: "12px 22px",
+    borderRadius: "8px",
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontSize: "15px",
     fontWeight: "700",
-    boxShadow: "0 3px 8px rgba(37,99,235,0.15)",
+    boxShadow:
+      "0 4px 10px rgba(37,99,235,0.18)",
     display: "inline-block",
   },
 
-  /* =========================================================
-     SUMMARY SECTION
-  ========================================================= */
+  // ==========================================================
+  // THREE SUMMARY CARDS
+  // ==========================================================
 
   summaryGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "24px",
-    marginBottom: "34px",
+    gridTemplateColumns:
+      "repeat(3, 1fr)",
+    gap: "28px",
+    marginBottom: "38px",
   },
 
   summaryCard: {
     background: "#ffffff",
-    borderRadius: "14px",
-    padding: "24px 28px",
-    minHeight: "130px",
-    boxShadow: "0 8px 22px rgba(15,23,42,0.07)",
-    border: "1px solid rgba(226,232,240,0.7)",
+    borderRadius: "16px",
+    padding: "28px 32px",
+    minHeight: "125px",
+    boxShadow:
+      "0 7px 22px rgba(15,23,42,0.07)",
+    border:
+      "1px solid #e2e8f0",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
   },
 
   summaryCardTitle: {
-    fontFamily: 'Georgia, "Times New Roman", serif',
-    fontSize: "15px",
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
+    fontSize: "17px",
     fontWeight: "400",
-    color: "#61758a",
-    margin: "0 0 10px 0",
+    color: "#334e68",
+    marginBottom: "10px",
   },
 
   summaryCardValue: {
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontSize: "36px",
     fontWeight: "700",
-    color: "#2563eb",
+    color: "#111827",
     margin: 0,
+    lineHeight: "1.1",
   },
 
-  /* =========================================================
-     TOOLBAR
-  ========================================================= */
+  // ==========================================================
+  // TOOLBAR
+  // ==========================================================
 
   toolbar: {
     display: "flex",
@@ -565,12 +688,26 @@ const styles = {
     flexWrap: "wrap",
   },
 
+  searchWrapper: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+  },
+
+  searchIcon: {
+    position: "absolute",
+    left: "14px",
+    fontSize: "15px",
+    pointerEvents: "none",
+  },
+
   search: {
     width: "340px",
-    padding: "12px 15px",
-    borderRadius: "6px",
+    padding: "12px 15px 12px 40px",
+    borderRadius: "7px",
     border: "1px solid #cbd5e1",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontSize: "15px",
     fontWeight: "400",
     color: "#1e293b",
@@ -585,28 +722,84 @@ const styles = {
     padding: "11px 22px",
     borderRadius: "7px",
     cursor: "pointer",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontWeight: "700",
     fontSize: "15px",
-    boxShadow: "0 3px 8px rgba(22,163,74,0.15)",
+    boxShadow:
+      "0 3px 8px rgba(22,163,74,0.15)",
   },
 
-  /* =========================================================
-     TABLE
-  ========================================================= */
+  // ==========================================================
+  // DATASET CARD
+  // ==========================================================
+
+  datasetCard: {
+    background: "#ffffff",
+    borderRadius: "16px",
+    padding: "28px",
+    boxShadow:
+      "0 8px 22px rgba(15,23,42,0.07)",
+    border:
+      "1px solid rgba(226,232,240,0.7)",
+  },
+
+  datasetHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "20px",
+    marginBottom: "24px",
+    flexWrap: "wrap",
+  },
+
+  datasetTitle: {
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
+    fontSize: "25px",
+    fontWeight: "700",
+    color: "#102a43",
+    margin: "0 0 6px 0",
+  },
+
+  datasetSubtitle: {
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
+    fontSize: "15px",
+    color: "#64748b",
+    margin: 0,
+    lineHeight: "1.5",
+  },
+
+  recordBadge: {
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    padding: "8px 15px",
+    borderRadius: "20px",
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
+    fontSize: "14px",
+    fontWeight: "700",
+    whiteSpace: "nowrap",
+  },
+
+  // ==========================================================
+  // TABLE
+  // ==========================================================
 
   tableWrapper: {
     background: "#ffffff",
-    borderRadius: "14px",
+    borderRadius: "12px",
     overflowX: "auto",
-    boxShadow: "0 8px 22px rgba(15,23,42,0.07)",
-    border: "1px solid rgba(226,232,240,0.7)",
+    border:
+      "1px solid #e2e8f0",
   },
 
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
   },
 
   th: {
@@ -614,33 +807,47 @@ const styles = {
     color: "#102a43",
     padding: "15px 18px",
     textAlign: "left",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontWeight: "700",
     fontSize: "15px",
-    borderBottom: "1px solid #dbe4ee",
+    borderBottom:
+      "1px solid #dbe4ee",
     whiteSpace: "nowrap",
   },
 
   td: {
     padding: "15px 18px",
-    borderBottom: "1px solid #edf2f7",
+    borderBottom:
+      "1px solid #edf2f7",
     color: "#334e68",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontSize: "15px",
     fontWeight: "400",
     whiteSpace: "nowrap",
   },
 
-  /* =========================================================
-     GENDER BADGES
-  ========================================================= */
+  tableRow: {
+    background: "#ffffff",
+  },
+
+  patientId: {
+    fontWeight: "700",
+    color: "#102a43",
+  },
+
+  // ==========================================================
+  // GENDER BADGES
+  // ==========================================================
 
   badgeMale: {
     background: "#dbeafe",
     color: "#1d4ed8",
     padding: "5px 12px",
     borderRadius: "14px",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontWeight: "700",
     fontSize: "14px",
     display: "inline-block",
@@ -651,7 +858,8 @@ const styles = {
     color: "#be185d",
     padding: "5px 12px",
     borderRadius: "14px",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontWeight: "700",
     fontSize: "14px",
     display: "inline-block",
@@ -662,34 +870,54 @@ const styles = {
     color: "#374151",
     padding: "5px 12px",
     borderRadius: "14px",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontWeight: "700",
     fontSize: "14px",
     display: "inline-block",
   },
 
-  /* =========================================================
-     EMPTY DATA
-  ========================================================= */
+  // ==========================================================
+  // NO DATA
+  // ==========================================================
 
   noData: {
     textAlign: "center",
     padding: "35px",
     color: "#64748b",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontSize: "16px",
     fontWeight: "400",
   },
 
-  /* =========================================================
-     FOOTER
-  ========================================================= */
+  // ==========================================================
+  // LOADING
+  // ==========================================================
+
+  loading: {
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "#f4f7fb",
+    color: "#102a43",
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
+    fontSize: "22px",
+    fontWeight: "600",
+  },
+
+  // ==========================================================
+  // FOOTER
+  // ==========================================================
 
   footer: {
     marginTop: "25px",
     textAlign: "center",
     color: "#64748b",
-    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontFamily:
+      'Georgia, "Times New Roman", serif',
     fontSize: "14px",
   },
 

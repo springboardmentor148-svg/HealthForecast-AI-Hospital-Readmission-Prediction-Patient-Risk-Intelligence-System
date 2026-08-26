@@ -384,7 +384,7 @@ total > 0
     minHeight: "100vh",
     background: "#f4f7fb",
     padding: "40px",
-    fontFamily: "Arial, sans-serif",
+    fontFamily:"Times New Roman",
   },
 
   container: {
@@ -482,5 +482,6 @@ total > 0
     color: "#6b7280",
     fontSize: "16px",
   }
+  
 
 };

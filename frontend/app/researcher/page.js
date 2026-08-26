@@ -9,68 +9,43 @@ import {
   getTreatments,
 } from "../../lib/api";
 
-
-// ============================================================
-// HEALTHCARE RESEARCHER DASHBOARD
-// ============================================================
-
 export default function HealthcareResearcherPage() {
 
-  // ============================================================
-  // STATE
-  // ============================================================
-
   const [patients, setPatients] = useState([]);
-
   const [predictions, setPredictions] = useState([]);
-
   const [treatments, setTreatments] = useState([]);
 
   const [loading, setLoading] = useState(true);
-
   const [refreshing, setRefreshing] = useState(false);
-
   const [error, setError] = useState("");
-
 
   // ============================================================
   // LOAD RESEARCH DATA
   // ============================================================
 
-  const loadResearchData = async () => {
+  const loadResearchData = async (
+    isRefresh = false
+  ) => {
 
     try {
 
       setError("");
 
-      const isRefresh = patients.length > 0 ||
-        predictions.length > 0 ||
-        treatments.length > 0;
-
       if (isRefresh) {
-
         setRefreshing(true);
-
       } else {
-
         setLoading(true);
-
       }
 
-
-      // --------------------------------------------------------
-      // FETCH DATA
-      // --------------------------------------------------------
+      // IMPORTANT:
+      // Promise.allSettled prevents the 422 treatment
+      // endpoint from breaking the complete researcher page.
 
       const [
-
-        patientsData,
-
-        predictionsData,
-
-        treatmentsData,
-
-      ] = await Promise.all([
+        patientsResult,
+        predictionsResult,
+        treatmentsResult,
+      ] = await Promise.allSettled([
 
         getPatients(),
 
@@ -80,121 +55,134 @@ export default function HealthcareResearcherPage() {
 
       ]);
 
-
       // ========================================================
-      // PATIENT DATA
+      // PATIENTS
       // ========================================================
 
-      let patientsList = [];
-
-
-      if (Array.isArray(patientsData)) {
-
-        patientsList = patientsData;
-
-      }
-
-      else if (
-        Array.isArray(patientsData?.data)
+      if (
+        patientsResult.status === "fulfilled"
       ) {
 
-        patientsList = patientsData.data;
+        const data =
+          patientsResult.value;
 
-      }
-
-      else if (
-        Array.isArray(patientsData?.patients)
-      ) {
-
-        patientsList = patientsData.patients;
-
-      }
-
-
-      // ========================================================
-      // PREDICTION DATA
-      // ========================================================
-
-      let predictionsList = [];
-
-
-      if (Array.isArray(predictionsData)) {
-
-        predictionsList = predictionsData;
-
-      }
-
-      else if (
-        Array.isArray(predictionsData?.data)
-      ) {
-
-        predictionsList = predictionsData.data;
-
-      }
-
-      else if (
-        Array.isArray(predictionsData?.predictions)
-      ) {
-
-        predictionsList = predictionsData.predictions;
-
-      }
-
-
-      // ========================================================
-      // TREATMENT DATA
-      // ========================================================
-
-      let treatmentsList = [];
-
-
-      if (Array.isArray(treatmentsData)) {
-
-        treatmentsList = treatmentsData;
-
-      }
-
-      else if (
-        Array.isArray(treatmentsData?.data)
-      ) {
-
-        treatmentsList = treatmentsData.data;
-
-      }
-
-      else if (
-        Array.isArray(treatmentsData?.treatments)
-      ) {
-
-        treatmentsList = treatmentsData.treatments;
-
-      }
-
-
-      // ========================================================
-      // SAVE DATA
-      // ========================================================
-
-      setPatients(patientsList);
-
-      setPredictions(predictionsList);
-
-      setTreatments(treatmentsList);
-
-
-      console.log(
-        "RESEARCHER DATA LOADED:",
-        {
-          patients: patientsList,
-          predictions: predictionsList,
-          treatments: treatmentsList,
+        if (Array.isArray(data)) {
+          setPatients(data);
         }
-      );
 
+        else if (
+          Array.isArray(data?.data)
+        ) {
+          setPatients(data.data);
+        }
 
-    }
+        else if (
+          Array.isArray(data?.patients)
+        ) {
+          setPatients(data.patients);
+        }
 
-    catch (err) {
+        else {
+          setPatients([]);
+        }
+
+      } else {
+
+        console.error(
+          "RESEARCH PATIENT ERROR:",
+          patientsResult.reason
+        );
+
+        setPatients([]);
+      }
+
+      // ========================================================
+      // PREDICTIONS
+      // ========================================================
+
+      if (
+        predictionsResult.status === "fulfilled"
+      ) {
+
+        const data =
+          predictionsResult.value;
+
+        if (Array.isArray(data)) {
+          setPredictions(data);
+        }
+
+        else if (
+          Array.isArray(data?.data)
+        ) {
+          setPredictions(data.data);
+        }
+
+        else if (
+          Array.isArray(data?.predictions)
+        ) {
+          setPredictions(
+            data.predictions
+          );
+        }
+
+        else {
+          setPredictions([]);
+        }
+
+      } else {
+
+        console.error(
+          "RESEARCH PREDICTION ERROR:",
+          predictionsResult.reason
+        );
+
+        setPredictions([]);
+      }
+
+      // ========================================================
+      // TREATMENTS
+      // ========================================================
+
+      if (
+        treatmentsResult.status === "fulfilled"
+      ) {
+
+        const data =
+          treatmentsResult.value;
+
+        if (Array.isArray(data)) {
+          setTreatments(data);
+        }
+
+        else if (
+          Array.isArray(data?.data)
+        ) {
+          setTreatments(data.data);
+        }
+
+        else if (
+          Array.isArray(data?.treatments)
+        ) {
+          setTreatments(
+            data.treatments
+          );
+        }
+
+        else {
+          setTreatments([]);
+        }
+
+      } else {
+
+        console.error(
+          "RESEARCH TREATMENT ERROR:",
+          treatmentsResult.reason
+        );
+
+        setTreatments([]);
+      }
+
+    } catch (err) {
 
       console.error(
         "HEALTHCARE RESEARCHER ERROR:",
@@ -206,18 +194,13 @@ export default function HealthcareResearcherPage() {
         "Failed to load research data."
       );
 
-    }
-
-    finally {
+    } finally {
 
       setLoading(false);
-
       setRefreshing(false);
 
     }
-
   };
-
 
   // ============================================================
   // INITIAL LOAD
@@ -229,30 +212,19 @@ export default function HealthcareResearcherPage() {
 
   }, []);
 
-
   // ============================================================
-  // TOTAL RESEARCH RECORDS
+  // STATISTICS
   // ============================================================
 
   const totalResearchRecords =
-
     patients.length;
 
-
-  // ============================================================
-  // TOTAL AI PREDICTIONS
-  // ============================================================
-
   const totalPredictions =
-
     predictions.length;
 
-
-  // ============================================================
-  // GET RISK VALUE
-  // ============================================================
-
-  const getPredictionRisk = (prediction) => {
+  const getPredictionRisk = (
+    prediction
+  ) => {
 
     return String(
 
@@ -279,194 +251,123 @@ export default function HealthcareResearcherPage() {
       ""
 
     ).toLowerCase();
-
   };
 
+  const highRisk =
+    useMemo(() => {
 
-  // ============================================================
-  // HIGH RISK
-  // ============================================================
+      return predictions.filter(
+        (prediction) =>
+          getPredictionRisk(
+            prediction
+          ).includes("high")
+      ).length;
 
-  const highRisk = useMemo(() => {
+    }, [predictions]);
 
-    return predictions.filter(
+  const mediumRisk =
+    useMemo(() => {
 
-      (prediction) => {
+      return predictions.filter(
+        (prediction) =>
+          getPredictionRisk(
+            prediction
+          ).includes("medium")
+      ).length;
 
-        const risk =
-          getPredictionRisk(prediction);
+    }, [predictions]);
 
-        return risk.includes("high");
+  const lowRisk =
+    useMemo(() => {
 
-      }
+      return predictions.filter(
+        (prediction) =>
+          getPredictionRisk(
+            prediction
+          ).includes("low")
+      ).length;
 
-    ).length;
-
-  }, [predictions]);
-
-
-  // ============================================================
-  // MEDIUM RISK
-  // ============================================================
-
-  const mediumRisk = useMemo(() => {
-
-    return predictions.filter(
-
-      (prediction) => {
-
-        const risk =
-          getPredictionRisk(prediction);
-
-        return risk.includes("medium");
-
-      }
-
-    ).length;
-
-  }, [predictions]);
-
-
-  // ============================================================
-  // LOW RISK
-  // ============================================================
-
-  const lowRisk = useMemo(() => {
-
-    return predictions.filter(
-
-      (prediction) => {
-
-        const risk =
-          getPredictionRisk(prediction);
-
-        return risk.includes("low");
-
-      }
-
-    ).length;
-
-  }, [predictions]);
-
-
-  // ============================================================
-  // RISK PERCENTAGES
-  // ============================================================
+    }, [predictions]);
 
   const highRiskPercentage =
-
     totalPredictions > 0
-
       ? Math.round(
-          (highRisk / totalPredictions) * 100
+          (highRisk /
+            totalPredictions) *
+            100
         )
-
       : 0;
-
 
   const mediumRiskPercentage =
-
     totalPredictions > 0
-
       ? Math.round(
-          (mediumRisk / totalPredictions) * 100
+          (mediumRisk /
+            totalPredictions) *
+            100
         )
-
       : 0;
-
 
   const lowRiskPercentage =
-
     totalPredictions > 0
-
       ? Math.round(
-          (lowRisk / totalPredictions) * 100
+          (lowRisk /
+            totalPredictions) *
+            100
         )
-
       : 0;
-
 
   // ============================================================
   // TREATMENT STATISTICS
   // ============================================================
 
   const totalTreatments =
-
     treatments.length;
 
-
   const successfulTreatments =
-
     treatments.filter(
-
       (treatment) => {
 
-        const outcome = String(
-
-          treatment?.outcome || ""
-
-        ).toLowerCase();
-
+        const outcome =
+          String(
+            treatment?.outcome || ""
+          ).toLowerCase();
 
         return (
-
           outcome === "successful" ||
-
           outcome === "success" ||
-
           outcome === "improved"
-
         );
 
       }
-
     ).length;
-
 
   const unsuccessfulTreatments =
-
     treatments.filter(
-
       (treatment) => {
 
-        const outcome = String(
-
-          treatment?.outcome || ""
-
-        ).toLowerCase();
-
+        const outcome =
+          String(
+            treatment?.outcome || ""
+          ).toLowerCase();
 
         return (
-
           outcome === "unsuccessful" ||
-
           outcome === "failed" ||
-
           outcome === "no improvement"
-
         );
 
       }
-
     ).length;
 
-
   const treatmentEffectiveness =
-
     totalTreatments > 0
-
       ? Math.round(
-
-          (successfulTreatments /
-
-            totalTreatments) *
-
-            100
-
+          (
+            successfulTreatments /
+            totalTreatments
+          ) * 100
         )
-
       : 0;
-
 
   // ============================================================
   // LOADING
@@ -487,63 +388,10 @@ export default function HealthcareResearcherPage() {
       </main>
 
     );
-
   }
 
-
   // ============================================================
-  // ERROR
-  // ============================================================
-
-  if (error) {
-
-    return (
-
-      <main style={styles.main}>
-
-        <div style={styles.errorCard}>
-
-          <h2>
-
-            Failed to Load Research Data
-
-          </h2>
-
-          <p style={styles.errorText}>
-
-            {error}
-
-          </p>
-
-          <p>
-
-            Please check whether the backend is running.
-
-          </p>
-
-          <button
-
-            onClick={loadResearchData}
-
-            style={styles.retryButton}
-
-          >
-
-            Retry
-
-          </button>
-
-        </div>
-
-      </main>
-
-    );
-
-  }
-
-
-  // ============================================================
-  // MAIN DASHBOARD
+  // DASHBOARD
   // ============================================================
 
   return (
@@ -552,273 +400,199 @@ export default function HealthcareResearcherPage() {
 
       <div style={styles.container}>
 
-
-        {/* ======================================================
-            HEADER
-        ====================================================== */}
+        {/* HEADER */}
 
         <div style={styles.header}>
 
           <div>
 
             <h1 style={styles.title}>
-
               Healthcare Researcher Dashboard
-
             </h1>
 
             <p style={styles.subtitle}>
-
-              Healthcare analytics, population health research,
-              and clinical outcome analysis
-
+              Healthcare analytics, population
+              health research, and clinical
+              outcome analysis
             </p>
 
           </div>
 
-
           <Link
-
             href="/login"
-
             style={styles.logout}
-
           >
-
             Logout
-
           </Link>
 
         </div>
 
-
-        {/* ======================================================
-            RESEARCH NOTICE
-        ====================================================== */}
+        {/* RESEARCH NOTICE */}
 
         <div style={styles.notice}>
 
           <strong>
-
             Research Access
-
           </strong>
 
           <p>
-
-            This dashboard is designed for healthcare research
-            using anonymized patient data and aggregated
-            healthcare analytics.
-
+            This dashboard is designed for
+            healthcare research using
+            anonymized patient data and
+            aggregated healthcare analytics.
           </p>
 
         </div>
 
+        {/* API INFORMATION */}
 
-        {/* ======================================================
-            RESEARCH OVERVIEW
-        ====================================================== */}
+        {treatments.length === 0 &&
+          totalResearchRecords > 0 && (
+
+          <div style={styles.info}>
+
+            Treatment data is currently
+            unavailable. Research patient
+            and prediction analytics remain
+            available.
+
+          </div>
+
+        )}
+
+        {/* RESEARCH OVERVIEW */}
 
         <h2 style={styles.sectionTitle}>
-
           Research Overview
-
         </h2>
-
 
         <div style={styles.grid}>
 
-
-          {/* RESEARCH RECORDS */}
-
           <div style={styles.card}>
 
             <p style={styles.cardLabel}>
-
               Research Records
-
             </p>
 
             <p style={styles.number}>
-
               {totalResearchRecords}
-
             </p>
 
             <p style={styles.description}>
-
-              Available records for anonymized healthcare
-              research analysis.
-
+              Available records for anonymized
+              healthcare research analysis.
             </p>
 
           </div>
 
-
-          {/* AI PREDICTIONS */}
-
           <div style={styles.card}>
 
             <p style={styles.cardLabel}>
-
               AI Predictions
-
             </p>
 
             <p style={styles.number}>
-
               {totalPredictions}
-
             </p>
 
             <p style={styles.description}>
-
-              Total readmission risk predictions available
-              for aggregated analysis.
-
+              Total readmission predictions
+              available for aggregated analysis.
             </p>
 
           </div>
 
-
-          {/* HIGH RISK */}
-
           <div style={styles.card}>
 
             <p style={styles.cardLabel}>
-
               High Risk
-
             </p>
 
             <p style={styles.highRiskNumber}>
-
               {highRiskPercentage}%
-
             </p>
 
             <p style={styles.description}>
-
-              Percentage of predictions classified as high risk.
-
+              Predictions classified as high risk.
             </p>
 
           </div>
 
-
-          {/* TREATMENT EFFECTIVENESS */}
-
           <div style={styles.card}>
 
             <p style={styles.cardLabel}>
-
               Treatment Effectiveness
-
             </p>
 
             <p style={styles.successNumber}>
-
               {treatmentEffectiveness}%
-
             </p>
 
             <p style={styles.description}>
-
-              Overall successful treatment outcome rate.
-
+              Successful treatment outcome rate.
             </p>
 
           </div>
 
         </div>
 
-
-        {/* ======================================================
-            POPULATION RISK DISTRIBUTION
-        ====================================================== */}
+        {/* POPULATION RISK */}
 
         <section style={styles.section}>
 
           <h2 style={styles.sectionTitle}>
-
             Population Risk Distribution
-
           </h2>
 
-
           <div style={styles.grid}>
-
-
-            {/* HIGH */}
 
             <div style={styles.analyticsCard}>
 
               <h3>
-
                 High Risk
-
               </h3>
 
               <p style={styles.highRiskNumber}>
-
                 {highRisk}
-
               </p>
 
-              <span style={styles.percentageText}>
-
-                {highRiskPercentage}% of predictions
-
+              <span>
+                {highRiskPercentage}%
+                {" "}of predictions
               </span>
 
             </div>
 
-
-            {/* MEDIUM */}
-
             <div style={styles.analyticsCard}>
 
               <h3>
-
                 Medium Risk
-
               </h3>
 
               <p style={styles.mediumRiskNumber}>
-
                 {mediumRisk}
-
               </p>
 
-              <span style={styles.percentageText}>
-
-                {mediumRiskPercentage}% of predictions
-
+              <span>
+                {mediumRiskPercentage}%
+                {" "}of predictions
               </span>
 
             </div>
 
-
-            {/* LOW */}
-
             <div style={styles.analyticsCard}>
 
               <h3>
-
                 Low Risk
-
               </h3>
 
               <p style={styles.lowRiskNumber}>
-
                 {lowRisk}
-
               </p>
 
-              <span style={styles.percentageText}>
-
-                {lowRiskPercentage}% of predictions
-
+              <span>
+                {lowRiskPercentage}%
+                {" "}of predictions
               </span>
 
             </div>
@@ -827,86 +601,60 @@ export default function HealthcareResearcherPage() {
 
         </section>
 
-
-        {/* ======================================================
-            TREATMENT EFFECTIVENESS
-        ====================================================== */}
+        {/* TREATMENT RESEARCH */}
 
         <section style={styles.section}>
 
           <h2 style={styles.sectionTitle}>
-
             Treatment Effectiveness Research
-
           </h2>
-
 
           <div style={styles.grid}>
 
-
             <div style={styles.analyticsCard}>
 
               <h3>
-
                 Total Treatments
-
               </h3>
 
               <p style={styles.number}>
-
                 {totalTreatments}
-
               </p>
 
             </div>
 
-
             <div style={styles.analyticsCard}>
 
               <h3>
-
                 Successful
-
               </h3>
 
               <p style={styles.successNumber}>
-
                 {successfulTreatments}
-
               </p>
 
             </div>
 
-
             <div style={styles.analyticsCard}>
 
               <h3>
-
                 Unsuccessful
-
               </h3>
 
               <p style={styles.highRiskNumber}>
-
                 {unsuccessfulTreatments}
-
               </p>
 
             </div>
 
-
             <div style={styles.analyticsCard}>
 
               <h3>
-
                 Effectiveness Rate
-
               </h3>
 
               <p style={styles.successNumber}>
-
                 {treatmentEffectiveness}%
-
               </p>
 
             </div>
@@ -915,578 +663,282 @@ export default function HealthcareResearcherPage() {
 
         </section>
 
-
-        {/* ======================================================
-            RESEARCH SUMMARY
-        ====================================================== */}
+        {/* SUMMARY */}
 
         <section style={styles.summary}>
 
           <h2>
-
             Research Summary
-
           </h2>
 
-
           <p>
-
-            The research dataset currently contains{" "}
-
+            The research dataset currently
+            contains{" "}
             <strong>
-
               {totalResearchRecords}
-
             </strong>{" "}
-
             available records.
-
           </p>
 
-
           <p>
-
             A total of{" "}
-
             <strong>
-
               {totalPredictions}
-
             </strong>{" "}
-
-            AI-based readmission predictions are available
-            for aggregated analysis.
-
+            AI-based readmission predictions
+            are available for aggregated analysis.
           </p>
 
-
           <p>
-
             High-risk predictions account for{" "}
-
             <strong>
-
               {highRiskPercentage}%
-
             </strong>{" "}
-
-            of the available prediction data.
-
-          </p>
-
-
-          <p>
-
-            The observed treatment effectiveness rate is{" "}
-
-            <strong>
-
-              {treatmentEffectiveness}%
-
-            </strong>.
-
+            of available prediction data.
           </p>
 
         </section>
 
-
-        {/* ======================================================
-            QUICK ACTIONS
-        ====================================================== */}
+        {/* QUICK ACTIONS */}
 
         <section style={styles.section}>
 
           <h2 style={styles.sectionTitle}>
-
-            Research Tools
-
+            Quick Actions
           </h2>
-
 
           <div style={styles.actions}>
 
-
             <Link
-
-              href="researcher/dataset"
-
+              href="/researcher/population-health"
               style={styles.actionButton}
-
             >
-
-              Anonymized Dataset
-
+              Research Analytics
             </Link>
 
-
             <Link
-
-              href="researcher/predictions"
-
+              href="/researcher/dataset"
               style={styles.actionButton}
-
             >
-
-              AI Prediction Analysis
-
+              Research Datasets
             </Link>
 
-
-            <Link href="/researcher/population-health"
-              style={styles.actionButton}
-
-            >
-
-              Population Health Analytics
-
-            </Link>
             <Link
-
-              href="researcher/reports"
-
+              href="/researcher/reports"
               style={styles.actionButton}
-
             >
-
               Research Reports
-
             </Link>
-
 
             <button
-
-              onClick={loadResearchData}
-
-              disabled={refreshing}
-
-              style={
-
-                refreshing
-
-                  ? styles.refreshButtonDisabled
-
-                  : styles.refreshButton
-
+              onClick={() =>
+                loadResearchData(true)
               }
-
+              disabled={refreshing}
+              style={
+                refreshing
+                  ? styles.refreshDisabled
+                  : styles.refreshButton
+              }
             >
-
               {refreshing
-
                 ? "Refreshing..."
-
-                : "Refresh Research Data"}
-
+                : "Refresh Data"}
             </button>
-
 
           </div>
 
         </section>
-
 
       </div>
 
     </main>
 
   );
-
 }
-
-
-// ============================================================
-// STYLES
-// ============================================================
 
 const styles = {
 
   main: {
-
     minHeight: "100vh",
-
     background: "#f5f7fb",
-
-    padding: "40px",
-
+    padding: "30px",
   },
-
 
   container: {
-
     maxWidth: "1200px",
-
     margin: "0 auto",
-
   },
-
 
   header: {
-
     display: "flex",
-
     justifyContent: "space-between",
-
-    alignItems: "flex-start",
-
+    alignItems: "center",
     marginBottom: "30px",
-
+    gap: "20px",
   },
-
 
   title: {
-
-    fontSize: "32px",
-
+    margin: 0,
     color: "#111827",
-
-    marginBottom: "10px",
-
+    fontSize: "30px",
   },
-
 
   subtitle: {
-
     color: "#6b7280",
-
-    margin: 0,
-
-    maxWidth: "700px",
-
+    marginTop: "8px",
+    lineHeight: "1.5",
   },
-
 
   logout: {
-
-    color: "#dc2626",
-
+    padding: "10px 18px",
+    background: "#dc2626",
+    color: "#ffffff",
+    borderRadius: "8px",
     textDecoration: "none",
-
     fontWeight: "600",
-
   },
-
 
   notice: {
-
     background: "#eff6ff",
-
     border: "1px solid #bfdbfe",
-
     padding: "20px",
-
     borderRadius: "12px",
-
-    marginBottom: "35px",
-
-    color: "#1e3a8a",
-
+    marginBottom: "25px",
+    color: "#1e40af",
   },
 
+  info: {
+    background: "#fef3c7",
+    color: "#92400e",
+    padding: "15px",
+    borderRadius: "8px",
+    marginBottom: "20px",
+  },
 
   section: {
-
-    marginTop: "40px",
-
+    marginTop: "35px",
   },
-
 
   sectionTitle: {
-
-    fontSize: "24px",
-
     color: "#111827",
-
     marginBottom: "20px",
-
   },
-
 
   grid: {
-
     display: "grid",
-
     gridTemplateColumns:
       "repeat(auto-fit, minmax(220px, 1fr))",
-
     gap: "20px",
-
   },
-
 
   card: {
-
-    background: "white",
-
+    background: "#ffffff",
     padding: "25px",
-
     borderRadius: "14px",
-
     boxShadow:
-      "0 5px 20px rgba(0,0,0,0.08)",
-
+      "0 5px 18px rgba(0,0,0,0.06)",
   },
-
 
   analyticsCard: {
-
-    background: "white",
-
+    background: "#ffffff",
     padding: "25px",
-
     borderRadius: "14px",
-
+    textAlign: "center",
     boxShadow:
-      "0 5px 20px rgba(0,0,0,0.08)",
-
+      "0 5px 18px rgba(0,0,0,0.06)",
   },
-
 
   cardLabel: {
-
     color: "#6b7280",
-
-    fontSize: "14px",
-
-    margin: 0,
-
+    fontWeight: "600",
   },
-
 
   number: {
-
-    fontSize: "34px",
-
+    fontSize: "32px",
     fontWeight: "700",
-
     color: "#2563eb",
-
     margin: "10px 0",
-
   },
-
 
   highRiskNumber: {
-
-    fontSize: "34px",
-
+    fontSize: "32px",
     fontWeight: "700",
-
     color: "#dc2626",
-
-    margin: "10px 0",
-
   },
-
 
   mediumRiskNumber: {
-
-    fontSize: "34px",
-
+    fontSize: "32px",
     fontWeight: "700",
-
     color: "#d97706",
-
-    margin: "10px 0",
-
   },
-
 
   lowRiskNumber: {
-
-    fontSize: "34px",
-
+    fontSize: "32px",
     fontWeight: "700",
-
     color: "#16a34a",
-
-    margin: "10px 0",
-
   },
-
 
   successNumber: {
-
-    fontSize: "34px",
-
+    fontSize: "32px",
     fontWeight: "700",
-
     color: "#16a34a",
-
-    margin: "10px 0",
-
   },
-
-
-  percentageText: {
-
-    color: "#6b7280",
-
-    fontSize: "14px",
-
-  },
-
 
   description: {
-
     color: "#6b7280",
-
-    fontSize: "14px",
-
     lineHeight: "1.5",
-
   },
-
 
   summary: {
-
-    marginTop: "40px",
-
-    background: "white",
-
+    marginTop: "35px",
+    background: "#ffffff",
     padding: "30px",
-
     borderRadius: "14px",
-
     boxShadow:
-      "0 5px 20px rgba(0,0,0,0.08)",
-
+      "0 5px 18px rgba(0,0,0,0.06)",
   },
-
 
   actions: {
-
     display: "flex",
-
-    gap: "15px",
-
     flexWrap: "wrap",
-
+    gap: "15px",
   },
-
 
   actionButton: {
-
-    display: "inline-block",
-
     padding: "12px 20px",
-
     background: "#2563eb",
-
-    color: "white",
-
+    color: "#ffffff",
     borderRadius: "8px",
-
     textDecoration: "none",
-
-    border: "none",
-
-    cursor: "pointer",
-
-    fontSize: "15px",
-
+    fontWeight: "600",
   },
-
 
   refreshButton: {
-
     padding: "12px 20px",
-
     background: "#16a34a",
-
-    color: "white",
-
-    borderRadius: "8px",
-
+    color: "#ffffff",
     border: "none",
-
+    borderRadius: "8px",
     cursor: "pointer",
-
-    fontSize: "15px",
-
     fontWeight: "600",
-
   },
 
-
-  refreshButtonDisabled: {
-
+  refreshDisabled: {
     padding: "12px 20px",
-
     background: "#9ca3af",
-
-    color: "white",
-
-    borderRadius: "8px",
-
+    color: "#ffffff",
     border: "none",
-
+    borderRadius: "8px",
     cursor: "not-allowed",
-
-    fontSize: "15px",
-
     fontWeight: "600",
-
   },
-
 
   centerMessage: {
-
     textAlign: "center",
-
     paddingTop: "100px",
-
     fontSize: "20px",
-
     color: "#374151",
-
-  },
-
-
-  errorCard: {
-
-    maxWidth: "600px",
-
-    margin: "100px auto",
-
-    padding: "30px",
-
-    background: "white",
-
-    borderRadius: "14px",
-
-    textAlign: "center",
-
-    boxShadow:
-      "0 5px 20px rgba(0,0,0,0.08)",
-
-  },
-
-
-  errorText: {
-
-    color: "#dc2626",
-
-    fontWeight: "600",
-
-  },
-
-
-  retryButton: {
-
-    marginTop: "15px",
-
-    padding: "10px 20px",
-
-    background: "#2563eb",
-
-    color: "white",
-
-    border: "none",
-
-    borderRadius: "7px",
-
-    cursor: "pointer",
-
   },
 
 };

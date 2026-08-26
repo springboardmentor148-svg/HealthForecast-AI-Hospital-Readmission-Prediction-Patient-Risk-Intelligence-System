@@ -1,670 +1,296 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import Link from "next/link";
 
 import {
   getPatients,
-  getPredictions,
-  getTreatments,
+  getAnalyticsSummary,
+  getRiskDistribution,
+  getModelPerformance,
 } from "../../../lib/api";
 
 
 // ============================================================
-// HOSPITAL ANALYTICS PAGE
+// HOSPITAL ADMIN ANALYTICS
 // ============================================================
 
 export default function HospitalAnalyticsPage() {
 
-  // ============================================================
+  // ==========================================================
   // STATE
-  // ============================================================
+  // ==========================================================
 
-  const [patients, setPatients] = useState([]);
+  const [patients, setPatients] =
+    useState([]);
 
-  const [predictions, setPredictions] = useState([]);
+  const [summary, setSummary] =
+    useState(null);
 
-  const [treatments, setTreatments] = useState([]);
+  const [riskDistribution, setRiskDistribution] =
+    useState({});
 
-  const [loading, setLoading] = useState(true);
+  const [modelPerformance, setModelPerformance] =
+    useState(null);
 
-  const [error, setError] = useState("");
+  const [loading, setLoading] =
+    useState(true);
 
+  const [error, setError] =
+    useState("");
 
-  // ============================================================
-  // LOAD ANALYTICS DATA
-  // ============================================================
 
-  useEffect(() => {
+  // ==========================================================
+  // LOAD ANALYTICS
+  // ==========================================================
 
-    async function loadAnalyticsData() {
+  async function loadAnalytics() {
 
-      try {
+    try {
 
-        setLoading(true);
+      setLoading(true);
 
-        setError("");
+      setError("");
 
 
-        // --------------------------------------------------------
-        // FETCH ALL HOSPITAL DATA
-        // --------------------------------------------------------
+      // ========================================================
+      // FETCH ANALYTICS
+      // ========================================================
 
-        const [
-          patientsData,
-          predictionsData,
-          treatmentsData,
-        ] = await Promise.all([
+      const [
 
-          getPatients(),
+        patientsData,
 
-          getPredictions(),
+        summaryData,
 
-          getTreatments(),
+        riskData,
 
-        ]);
+        modelData,
 
+      ] = await Promise.all([
 
-        // ========================================================
-        // DEBUG
-        // ========================================================
+        getPatients(),
 
-        console.log(
-          "ANALYTICS PATIENTS:",
-          patientsData
-        );
+        getAnalyticsSummary(),
 
-        console.log(
-          "ANALYTICS PREDICTIONS:",
-          predictionsData
-        );
+        getRiskDistribution(),
 
-        console.log(
-          "ANALYTICS TREATMENTS:",
-          treatmentsData
-        );
+        getModelPerformance(),
 
+      ]);
 
-        // ========================================================
-        // NORMALIZE PATIENT DATA
-        // ========================================================
 
-        let patientsList = [];
+      console.log(
+        "HOSPITAL ANALYTICS PATIENTS:",
+        patientsData
+      );
 
+      console.log(
+        "HOSPITAL ANALYTICS SUMMARY:",
+        summaryData
+      );
 
-        if (
-          Array.isArray(patientsData)
-        ) {
+      console.log(
+        "HOSPITAL ANALYTICS RISK:",
+        riskData
+      );
 
-          patientsList = patientsData;
+      console.log(
+        "HOSPITAL ANALYTICS MODEL:",
+        modelData
+      );
 
-        }
 
-        else if (
-          Array.isArray(
-            patientsData?.data
-          )
-        ) {
+      // ========================================================
+      // NORMALIZE PATIENTS
+      // ========================================================
 
-          patientsList =
-            patientsData.data;
+      let patientList = [];
 
-        }
 
-        else if (
-          Array.isArray(
-            patientsData?.patients
-          )
-        ) {
+      if (
+        Array.isArray(patientsData)
+      ) {
 
-          patientsList =
-            patientsData.patients;
-
-        }
-
-
-        // ========================================================
-        // NORMALIZE PREDICTION DATA
-        // ========================================================
-
-        let predictionsList = [];
-
-
-        if (
-          Array.isArray(predictionsData)
-        ) {
-
-          predictionsList =
-            predictionsData;
-
-        }
-
-        else if (
-          Array.isArray(
-            predictionsData?.data
-          )
-        ) {
-
-          predictionsList =
-            predictionsData.data;
-
-        }
-
-        else if (
-          Array.isArray(
-            predictionsData?.predictions
-          )
-        ) {
-
-          predictionsList =
-            predictionsData.predictions;
-
-        }
-
-
-        // ========================================================
-        // NORMALIZE TREATMENT DATA
-        // ========================================================
-
-        let treatmentsList = [];
-
-
-        if (
-          Array.isArray(treatmentsData)
-        ) {
-
-          treatmentsList =
-            treatmentsData;
-
-        }
-
-        else if (
-          Array.isArray(
-            treatmentsData?.data
-          )
-        ) {
-
-          treatmentsList =
-            treatmentsData.data;
-
-        }
-
-        else if (
-          Array.isArray(
-            treatmentsData?.treatments
-          )
-        ) {
-
-          treatmentsList =
-            treatmentsData.treatments;
-
-        }
-
-
-        // ========================================================
-        // SAVE DATA
-        // ========================================================
-
-        setPatients(
-          patientsList
-        );
-
-        setPredictions(
-          predictionsList
-        );
-
-        setTreatments(
-          treatmentsList
-        );
+        patientList =
+          patientsData;
 
       }
 
-      catch (err) {
+      else if (
+        Array.isArray(
+          patientsData?.data
+        )
+      ) {
 
-        console.error(
-          "HOSPITAL ANALYTICS ERROR:",
-          err
-        );
-
-        setError(
-          err?.message ||
-          "Failed to load hospital analytics."
-        );
+        patientList =
+          patientsData.data;
 
       }
 
-      finally {
+      else if (
+        Array.isArray(
+          patientsData?.patients
+        )
+      ) {
 
-        setLoading(false);
+        patientList =
+          patientsData.patients;
 
       }
+
+
+      // ========================================================
+      // SAVE DATA
+      // ========================================================
+
+      setPatients(
+        patientList
+      );
+
+
+      setSummary(
+        summaryData || {}
+      );
+
+
+      setRiskDistribution(
+        riskData?.distribution || {}
+      );
+
+
+      setModelPerformance(
+        modelData || {}
+      );
 
     }
 
+    catch (err) {
 
-    loadAnalyticsData();
+      console.error(
+        "HOSPITAL ANALYTICS ERROR:",
+        err
+      );
+
+
+      setError(
+        err?.message ||
+        "Failed to load Hospital Analytics."
+      );
+
+    }
+
+    finally {
+
+      setLoading(false);
+
+    }
+
+  }
+
+
+  // ==========================================================
+  // INITIAL LOAD
+  // ==========================================================
+
+  useEffect(() => {
+
+    loadAnalytics();
 
   }, []);
 
 
-  // ============================================================
-  // BASIC COUNTS
-  // ============================================================
+  // ==========================================================
+  // VALUES
+  // ==========================================================
 
   const totalPatients =
     patients.length;
 
 
   const totalPredictions =
-    predictions.length;
+    Number(
+      summary?.total_predictions || 0
+    );
 
 
-  const totalTreatments =
-    treatments.length;
+  const highRisk =
+    Number(
+      summary?.high_risk || 0
+    );
 
 
-  // ============================================================
-  // GET PREDICTION RISK
-  // ============================================================
-
-  const getPredictionRisk = (
-    prediction
-  ) => {
-
-    return String(
-
-      prediction?.risk_level ||
-
-      prediction?.riskLevel ||
-
-      prediction?.risk ||
-
-      prediction?.risk_category ||
-
-      prediction?.riskCategory ||
-
-      prediction?.prediction_result ||
-
-      prediction?.predictionResult ||
-
-      prediction?.prediction ||
-
-      prediction?.readmission_risk ||
-
-      prediction?.readmissionRisk ||
-
-      ""
-
-    ).toLowerCase();
-
-  };
+  const mediumRisk =
+    Number(
+      summary?.medium_risk || 0
+    );
 
 
-  // ============================================================
-  // RISK ANALYTICS
-  // ============================================================
-
-  const highRiskPatients =
-
-    useMemo(() => {
-
-      return predictions.filter(
-
-        (prediction) => {
-
-          const risk =
-            getPredictionRisk(
-              prediction
-            );
-
-          return risk.includes(
-            "high"
-          );
-
-        }
-
-      ).length;
-
-    }, [predictions]);
+  const lowRisk =
+    Number(
+      summary?.low_risk || 0
+    );
 
 
-  const mediumRiskPatients =
+  // ==========================================================
+  // RISK TOTAL
+  // ==========================================================
 
-    useMemo(() => {
-
-      return predictions.filter(
-
-        (prediction) => {
-
-          const risk =
-            getPredictionRisk(
-              prediction
-            );
-
-          return risk.includes(
-            "medium"
-          );
-
-        }
-
-      ).length;
-
-    }, [predictions]);
+  const riskTotal =
+    highRisk +
+    mediumRisk +
+    lowRisk;
 
 
-  const lowRiskPatients =
-
-    useMemo(() => {
-
-      return predictions.filter(
-
-        (prediction) => {
-
-          const risk =
-            getPredictionRisk(
-              prediction
-            );
-
-          return risk.includes(
-            "low"
-          );
-
-        }
-
-      ).length;
-
-    }, [predictions]);
-
-
-  // ============================================================
+  // ==========================================================
   // RISK PERCENTAGES
-  // ============================================================
+  // ==========================================================
 
   const highRiskPercentage =
-
-    totalPredictions > 0
-
+    riskTotal > 0
       ? Math.round(
-
-          (
-            highRiskPatients /
-            totalPredictions
-          ) * 100
-
+          (highRisk / riskTotal) * 100
         )
-
       : 0;
 
 
   const mediumRiskPercentage =
-
-    totalPredictions > 0
-
+    riskTotal > 0
       ? Math.round(
-
-          (
-            mediumRiskPatients /
-            totalPredictions
-          ) * 100
-
+          (mediumRisk / riskTotal) * 100
         )
-
       : 0;
 
 
   const lowRiskPercentage =
-
-    totalPredictions > 0
-
+    riskTotal > 0
       ? Math.round(
-
-          (
-            lowRiskPatients /
-            totalPredictions
-          ) * 100
-
+          (lowRisk / riskTotal) * 100
         )
-
       : 0;
 
 
-  // ============================================================
-  // TREATMENT STATUS
-  // ============================================================
+  // ==========================================================
+  // MODEL
+  // ==========================================================
 
-  const plannedTreatments =
+  const modelName =
+    modelPerformance?.model_name ||
+    "CatBoost";
 
-    treatments.filter(
 
-      (treatment) =>
+  const modelStatus =
+    modelPerformance?.model_status ||
+    "unknown";
 
-        String(
 
-          treatment?.status ||
-
-          ""
-
-        ).toLowerCase() ===
-
-        "planned"
-
-    ).length;
-
-
-  const ongoingTreatments =
-
-    treatments.filter(
-
-      (treatment) =>
-
-        String(
-
-          treatment?.status ||
-
-          ""
-
-        ).toLowerCase() ===
-
-        "ongoing"
-
-    ).length;
-
-
-  const completedTreatments =
-
-    treatments.filter(
-
-      (treatment) =>
-
-        String(
-
-          treatment?.status ||
-
-          ""
-
-        ).toLowerCase() ===
-
-        "completed"
-
-    ).length;
-
-
-  // ============================================================
-  // TREATMENT COMPLETION RATE
-  // ============================================================
-
-  const treatmentCompletionRate =
-
-    totalTreatments > 0
-
-      ? Math.round(
-
-          (
-
-            completedTreatments /
-
-            totalTreatments
-
-          ) * 100
-
-        )
-
-      : 0;
-
-
-  // ============================================================
-  // TREATMENT OUTCOMES
-  // ============================================================
-
-  const successfulTreatments =
-
-    treatments.filter(
-
-      (treatment) => {
-
-        const outcome =
-
-          String(
-
-            treatment?.outcome ||
-
-            ""
-
-          ).toLowerCase();
-
-
-        return (
-
-          outcome ===
-            "successful" ||
-
-          outcome ===
-            "success" ||
-
-          outcome ===
-            "improved"
-
-        );
-
-      }
-
-    ).length;
-
-
-  const unsuccessfulTreatments =
-
-    treatments.filter(
-
-      (treatment) => {
-
-        const outcome =
-
-          String(
-
-            treatment?.outcome ||
-
-            ""
-
-          ).toLowerCase();
-
-
-        return (
-
-          outcome ===
-            "unsuccessful" ||
-
-          outcome ===
-            "failed" ||
-
-          outcome ===
-            "no improvement"
-
-        );
-
-      }
-
-    ).length;
-
-
-  const notEvaluatedTreatments =
-
-    Math.max(
-
-      0,
-
-      totalTreatments -
-
-      successfulTreatments -
-
-      unsuccessfulTreatments
-
-    );
-
-
-  // ============================================================
-  // TREATMENT OUTCOME PERCENTAGES
-  // ============================================================
-
-  const successfulPercentage =
-
-    totalTreatments > 0
-
-      ? Math.round(
-
-          (
-
-            successfulTreatments /
-
-            totalTreatments
-
-          ) * 100
-
-        )
-
-      : 0;
-
-
-  const unsuccessfulPercentage =
-
-    totalTreatments > 0
-
-      ? Math.round(
-
-          (
-
-            unsuccessfulTreatments /
-
-            totalTreatments
-
-          ) * 100
-
-        )
-
-      : 0;
-
-
-  const notEvaluatedPercentage =
-
-    totalTreatments > 0
-
-      ? Math.round(
-
-          (
-
-            notEvaluatedTreatments /
-
-            totalTreatments
-
-          ) * 100
-
-        )
-
-      : 0;
-
-
-  // ============================================================
+  // ==========================================================
   // LOADING
-  // ============================================================
+  // ==========================================================
 
   if (loading) {
 
@@ -689,9 +315,9 @@ export default function HospitalAnalyticsPage() {
   }
 
 
-  // ============================================================
+  // ==========================================================
   // ERROR
-  // ============================================================
+  // ==========================================================
 
   if (error) {
 
@@ -705,9 +331,11 @@ export default function HospitalAnalyticsPage() {
           style={styles.errorCard}
         >
 
-          <h2>
+          <h2
+            style={styles.errorTitle}
+          >
 
-            Failed to Load Analytics
+            Failed to Load Hospital Analytics
 
           </h2>
 
@@ -721,22 +349,20 @@ export default function HospitalAnalyticsPage() {
           </p>
 
 
-          <p>
+          <p
+            style={styles.errorDescription}
+          >
 
-            Please make sure the backend
-            is running correctly.
+            Please check whether the backend
+            is running and your account is
+            authorized to access analytics.
 
           </p>
 
 
           <button
-
-            onClick={() =>
-              window.location.reload()
-            }
-
+            onClick={loadAnalytics}
             style={styles.retryButton}
-
           >
 
             Retry
@@ -752,9 +378,9 @@ export default function HospitalAnalyticsPage() {
   }
 
 
-  // ============================================================
+  // ==========================================================
   // MAIN PAGE
-  // ============================================================
+  // ==========================================================
 
   return (
 
@@ -766,12 +392,11 @@ export default function HospitalAnalyticsPage() {
         style={styles.container}
       >
 
-
-        {/* ======================================================
+        {/* ====================================================
             HEADER
-        ====================================================== */}
+        ==================================================== */}
 
-        <div
+        <header
           style={styles.header}
         >
 
@@ -790,8 +415,8 @@ export default function HospitalAnalyticsPage() {
               style={styles.subtitle}
             >
 
-              Hospital-wide performance,
-              patient risk and treatment analytics
+              Hospital-wide patient risk
+              and AI prediction analytics
 
             </p>
 
@@ -823,14 +448,16 @@ export default function HospitalAnalyticsPage() {
 
           </div>
 
-        </div>
+        </header>
 
 
-        {/* ======================================================
-            OVERVIEW
-        ====================================================== */}
+        {/* ====================================================
+            HOSPITAL OVERVIEW
+        ==================================================== */}
 
-        <section>
+        <section
+          style={styles.section}
+        >
 
           <h2
             style={styles.sectionTitle}
@@ -845,8 +472,7 @@ export default function HospitalAnalyticsPage() {
             style={styles.grid}
           >
 
-
-            {/* TOTAL PATIENTS */}
+            {/* PATIENTS */}
 
             <div
               style={styles.card}
@@ -874,14 +500,15 @@ export default function HospitalAnalyticsPage() {
                 style={styles.description}
               >
 
-                Registered patients in the hospital system.
+                Registered patients in the
+                hospital system.
 
               </p>
 
             </div>
 
 
-            {/* TOTAL PREDICTIONS */}
+            {/* PREDICTIONS */}
 
             <div
               style={styles.card}
@@ -909,7 +536,7 @@ export default function HospitalAnalyticsPage() {
                 style={styles.description}
               >
 
-                Total AI-based readmission risk predictions.
+                Total readmission risk predictions.
 
               </p>
 
@@ -926,7 +553,7 @@ export default function HospitalAnalyticsPage() {
                 style={styles.cardLabel}
               >
 
-                High Risk Patients
+                High Risk
 
               </p>
 
@@ -935,7 +562,7 @@ export default function HospitalAnalyticsPage() {
                 style={styles.highRiskNumber}
               >
 
-                {highRiskPatients}
+                {highRisk}
 
               </p>
 
@@ -944,14 +571,14 @@ export default function HospitalAnalyticsPage() {
                 style={styles.description}
               >
 
-                Patients identified as high readmission risk.
+                Patients classified as high risk.
 
               </p>
 
             </div>
 
 
-            {/* TREATMENTS */}
+            {/* MODEL */}
 
             <div
               style={styles.card}
@@ -961,16 +588,16 @@ export default function HospitalAnalyticsPage() {
                 style={styles.cardLabel}
               >
 
-                Total Treatments
+                Active Model
 
               </p>
 
 
               <p
-                style={styles.number}
+                style={styles.modelNumber}
               >
 
-                {totalTreatments}
+                {modelName}
 
               </p>
 
@@ -979,7 +606,7 @@ export default function HospitalAnalyticsPage() {
                 style={styles.description}
               >
 
-                Treatments recorded in the hospital system.
+                Status: {modelStatus}
 
               </p>
 
@@ -990,9 +617,9 @@ export default function HospitalAnalyticsPage() {
         </section>
 
 
-        {/* ======================================================
-            PATIENT RISK ANALYTICS
-        ====================================================== */}
+        {/* ====================================================
+            RISK DISTRIBUTION
+        ==================================================== */}
 
         <section
           style={styles.section}
@@ -1002,7 +629,7 @@ export default function HospitalAnalyticsPage() {
             style={styles.sectionTitle}
           >
 
-            Patient Risk Analytics
+            Patient Risk Distribution
 
           </h2>
 
@@ -1011,8 +638,7 @@ export default function HospitalAnalyticsPage() {
             style={styles.grid}
           >
 
-
-            {/* HIGH RISK */}
+            {/* HIGH */}
 
             <div
               style={styles.analyticsCard}
@@ -1029,7 +655,7 @@ export default function HospitalAnalyticsPage() {
                 style={styles.highRiskNumber}
               >
 
-                {highRiskPatients}
+                {highRisk}
 
               </p>
 
@@ -1048,13 +674,11 @@ export default function HospitalAnalyticsPage() {
               >
 
                 <div
-
                   style={{
                     ...styles.progressHighRisk,
                     width:
                       `${highRiskPercentage}%`,
                   }}
-
                 />
 
               </div>
@@ -1062,7 +686,7 @@ export default function HospitalAnalyticsPage() {
             </div>
 
 
-            {/* MEDIUM RISK */}
+            {/* MEDIUM */}
 
             <div
               style={styles.analyticsCard}
@@ -1079,7 +703,7 @@ export default function HospitalAnalyticsPage() {
                 style={styles.mediumRiskNumber}
               >
 
-                {mediumRiskPatients}
+                {mediumRisk}
 
               </p>
 
@@ -1098,13 +722,11 @@ export default function HospitalAnalyticsPage() {
               >
 
                 <div
-
                   style={{
                     ...styles.progressMediumRisk,
                     width:
                       `${mediumRiskPercentage}%`,
                   }}
-
                 />
 
               </div>
@@ -1112,7 +734,7 @@ export default function HospitalAnalyticsPage() {
             </div>
 
 
-            {/* LOW RISK */}
+            {/* LOW */}
 
             <div
               style={styles.analyticsCard}
@@ -1129,7 +751,7 @@ export default function HospitalAnalyticsPage() {
                 style={styles.lowRiskNumber}
               >
 
-                {lowRiskPatients}
+                {lowRisk}
 
               </p>
 
@@ -1148,13 +770,11 @@ export default function HospitalAnalyticsPage() {
               >
 
                 <div
-
                   style={{
                     ...styles.progressLowRisk,
                     width:
                       `${lowRiskPercentage}%`,
                   }}
-
                 />
 
               </div>
@@ -1166,9 +786,9 @@ export default function HospitalAnalyticsPage() {
         </section>
 
 
-        {/* ======================================================
-            TREATMENT STATUS ANALYTICS
-        ====================================================== */}
+        {/* ====================================================
+            RISK DISTRIBUTION FROM DATABASE
+        ==================================================== */}
 
         <section
           style={styles.section}
@@ -1178,261 +798,66 @@ export default function HospitalAnalyticsPage() {
             style={styles.sectionTitle}
           >
 
-            Treatment Status Analytics
+            Database Risk Distribution
 
           </h2>
 
 
           <div
-            style={styles.grid}
+            style={styles.summary}
           >
 
+            {Object.keys(
+              riskDistribution
+            ).length === 0 ? (
 
-            {/* PLANNED */}
+              <p>
 
-            <div
-              style={styles.analyticsCard}
-            >
-
-              <h3>
-
-                Planned
-
-              </h3>
-
-
-              <p
-                style={styles.number}
-              >
-
-                {plannedTreatments}
+                No risk distribution data
+                is currently available.
 
               </p>
 
-            </div>
+            ) : (
+
+              Object.entries(
+                riskDistribution
+              ).map(
+                ([risk, count]) => (
+
+                  <div
+                    key={risk}
+                    style={styles.riskRow}
+                  >
+
+                    <span>
+
+                      {risk || "Unknown"}
+
+                    </span>
 
 
-            {/* ONGOING */}
+                    <strong>
 
-            <div
-              style={styles.analyticsCard}
-            >
+                      {Number(count)}
 
-              <h3>
+                    </strong>
 
-                Ongoing
+                  </div>
 
-              </h3>
+                )
+              )
 
-
-              <p
-                style={styles.number}
-              >
-
-                {ongoingTreatments}
-
-              </p>
-
-            </div>
-
-
-            {/* COMPLETED */}
-
-            <div
-              style={styles.analyticsCard}
-            >
-
-              <h3>
-
-                Completed
-
-              </h3>
-
-
-              <p
-                style={styles.number}
-              >
-
-                {completedTreatments}
-
-              </p>
-
-            </div>
-
-
-            {/* COMPLETION RATE */}
-
-            <div
-              style={styles.analyticsCard}
-            >
-
-              <h3>
-
-                Completion Rate
-
-              </h3>
-
-
-              <p
-                style={styles.number}
-              >
-
-                {treatmentCompletionRate}%
-
-              </p>
-
-
-              <div
-                style={styles.progressBackground}
-              >
-
-                <div
-
-                  style={{
-                    ...styles.progressCompleted,
-                    width:
-                      `${treatmentCompletionRate}%`,
-                  }}
-
-                />
-
-              </div>
-
-            </div>
+            )}
 
           </div>
 
         </section>
 
 
-        {/* ======================================================
-            TREATMENT OUTCOME ANALYTICS
-        ====================================================== */}
-
-        <section
-          style={styles.section}
-        >
-
-          <h2
-            style={styles.sectionTitle}
-          >
-
-            Treatment Outcome Analytics
-
-          </h2>
-
-
-          <div
-            style={styles.grid}
-          >
-
-
-            {/* SUCCESSFUL */}
-
-            <div
-              style={styles.analyticsCard}
-            >
-
-              <h3>
-
-                Successful
-
-              </h3>
-
-
-              <p
-                style={styles.successNumber}
-              >
-
-                {successfulTreatments}
-
-              </p>
-
-
-              <p
-                style={styles.percentage}
-              >
-
-                {successfulPercentage}%
-
-              </p>
-
-            </div>
-
-
-            {/* UNSUCCESSFUL */}
-
-            <div
-              style={styles.analyticsCard}
-            >
-
-              <h3>
-
-                Unsuccessful
-
-              </h3>
-
-
-              <p
-                style={styles.unsuccessfulNumber}
-              >
-
-                {unsuccessfulTreatments}
-
-              </p>
-
-
-              <p
-                style={styles.percentage}
-              >
-
-                {unsuccessfulPercentage}%
-
-              </p>
-
-            </div>
-
-
-            {/* NOT EVALUATED */}
-
-            <div
-              style={styles.analyticsCard}
-            >
-
-              <h3>
-
-                Not Evaluated
-
-              </h3>
-
-
-              <p
-                style={styles.number}
-              >
-
-                {notEvaluatedTreatments}
-
-              </p>
-
-
-              <p
-                style={styles.percentage}
-              >
-
-                {notEvaluatedPercentage}%
-
-              </p>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* ======================================================
+        {/* ====================================================
             PERFORMANCE SUMMARY
-        ====================================================== */}
+        ==================================================== */}
 
         <section
           style={styles.summary}
@@ -1450,12 +875,10 @@ export default function HospitalAnalyticsPage() {
             The hospital currently has{" "}
 
             <strong>
-
               {totalPatients}
+            </strong>
 
-            </strong>{" "}
-
-            registered patients.
+            {" "}registered patients.
 
           </p>
 
@@ -1465,65 +888,54 @@ export default function HospitalAnalyticsPage() {
             A total of{" "}
 
             <strong>
-
               {totalPredictions}
+            </strong>
 
-            </strong>{" "}
-
-            AI-based readmission risk predictions
-            have been recorded.
-
-          </p>
-
-
-          <p>
-
-            There are{" "}
-
-            <strong>
-
-              {highRiskPatients}
-
-            </strong>{" "}
-
-            high-risk patients based on
-            available prediction data.
+            {" "}AI-based readmission risk
+            predictions have been recorded.
 
           </p>
 
 
           <p>
 
-            The hospital has recorded{" "}
+            High-risk predictions:{" "}
 
             <strong>
-
-              {totalTreatments}
-
-            </strong>{" "}
-
-            treatments with a current completion
-            rate of{" "}
-
-            <strong>
-
-              {treatmentCompletionRate}%
-
-            </strong>.
+              {highRisk}
+            </strong>
 
           </p>
 
 
           <p>
 
-            Successful treatment outcomes:
-
-            {" "}
+            Medium-risk predictions:{" "}
 
             <strong>
+              {mediumRisk}
+            </strong>
 
-              {successfulTreatments}
+          </p>
 
+
+          <p>
+
+            Low-risk predictions:{" "}
+
+            <strong>
+              {lowRisk}
+            </strong>
+
+          </p>
+
+
+          <p>
+
+            Active prediction model:{" "}
+
+            <strong>
+              {modelName}
             </strong>
 
           </p>
@@ -1531,9 +943,9 @@ export default function HospitalAnalyticsPage() {
         </section>
 
 
-        {/* ======================================================
+        {/* ====================================================
             QUICK ACTIONS
-        ====================================================== */}
+        ==================================================== */}
 
         <section
           style={styles.section}
@@ -1583,13 +995,8 @@ export default function HospitalAnalyticsPage() {
 
 
             <button
-
-              onClick={() =>
-                window.location.reload()
-              }
-
+              onClick={loadAnalytics}
               style={styles.refreshButton}
-
             >
 
               Refresh Analytics
@@ -1599,7 +1006,6 @@ export default function HospitalAnalyticsPage() {
           </div>
 
         </section>
-
 
       </div>
 
@@ -1652,11 +1058,11 @@ const styles = {
     alignItems:
       "flex-start",
 
-    marginBottom:
-      "40px",
-
     gap:
       "20px",
+
+    marginBottom:
+      "40px",
 
   },
 
@@ -1670,7 +1076,7 @@ const styles = {
       "center",
 
     gap:
-      "20px",
+      "15px",
 
   },
 
@@ -1683,8 +1089,8 @@ const styles = {
     color:
       "#111827",
 
-    marginBottom:
-      "10px",
+    margin:
+      "0 0 10px 0",
 
   },
 
@@ -1739,7 +1145,7 @@ const styles = {
   card: {
 
     background:
-      "white",
+      "#ffffff",
 
     padding:
       "25px",
@@ -1756,7 +1162,7 @@ const styles = {
   analyticsCard: {
 
     background:
-      "white",
+      "#ffffff",
 
     padding:
       "25px",
@@ -1794,6 +1200,23 @@ const styles = {
 
     color:
       "#2563eb",
+
+    margin:
+      "10px 0",
+
+  },
+
+
+  modelNumber: {
+
+    fontSize:
+      "25px",
+
+    fontWeight:
+      "700",
+
+    color:
+      "#7c3aed",
 
     margin:
       "10px 0",
@@ -1845,40 +1268,6 @@ const styles = {
 
     color:
       "#16a34a",
-
-    margin:
-      "10px 0",
-
-  },
-
-
-  successNumber: {
-
-    fontSize:
-      "34px",
-
-    fontWeight:
-      "700",
-
-    color:
-      "#16a34a",
-
-    margin:
-      "10px 0",
-
-  },
-
-
-  unsuccessfulNumber: {
-
-    fontSize:
-      "34px",
-
-    fontWeight:
-      "700",
-
-    color:
-      "#dc2626",
 
     margin:
       "10px 0",
@@ -1979,27 +1368,13 @@ const styles = {
   },
 
 
-  progressCompleted: {
-
-    height:
-      "100%",
-
-    background:
-      "#2563eb",
-
-    borderRadius:
-      "10px",
-
-  },
-
-
   summary: {
 
     marginTop:
       "40px",
 
     background:
-      "white",
+      "#ffffff",
 
     padding:
       "30px",
@@ -2012,6 +1387,23 @@ const styles = {
 
     lineHeight:
       "1.7",
+
+  },
+
+
+  riskRow: {
+
+    display:
+      "flex",
+
+    justifyContent:
+      "space-between",
+
+    padding:
+      "12px 0",
+
+    borderBottom:
+      "1px solid #e5e7eb",
 
   },
 
@@ -2042,19 +1434,13 @@ const styles = {
       "#2563eb",
 
     color:
-      "white",
+      "#ffffff",
 
     borderRadius:
       "8px",
 
     textDecoration:
       "none",
-
-    border:
-      "none",
-
-    cursor:
-      "pointer",
 
     fontSize:
       "15px",
@@ -2071,7 +1457,7 @@ const styles = {
       "#111827",
 
     color:
-      "white",
+      "#ffffff",
 
     border:
       "none",
@@ -2097,7 +1483,7 @@ const styles = {
       "#2563eb",
 
     color:
-      "white",
+      "#ffffff",
 
     borderRadius:
       "8px",
@@ -2154,7 +1540,7 @@ const styles = {
       "30px",
 
     background:
-      "white",
+      "#ffffff",
 
     borderRadius:
       "14px",
@@ -2168,6 +1554,14 @@ const styles = {
   },
 
 
+  errorTitle: {
+
+    color:
+      "#111827",
+
+  },
+
+
   errorText: {
 
     color:
@@ -2175,6 +1569,14 @@ const styles = {
 
     fontWeight:
       "600",
+
+  },
+
+
+  errorDescription: {
+
+    color:
+      "#6b7280",
 
   },
 
@@ -2191,7 +1593,7 @@ const styles = {
       "#2563eb",
 
     color:
-      "white",
+      "#ffffff",
 
     border:
       "none",

@@ -1,15 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-
-  // ============================================================
-  // FORM STATES
-  // ============================================================
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,10 +13,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ============================================================
-  // LOGIN FUNCTION
-  // ============================================================
-
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -29,17 +20,9 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // --------------------------------------------------------
-      // API URL
-      // --------------------------------------------------------
-
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL ||
         "http://localhost:8000";
-
-      // --------------------------------------------------------
-      // SEND LOGIN REQUEST
-      // --------------------------------------------------------
 
       const response = await fetch(
         `${apiUrl}/auth/auth/login`,
@@ -58,33 +41,16 @@ export default function LoginPage() {
         }
       );
 
-      // --------------------------------------------------------
-      // READ RESPONSE
-      // --------------------------------------------------------
-
       const data = await response.json();
 
-      console.log(
-        "Login Status:",
-        response.status
-      );
-
-      console.log(
-        "Login Response:",
-        data
-      );
-
-      // --------------------------------------------------------
-      // HANDLE BACKEND ERROR
-      // --------------------------------------------------------
+      console.log("Login Status:", response.status);
+      console.log("Login Response:", data);
 
       if (!response.ok) {
         let errorMessage =
           "Invalid email, password, or role.";
 
-        if (
-          typeof data.detail === "string"
-        ) {
+        if (typeof data.detail === "string") {
           errorMessage = data.detail;
         } else if (
           data.detail &&
@@ -96,14 +62,8 @@ export default function LoginPage() {
             errorMessage;
         }
 
-        throw new Error(
-          errorMessage
-        );
+        throw new Error(errorMessage);
       }
-
-      // --------------------------------------------------------
-      // CHECK ACCESS TOKEN
-      // --------------------------------------------------------
 
       if (!data.access_token) {
         throw new Error(
@@ -111,110 +71,68 @@ export default function LoginPage() {
         );
       }
 
-      // --------------------------------------------------------
-      // CHECK USER DETAILS
-      // --------------------------------------------------------
-
       if (!data.user) {
         throw new Error(
           "Login successful, but user details were not received."
         );
       }
 
-      // ========================================================
+      // ============================================================
       // SAVE LOGIN INFORMATION
-      // ========================================================
+      // ============================================================
 
-      // Save JWT token
       localStorage.setItem(
         "token",
         data.access_token
       );
 
-      // Save complete user object
       localStorage.setItem(
         "user",
         JSON.stringify(data.user)
       );
 
-      // Save email
       localStorage.setItem(
         "user_email",
         email.trim()
       );
 
-      // Save role
+      const userRole = String(
+        data.user.role || ""
+      )
+        .trim()
+        .toLowerCase();
+
       localStorage.setItem(
         "user_role",
-        data.user.role
+        userRole
       );
-
-      // ========================================================
-      // ROLE-BASED REDIRECTION
-      // ========================================================
-
-      const userRole =
-        data.user.role
-          ?.trim()
-          .toLowerCase();
 
       console.log(
         "Logged-in User Role:",
         userRole
       );
 
-      // --------------------------------------------------------
-      // DOCTOR
-      // --------------------------------------------------------
+      // ============================================================
+      // ROLE BASED REDIRECTION
+      // ============================================================
 
-      if (
-        userRole === "doctor"
-      ) {
-        router.push(
-          "/dashboard"
-        );
+      if (userRole === "doctor") {
+        // DOCTOR MUST REMAIN /dashboard
+        router.push("/dashboard");
       }
 
-      // --------------------------------------------------------
-      // HOSPITAL ADMIN
-      // --------------------------------------------------------
-
-      else if (
-        userRole ===
-        "hospital_admin"
-      ) {
-        router.push(
-          "/hospital_admin"
-        );
+      else if (userRole === "hospital_admin") {
+        router.push("/hospital_admin");
       }
 
-      // --------------------------------------------------------
-      // RESEARCHER
-      // --------------------------------------------------------
-
-      // --------------------------------------------------------
-// RESEARCHER
-// --------------------------------------------------------
-
-else if (userRole === "researcher") {
-    router.push("/researcher");
-}
-      
-      // --------------------------------------------------------
-      // SYSTEM ADMIN
-      // --------------------------------------------------------
-
-      else if (
-        userRole === "system_admin"
-      ) {
-        router.push(
-          "/system_admin"
-        );
+      else if (userRole === "researcher") {
+        // DATABASE ROLE IS researcher
+        router.push("/researcher");
       }
 
-      // --------------------------------------------------------
-      // UNKNOWN ROLE
-      // --------------------------------------------------------
+      else if (userRole === "system_admin") {
+        router.push("/system_admin");
+      }
 
       else {
         throw new Error(
@@ -223,36 +141,21 @@ else if (userRole === "researcher") {
       }
 
     } catch (err) {
-
-      console.error(
-        "Login Error:",
-        err
-      );
+      console.error("Login Error:", err);
 
       setError(
-        err.message ||
+        err?.message ||
         "Login failed. Please try again."
       );
-
     } finally {
-
       setLoading(false);
-
     }
   };
-
-  // ============================================================
-  // UI
-  // ============================================================
 
   return (
     <main style={styles.main}>
 
       <div style={styles.card}>
-
-        {/* ================================================== */}
-        {/* TITLE */}
-        {/* ================================================== */}
 
         <h1 style={styles.title}>
           HealthForecast AI
@@ -267,25 +170,15 @@ else if (userRole === "researcher") {
           Login
         </h2>
 
-        {/* ================================================== */}
-        {/* ERROR MESSAGE */}
-        {/* ================================================== */}
-
         {error && (
           <div style={styles.error}>
             {error}
           </div>
         )}
 
-        {/* ================================================== */}
-        {/* LOGIN FORM */}
-        {/* ================================================== */}
-
         <form onSubmit={handleLogin}>
 
-          {/* ================================================== */}
           {/* EMAIL */}
-          {/* ================================================== */}
 
           <div style={styles.inputGroup}>
 
@@ -298,10 +191,7 @@ else if (userRole === "researcher") {
               placeholder="Enter your email"
               value={email}
               onChange={(e) => {
-                setEmail(
-                  e.target.value
-                );
-
+                setEmail(e.target.value);
                 setError("");
               }}
               required
@@ -310,9 +200,7 @@ else if (userRole === "researcher") {
 
           </div>
 
-          {/* ================================================== */}
           {/* PASSWORD */}
-          {/* ================================================== */}
 
           <div style={styles.inputGroup}>
 
@@ -325,10 +213,7 @@ else if (userRole === "researcher") {
               placeholder="Enter your password"
               value={password}
               onChange={(e) => {
-                setPassword(
-                  e.target.value
-                );
-
+                setPassword(e.target.value);
                 setError("");
               }}
               required
@@ -337,9 +222,7 @@ else if (userRole === "researcher") {
 
           </div>
 
-          {/* ================================================== */}
           {/* ROLE */}
-          {/* ================================================== */}
 
           <div style={styles.inputGroup}>
 
@@ -350,10 +233,7 @@ else if (userRole === "researcher") {
             <select
               value={role}
               onChange={(e) => {
-                setRole(
-                  e.target.value
-                );
-
+                setRole(e.target.value);
                 setError("");
               }}
               required
@@ -369,8 +249,8 @@ else if (userRole === "researcher") {
               </option>
 
               <option value="researcher">
-    HealthCare Researcher
-</option>
+                Healthcare Researcher
+              </option>
 
               <option value="system_admin">
                 System Administrator
@@ -380,9 +260,7 @@ else if (userRole === "researcher") {
 
           </div>
 
-          {/* ================================================== */}
-          {/* LOGIN BUTTON */}
-          {/* ================================================== */}
+          {/* LOGIN */}
 
           <button
             type="submit"
@@ -390,29 +268,19 @@ else if (userRole === "researcher") {
             style={{
               ...styles.button,
 
-              opacity:
-                loading
-                  ? 0.6
-                  : 1,
+              opacity: loading ? 0.6 : 1,
 
-              cursor:
-                loading
-                  ? "not-allowed"
-                  : "pointer",
+              cursor: loading
+                ? "not-allowed"
+                : "pointer",
             }}
           >
-
             {loading
               ? "Logging in..."
               : "Login"}
-
           </button>
 
         </form>
-
-        {/* ================================================== */}
-        {/* REGISTER */}
-        {/* ================================================== */}
 
         <p style={styles.registerText}>
           Don't have an account?
@@ -421,13 +289,9 @@ else if (userRole === "researcher") {
         <button
           type="button"
           onClick={() =>
-            router.push(
-              "/register"
-            )
+            router.push("/register")
           }
-          style={
-            styles.registerButton
-          }
+          style={styles.registerButton}
         >
           Create Account
         </button>
@@ -438,68 +302,45 @@ else if (userRole === "researcher") {
   );
 }
 
-// ============================================================
-// STYLES
-// ============================================================
-
 const styles = {
 
   main: {
     minHeight: "100vh",
-
     display: "flex",
-
     alignItems: "center",
-
     justifyContent: "center",
-
     background: "#f5f7fb",
-
     padding: "30px",
   },
 
   card: {
     width: "100%",
-
     maxWidth: "450px",
-
     background: "#ffffff",
-
     padding: "40px",
-
     borderRadius: "16px",
-
     boxShadow:
       "0 10px 30px rgba(0,0,0,0.08)",
   },
 
   title: {
     textAlign: "center",
-
     color: "#2563eb",
-
     fontSize: "30px",
-
     fontWeight: "700",
-
     marginBottom: "10px",
   },
 
   subtitle: {
     textAlign: "center",
-
     color: "#6b7280",
-
     lineHeight: "1.5",
-
     marginBottom: "30px",
   },
 
   loginTitle: {
     textAlign: "center",
-
     color: "#111827",
-
     marginBottom: "25px",
   },
 
@@ -509,90 +350,57 @@ const styles = {
 
   label: {
     display: "block",
-
     marginBottom: "8px",
-
     color: "#374151",
-
     fontWeight: "600",
   },
 
   input: {
     width: "100%",
-
     padding: "12px",
-
-    border:
-      "1px solid #d1d5db",
-
+    border: "1px solid #d1d5db",
     borderRadius: "8px",
-
     fontSize: "16px",
-
     boxSizing: "border-box",
-
     background: "#ffffff",
   },
 
   button: {
     width: "100%",
-
     padding: "13px",
-
     background: "#2563eb",
-
     color: "#ffffff",
-
     border: "none",
-
     borderRadius: "8px",
-
     fontSize: "16px",
-
     fontWeight: "600",
   },
 
   error: {
     background: "#fee2e2",
-
     color: "#b91c1c",
-
     padding: "12px",
-
     borderRadius: "8px",
-
     marginBottom: "20px",
-
     textAlign: "center",
   },
 
   registerText: {
     textAlign: "center",
-
     color: "#6b7280",
-
     marginTop: "25px",
-
     marginBottom: "10px",
   },
 
   registerButton: {
     width: "100%",
-
     padding: "12px",
-
     background: "#e5e7eb",
-
     color: "#111827",
-
     border: "none",
-
     borderRadius: "8px",
-
     fontSize: "15px",
-
     fontWeight: "600",
-
     cursor: "pointer",
   },
 
