@@ -1,5 +1,24 @@
 from fastapi import FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Add CORS Middleware before adding routes
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://healthforecast-ai-frontend.onrender.com",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "*"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Your router inclusions below this line...
 
 from app.config import settings
 
