@@ -51,9 +51,22 @@ export function AnalyticsProvider({ children }) {
         if (!isActive) return;
         setDashboardSummary(null);
         setAnalyticsOverview(null);
-        setModelSummary(null);
         setAnalyticsError('');
-        setIsAnalyticsLoading(false);
+        setIsAnalyticsLoading(true);
+        try {
+          const model = await getModelSummary().catch(() => null);
+          if (isActive) {
+            setModelSummary(model);
+          }
+        } catch {
+          if (isActive) {
+            setModelSummary(null);
+          }
+        } finally {
+          if (isActive) {
+            setIsAnalyticsLoading(false);
+          }
+        }
         return;
       }
 

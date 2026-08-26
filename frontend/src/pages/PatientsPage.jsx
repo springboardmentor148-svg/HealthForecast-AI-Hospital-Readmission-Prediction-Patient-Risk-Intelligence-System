@@ -191,11 +191,19 @@ export default function PatientsPage() {
       'time_in_hospital',
       'lab_procedures_count',
       'prior_diagnoses_count',
+      'number_inpatient',
+      'number_emergency',
+      'number_outpatient',
+      'num_procedures',
+      'diag_3',
+      'a1c_result',
+      'max_glu_serum',
+      'insulin_usage',
       'medications',
     ];
     const examples = [
-      ['EMP-82014', 'John', 'Doe', '45', 'male', 'emergency', 'Type 2 Diabetes', 'Hypertension', '3', '42', '4', 'Metformin,Insulin'],
-      ['EMP-29481', 'Jane', 'Smith', '62', 'female', 'elective', 'Type 2 Diabetes', '', '5', '55', '6', 'Insulin'],
+      ['EMP-82014', 'John', 'Doe', '45', 'male', 'emergency', 'Type 2 Diabetes', 'Hypertension', '3', '42', '4', '2', '1', '0', '1', '401.9', '>8', '>300', 'Steady', 'Metformin,Insulin'],
+      ['EMP-29481', 'Jane', 'Smith', '62', 'female', 'elective', 'Type 2 Diabetes', '', '5', '55', '6', '0', '0', '1', '0', '250.00', 'None', 'Norm', 'No', 'Insulin'],
     ];
     const csvContent = [
       headers.join(','),

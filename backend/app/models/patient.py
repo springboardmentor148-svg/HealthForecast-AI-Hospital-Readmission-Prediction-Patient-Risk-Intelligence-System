@@ -41,6 +41,17 @@ class Patient(TimestampMixin, db.Model):
     time_in_hospital = db.Column(db.Integer, nullable=False, default=0)
     prior_diagnoses_count = db.Column(db.Integer, nullable=False, default=0)
     lab_procedures_count = db.Column(db.Integer, nullable=False, default=0)
+    admission_source_id = db.Column(db.Integer, nullable=True)
+    discharge_disposition_id = db.Column(db.Integer, nullable=True)
+    number_inpatient = db.Column(db.Integer, nullable=True)
+    number_emergency = db.Column(db.Integer, nullable=True)
+    number_outpatient = db.Column(db.Integer, nullable=True)
+    num_procedures = db.Column(db.Integer, nullable=True)
+    num_medications = db.Column(db.Integer, nullable=True)
+    diag_3 = db.Column(db.String(255), nullable=True)
+    a1c_result = db.Column(db.String(16), nullable=True)
+    max_glu_serum = db.Column(db.String(16), nullable=True)
+    insulin_usage = db.Column(db.String(16), nullable=True)
     medications = db.Column(db.JSON, nullable=False, default=list)
     follow_up_schedule = db.Column(db.Text, nullable=True)
     discharge_plan = db.Column(db.Text, nullable=True)
@@ -88,6 +99,13 @@ class Patient(TimestampMixin, db.Model):
         db.CheckConstraint("time_in_hospital >= 0", name="ck_patients_time_in_hospital_nonnegative"),
         db.CheckConstraint("prior_diagnoses_count >= 0", name="ck_patients_prior_diagnoses_nonnegative"),
         db.CheckConstraint("lab_procedures_count >= 0", name="ck_patients_lab_procedures_nonnegative"),
+        db.CheckConstraint("admission_source_id IS NULL OR admission_source_id >= 0", name="ck_patients_admission_source_nonnegative"),
+        db.CheckConstraint("discharge_disposition_id IS NULL OR discharge_disposition_id >= 0", name="ck_patients_discharge_disposition_nonnegative"),
+        db.CheckConstraint("number_inpatient IS NULL OR number_inpatient >= 0", name="ck_patients_number_inpatient_nonnegative"),
+        db.CheckConstraint("number_emergency IS NULL OR number_emergency >= 0", name="ck_patients_number_emergency_nonnegative"),
+        db.CheckConstraint("number_outpatient IS NULL OR number_outpatient >= 0", name="ck_patients_number_outpatient_nonnegative"),
+        db.CheckConstraint("num_procedures IS NULL OR num_procedures >= 0", name="ck_patients_num_procedures_nonnegative"),
+        db.CheckConstraint("num_medications IS NULL OR num_medications >= 0", name="ck_patients_num_medications_nonnegative"),
         db.CheckConstraint(
             "readmission_probability >= 0 AND readmission_probability <= 100",
             name="ck_patients_readmission_probability_range",

@@ -11,6 +11,17 @@ from typing import Any
 
 import joblib
 import pandas as pd
+import numpy as np
+
+for _alias, _target in {
+    "long": "int_",
+    "ulong": "uint",
+    "int": "int_",
+    "float": "float64",
+    "complex": "complex128",
+}.items():
+    if not hasattr(np, _alias) and hasattr(np, _target):
+        setattr(np, _alias, getattr(np, _target))
 
 from ..errors import APIError
 from ..models import AdmissionType, Gender, RiskBand
@@ -117,6 +128,13 @@ def _normalize_text(value: Any) -> str:
     return str(value).strip()
 
 
+def _first_present(*values: Any) -> Any:
+    for value in values:
+        if value not in (None, ""):
+            return value
+    return None
+
+
 def _normalize_medication_name(value: Any) -> str:
     text = _normalize_text(value).lower()
     if not text:
@@ -150,12 +168,9 @@ def _load_diagnosis_encoders(dataset_path: str) -> dict[str, dict[str, int]]:
 
     encoders: dict[str, dict[str, int]] = {}
     for column in DIAGNOSIS_COLUMNS:
-        values = (
-            frame[column]
-            .dropna()
-            .astype(str)
-            .map(str.strip)
-        )
+        cleaned = frame.copy()
+        cleaned[column] = cleaned[column].replace("", pd.NA)
+        values = cleaned.dropna(subset=list(DIAGNOSIS_COLUMNS))[column].astype(str).map(str.strip)
         classes = sorted(set(value for value in values if value))
         encoders[column] = {label: index for index, label in enumerate(classes)}
     return encoders
@@ -293,6 +308,16 @@ class MLInferenceService:
             return [_normalize_medication_name(part) for part in medications.split(",") if _normalize_medication_name(part)]
         return []
 
+    def _resolve_numeric_value(self, payload: dict[str, Any], patient: Any, field_name: str, *aliases: str, default: int | None = None) -> int | None:
+        values: list[Any] = [payload.get(field_name)]
+        values.extend(payload.get(alias) for alias in aliases)
+        values.append(getattr(patient, field_name, None))
+        values.extend(getattr(patient, alias, None) for alias in aliases)
+        resolved = _first_present(*values)
+        if resolved is None:
+            return default
+        return _to_int(resolved, default if default is not None else 0)
+
     def _resolve_diagnosis_value(self, explicit_value: Any, fallback_value: Any, feature_name: str) -> float | None:
         candidate = _extract_diagnosis_code(explicit_value)
         if candidate is None:
@@ -333,7 +358,9 @@ class MLInferenceService:
         if feature_name in row:
             row[feature_name] = 1.0
 
-    def _set_max_glu_feature(self, row: dict[str, float], max_glu_serum: str) -> None:
+    def _set_max_glu_feature(self, row: dict[str, float], max_glu_serum: str | None) -> None:
+        if not max_glu_serum:
+            return
         normalized = max_glu_serum.strip()
         feature_map = {
             ">200": None,
@@ -378,56 +405,57 @@ class MLInferenceService:
         medications = self._patient_medications(patient)
         medication_set = set(medications)
 
-        patient_medications = getattr(patient, "medications", None)
-        medication_count = _to_int(payload.get("medications_count"), len(patient_medications) if isinstance(patient_medications, list) else 0)
-        if medication_count <= 0 and isinstance(patient_medications, list) and patient_medications:
-            medication_count = len(patient_medications)
-
-        prior_inpatient = _to_int(payload.get("prior_inpatient"))
-        prior_emergency = _to_int(payload.get("prior_emergency"))
-        time_in_hospital = _to_int(
-            payload.get("time_in_hospital"),
-            _to_int(getattr(patient, "time_in_hospital", 0)),
+        medication_count = self._resolve_numeric_value(payload, patient, "num_medications", "medications_count") or 0
+        admission_source_id = self._resolve_numeric_value(payload, patient, "admission_source_id", default=int(DEFAULT_ADMISSION_SOURCE_ID))
+        discharge_disposition_id = self._resolve_numeric_value(
+            payload,
+            patient,
+            "discharge_disposition_id",
+            default=int(DEFAULT_DISCHARGE_DISPOSITION_ID),
         )
-        diagnoses_count = _to_int(
-            payload.get("diagnoses_count"),
-            _to_int(getattr(patient, "prior_diagnoses_count", 0)),
+        number_inpatient = self._resolve_numeric_value(payload, patient, "number_inpatient", "prior_inpatient")
+        number_emergency = self._resolve_numeric_value(payload, patient, "number_emergency", "prior_emergency")
+        num_procedures = self._resolve_numeric_value(payload, patient, "num_procedures")
+        time_in_hospital = _first_present(payload.get("time_in_hospital"), getattr(patient, "time_in_hospital", None))
+        diagnoses_count = _first_present(payload.get("diagnoses_count"), getattr(patient, "prior_diagnoses_count", None))
+        a1c_result = _normalize_text(
+            _first_present(payload.get("a1c_result"), payload.get("A1Cresult"), getattr(patient, "a1c_result", None))
+        ) or "None"
+        max_glu_serum = _normalize_text(_first_present(payload.get("max_glu_serum"), getattr(patient, "max_glu_serum", None))) or "None"
+        insulin_usage = _normalize_text(
+            _first_present(payload.get("insulin_usage"), payload.get("insulin"), getattr(patient, "insulin_usage", None))
+        ) or "No"
+        diag_3_value = self._resolve_diagnosis_value(
+            _first_present(payload.get("diag_3"), getattr(patient, "diag_3", None), payload.get("additional_diagnosis"), payload.get("diagnosis_3")),
+            getattr(patient, "diag_3", None),
+            "diag_3",
         )
-        a1c_result = _normalize_text(payload.get("a1c_result")) or "None"
-        max_glu_serum = _normalize_text(payload.get("max_glu_serum")) or "None"
-        insulin_usage = _normalize_text(payload.get("insulin_usage")) or "No"
-        if insulin_usage == "Normal":
-            insulin_usage = "No"
 
         patient_age = self._patient_age(patient)
         admission_type_id = self._map_admission_type(getattr(patient, "admission_type", None))
 
         numeric_values = {
             "admission_type_id": float(admission_type_id),
-            "discharge_disposition_id": DEFAULT_DISCHARGE_DISPOSITION_ID,
-            "admission_source_id": DEFAULT_ADMISSION_SOURCE_ID,
-            "time_in_hospital": float(time_in_hospital),
-            "num_lab_procedures": float(_to_int(getattr(patient, "lab_procedures_count", 0))),
-            "num_procedures": 0.0,
+            "discharge_disposition_id": float(discharge_disposition_id) if discharge_disposition_id is not None else float(DEFAULT_DISCHARGE_DISPOSITION_ID),
+            "admission_source_id": float(admission_source_id) if admission_source_id is not None else float(DEFAULT_ADMISSION_SOURCE_ID),
+            "time_in_hospital": float(time_in_hospital) if time_in_hospital is not None else None,
+            "num_lab_procedures": float(_to_int(getattr(patient, "lab_procedures_count", None))) if getattr(patient, "lab_procedures_count", None) is not None else None,
+            "num_procedures": float(num_procedures) if num_procedures is not None else None,
             "num_medications": float(medication_count),
-            "number_outpatient": 0.0,
-            "number_emergency": float(prior_emergency),
-            "number_inpatient": float(prior_inpatient),
-            "number_diagnoses": float(diagnoses_count),
+            "number_outpatient": float(self._resolve_numeric_value(payload, patient, "number_outpatient") or 0),
+            "number_emergency": float(number_emergency) if number_emergency is not None else 0.0,
+            "number_inpatient": float(number_inpatient) if number_inpatient is not None else 0.0,
+            "number_diagnoses": float(diagnoses_count) if diagnoses_count is not None else None,
         }
 
         diagnosis_values = {
             "diag_1": self._resolve_diagnosis_value(payload.get("diag_1"), getattr(patient, "primary_diagnosis", None), "diag_1"),
             "diag_2": self._resolve_diagnosis_value(payload.get("diag_2"), getattr(patient, "secondary_diagnosis", None), "diag_2"),
-            "diag_3": self._resolve_diagnosis_value(
-                payload.get("diag_3"),
-                payload.get("additional_diagnosis") or payload.get("diagnosis_3"),
-                "diag_3",
-            ),
+            "diag_3": diag_3_value,
         }
 
         for key, value in numeric_values.items():
-            if key in row:
+            if key in row and value is not None:
                 row[key] = value
         for key, value in diagnosis_values.items():
             if key in row and value is not None:
@@ -455,15 +483,15 @@ class MLInferenceService:
         if insulin_usage in {"No", "Steady"}:
             self._set_change_feature(row, insulin_usage)
 
-        if any(med in DIABETES_MEDICATION_NAMES for med in medication_set) or medication_count > 0 or insulin_usage != "No":
+        if any(med in DIABETES_MEDICATION_NAMES for med in medication_set) or medication_count > 0 or (insulin_usage not in (None, "") and insulin_usage != "No"):
             self._set_binary_feature(row, "diabetesMed_Yes", True)
         else:
             self._set_binary_feature(row, "diabetesMed_Yes", False)
 
         for family_key, (feature_prefix, statuses) in MEDICATION_FAMILIES.items():
-            has_known_medication = family_key in medication_set
             if family_key == "insulin":
-                has_known_medication = has_known_medication or insulin_usage in {"Steady", "Up"}
+                continue
+            has_known_medication = family_key in medication_set
             self._set_medication_family(row, family_key, has_known_medication)
 
         return row
@@ -481,7 +509,9 @@ class MLInferenceService:
         if feature_name in row:
             row[feature_name] = 1.0
 
-    def _set_a1c_feature(self, row: dict[str, float], a1c_result: str) -> None:
+    def _set_a1c_feature(self, row: dict[str, float], a1c_result: str | None) -> None:
+        if not a1c_result:
+            return
         normalized = a1c_result.strip()
         feature_map = {
             ">7": None,
@@ -496,7 +526,9 @@ class MLInferenceService:
         if feature_name in row:
             row[feature_name] = 1.0
 
-    def _set_insulin_feature(self, row: dict[str, float], insulin_usage: str) -> None:
+    def _set_insulin_feature(self, row: dict[str, float], insulin_usage: str | None) -> None:
+        if not insulin_usage:
+            return
         normalized = insulin_usage.strip()
         feature_map = {
             "Down": None,
@@ -565,17 +597,17 @@ class MLInferenceService:
 
     def _build_analysis(self, inputs: dict[str, Any], probability: float, risk_band: RiskBand) -> dict[str, list[dict[str, Any]] | list[str]]:
         factors: list[dict[str, Any]] = []
-        if inputs["prior_inpatient"] > 0:
-            factors.append({"label": "Prior inpatient visits", "impact": f"+{inputs['prior_inpatient'] * 8}%", "isPositive": True})
-        if inputs["prior_emergency"] > 0:
-            factors.append({"label": "Prior emergency visits", "impact": f"+{inputs['prior_emergency'] * 6}%", "isPositive": True})
-        if inputs["a1c_result"] != "None":
+        if (inputs.get("number_inpatient") or 0) > 0:
+            factors.append({"label": "Prior inpatient visits", "impact": f"+{(inputs.get('number_inpatient') or 0) * 8}%", "isPositive": True})
+        if (inputs.get("number_emergency") or 0) > 0:
+            factors.append({"label": "Prior emergency visits", "impact": f"+{(inputs.get('number_emergency') or 0) * 6}%", "isPositive": True})
+        if inputs.get("a1c_result") not in (None, ""):
             factors.append({"label": "A1C result present", "impact": "+12%", "isPositive": True})
-        if inputs["medications_count"] < 5:
+        if (inputs.get("medications_count") or 0) < 5:
             factors.append({"label": "Lower medication count", "impact": "-6%", "isPositive": False})
         else:
             factors.append({"label": "Medication regimen load", "impact": "+4%", "isPositive": True})
-        if inputs["time_in_hospital"] > 5:
+        if (inputs.get("time_in_hospital") or 0) > 5:
             factors.append({"label": "Extended stay duration", "impact": "+8%", "isPositive": True})
 
         if risk_band == RiskBand.high:
@@ -600,13 +632,22 @@ class MLInferenceService:
 
     def predict(self, payload: dict[str, Any], patient: Any) -> PredictionOutput:
         inputs = {
-            "prior_inpatient": _to_int(payload.get("prior_inpatient")),
-            "prior_emergency": _to_int(payload.get("prior_emergency")),
-            "medications_count": _to_int(payload.get("medications_count")),
-            "time_in_hospital": _to_int(payload.get("time_in_hospital")),
-            "diagnoses_count": _to_int(payload.get("diagnoses_count")),
-            "a1c_result": str(payload.get("a1c_result") or "None").strip() or "None",
-            "insulin_usage": str(payload.get("insulin_usage") or "No").strip() or "No",
+            "admission_source_id": _to_int(_first_present(payload.get("admission_source_id"), getattr(patient, "admission_source_id", None), DEFAULT_ADMISSION_SOURCE_ID)),
+            "discharge_disposition_id": _to_int(_first_present(payload.get("discharge_disposition_id"), getattr(patient, "discharge_disposition_id", None), DEFAULT_DISCHARGE_DISPOSITION_ID)),
+            "number_inpatient": _to_int(_first_present(payload.get("number_inpatient"), payload.get("prior_inpatient"), getattr(patient, "number_inpatient", None))),
+            "number_emergency": _to_int(_first_present(payload.get("number_emergency"), payload.get("prior_emergency"), getattr(patient, "number_emergency", None))),
+            "number_outpatient": _to_int(_first_present(payload.get("number_outpatient"), getattr(patient, "number_outpatient", None))),
+            "num_procedures": _to_int(_first_present(payload.get("num_procedures"), getattr(patient, "num_procedures", None))),
+            "num_medications": _to_int(_first_present(payload.get("num_medications"), payload.get("medications_count"), getattr(patient, "num_medications", None))),
+            "diag_1": _first_present(payload.get("diag_1"), getattr(patient, "primary_diagnosis", None)),
+            "diag_2": _first_present(payload.get("diag_2"), getattr(patient, "secondary_diagnosis", None)),
+            "diag_3": _first_present(payload.get("diag_3"), getattr(patient, "diag_3", None), payload.get("additional_diagnosis"), payload.get("diagnosis_3")),
+            "medications_count": _to_int(_first_present(payload.get("medications_count"), payload.get("num_medications"), getattr(patient, "num_medications", None))),
+            "time_in_hospital": _to_int(_first_present(payload.get("time_in_hospital"), getattr(patient, "time_in_hospital", None))),
+            "diagnoses_count": _to_int(_first_present(payload.get("diagnoses_count"), getattr(patient, "prior_diagnoses_count", None))),
+            "a1c_result": _first_present(payload.get("a1c_result"), payload.get("A1Cresult"), getattr(patient, "a1c_result", None)),
+            "max_glu_serum": _first_present(payload.get("max_glu_serum"), getattr(patient, "max_glu_serum", None)),
+            "insulin_usage": _first_present(payload.get("insulin_usage"), payload.get("insulin"), getattr(patient, "insulin_usage", None)),
         }
 
         feature_vector, feature_row, snapshot = self.preprocess(payload, patient)
@@ -626,8 +667,10 @@ class MLInferenceService:
         confidence = Decimal(f"{max(raw_probability, 1.0 - raw_probability) * 100.0:.2f}")
         risk_band = self._risk_band(probability)
 
+        analysis = self._build_analysis(inputs, probability, risk_band)
+        factors = list(analysis.get("factors", []))
+
         # 1. SHAP calculation
-        factors = []
         if self.explainer is not None:
             try:
                 import time as pytime
@@ -707,17 +750,14 @@ class MLInferenceService:
             except Exception as exc:
                 import logging
                 logging.getLogger("flask.app").exception("SHAP prediction explanation failed")
-                factors = []
                 self._last_shap_latency = 0.0
                 self._last_abs_error = -1.0
         else:
-            factors = []
             self._last_shap_latency = 0.0
             self._last_abs_error = -1.0
 
-        analysis = self._build_analysis(inputs, probability, risk_band)
-        # Replace Rule-Based Factors with SHAP Factors
-        analysis["factors"] = factors
+        if factors:
+            analysis["factors"] = factors
 
         patient_name = f"{getattr(patient, 'first_name', '')} {getattr(patient, 'last_name', '')}".strip()
         explanation = (

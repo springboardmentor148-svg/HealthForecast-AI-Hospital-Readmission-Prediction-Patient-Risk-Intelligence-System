@@ -44,6 +44,12 @@ def _optional_int(value: Any, field_name: str) -> int:
     return _to_int(value, field_name)
 
 
+def _nullable_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    return _to_int(value, "value")
+
+
 def _optional_text(value: Any) -> str | None:
     if value is None:
         return None
@@ -51,6 +57,13 @@ def _optional_text(value: Any) -> str | None:
         raise APIError("Input values must be strings where applicable", 400)
     cleaned = value.strip()
     return cleaned or None
+
+
+def _first_present(*values: Any) -> Any:
+    for value in values:
+        if value not in (None, ""):
+            return value
+    return None
 
 
 def _parse_request_payload(payload: dict[str, Any]) -> tuple[Patient, dict[str, Any]]:
@@ -63,13 +76,22 @@ def _parse_request_payload(payload: dict[str, Any]) -> tuple[Patient, dict[str, 
         raise APIError("Patient not found", 404)
 
     inputs = {
-        "prior_inpatient": _optional_int(payload.get("prior_inpatient"), "prior_inpatient"),
-        "prior_emergency": _optional_int(payload.get("prior_emergency"), "prior_emergency"),
-        "medications_count": _optional_int(payload.get("medications_count"), "medications_count"),
-        "time_in_hospital": _optional_int(payload.get("time_in_hospital"), "time_in_hospital"),
-        "diagnoses_count": _optional_int(payload.get("diagnoses_count"), "diagnoses_count"),
-        "a1c_result": _optional_text(payload.get("a1c_result")) or "None",
-        "insulin_usage": _optional_text(payload.get("insulin_usage")) or "No",
+        "admission_source_id": _nullable_int(_first_present(payload.get("admission_source_id"), patient.admission_source_id)),
+        "discharge_disposition_id": _nullable_int(_first_present(payload.get("discharge_disposition_id"), patient.discharge_disposition_id)),
+        "number_inpatient": _nullable_int(_first_present(payload.get("number_inpatient"), payload.get("prior_inpatient"), patient.number_inpatient)),
+        "number_emergency": _nullable_int(_first_present(payload.get("number_emergency"), payload.get("prior_emergency"), patient.number_emergency)),
+        "number_outpatient": _nullable_int(_first_present(payload.get("number_outpatient"), patient.number_outpatient)),
+        "num_procedures": _nullable_int(_first_present(payload.get("num_procedures"), patient.num_procedures)),
+        "num_medications": _nullable_int(_first_present(payload.get("num_medications"), payload.get("medications_count"), patient.num_medications)),
+        "medications_count": _nullable_int(_first_present(payload.get("medications_count"), payload.get("num_medications"), patient.num_medications)),
+        "diag_1": _optional_text(_first_present(payload.get("diag_1"), patient.primary_diagnosis)),
+        "diag_2": _optional_text(_first_present(payload.get("diag_2"), patient.secondary_diagnosis)),
+        "diag_3": _optional_text(_first_present(payload.get("diag_3"), payload.get("additional_diagnosis"), payload.get("diagnosis_3"), patient.diag_3)),
+        "a1c_result": _optional_text(_first_present(payload.get("a1c_result"), payload.get("A1Cresult"), patient.a1c_result)),
+        "max_glu_serum": _optional_text(_first_present(payload.get("max_glu_serum"), patient.max_glu_serum)),
+        "insulin_usage": _optional_text(_first_present(payload.get("insulin_usage"), payload.get("insulin"), patient.insulin_usage)),
+        "time_in_hospital": _nullable_int(_first_present(payload.get("time_in_hospital"), patient.time_in_hospital)),
+        "diagnoses_count": _nullable_int(_first_present(payload.get("diagnoses_count"), patient.prior_diagnoses_count)),
     }
 
     return patient, inputs
@@ -394,4 +416,3 @@ def get_unique_model_versions() -> list[str]:
         .all()
     )
     return [r[0] for r in results]
-

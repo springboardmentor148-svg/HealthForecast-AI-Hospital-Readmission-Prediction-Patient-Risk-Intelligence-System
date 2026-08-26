@@ -44,6 +44,14 @@ function getInitialState(patient) {
       timeInHospital: '',
       priorDiagnosesCount: '',
       labProceduresCount: '',
+      numberInpatient: '',
+      numberEmergency: '',
+      numberOutpatient: '',
+      numProcedures: '',
+      diag3: '',
+      a1cResult: '',
+      maxGluSerum: '',
+      insulinUsage: '',
       medications: '',
       followUpSchedule: '',
       dischargePlan: '',
@@ -67,6 +75,14 @@ function getInitialState(patient) {
     timeInHospital: patient.time_in_hospital ?? patient.timeInHospital ?? '',
     priorDiagnosesCount: patient.prior_diagnoses_count ?? patient.priorDiagnosesCount ?? '',
     labProceduresCount: patient.lab_procedures_count ?? patient.labProceduresCount ?? '',
+    numberInpatient: patient.number_inpatient ?? patient.numberInpatient ?? '',
+    numberEmergency: patient.number_emergency ?? patient.numberEmergency ?? '',
+    numberOutpatient: patient.number_outpatient ?? patient.numberOutpatient ?? '',
+    numProcedures: patient.num_procedures ?? patient.numProcedures ?? '',
+    diag3: patient.diag_3 ?? patient.diag3 ?? '',
+    a1cResult: patient.a1c_result ?? patient.a1cResult ?? '',
+    maxGluSerum: patient.max_glu_serum ?? patient.maxGluSerum ?? '',
+    insulinUsage: patient.insulin_usage ?? patient.insulinUsage ?? '',
     medications: Array.isArray(patient.medications) ? patient.medications.join(', ') : '',
     followUpSchedule: patient.follow_up_schedule || patient.followUpSchedule || '',
     dischargePlan: patient.discharge_plan || patient.dischargePlan || '',
@@ -312,6 +328,83 @@ export default function PatientFormModal({
               />
             </div>
 
+            <div className="md:col-span-2">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-txt-muted pl-1">Encounter History</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="number-inpatient">
+                Prior Inpatient Encounters
+              </label>
+              <Input
+                id="number-inpatient"
+                type="number"
+                min={0}
+                value={formState.numberInpatient}
+                onChange={updateField('numberInpatient')}
+                className={inputClassName}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="number-emergency">
+                Prior Emergency Encounters
+              </label>
+              <Input
+                id="number-emergency"
+                type="number"
+                min={0}
+                value={formState.numberEmergency}
+                onChange={updateField('numberEmergency')}
+                className={inputClassName}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="number-outpatient">
+                Prior Outpatient Encounters
+              </label>
+              <Input
+                id="number-outpatient"
+                type="number"
+                min={0}
+                value={formState.numberOutpatient}
+                onChange={updateField('numberOutpatient')}
+                className={inputClassName}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="num-procedures">
+                Number of Procedures
+              </label>
+              <Input
+                id="num-procedures"
+                type="number"
+                min={0}
+                value={formState.numProcedures}
+                onChange={updateField('numProcedures')}
+                className={inputClassName}
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="diag-3">
+                Third Diagnosis
+              </label>
+              <Input
+                id="diag-3"
+                value={formState.diag3}
+                onChange={updateField('diag3')}
+                className={inputClassName}
+                placeholder="ICD or clinical diagnosis"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-txt-muted pl-1">Lab / Treatment</p>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="lab-procedures-count">
                 Lab Procedures Count
@@ -322,6 +415,63 @@ export default function PatientFormModal({
                 min={0}
                 value={formState.labProceduresCount}
                 onChange={updateField('labProceduresCount')}
+                className={inputClassName}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="a1c-result">
+                A1C Result
+              </label>
+              <Select
+                id="a1c-result"
+                options={[
+                  { value: '', label: 'Not set' },
+                  { value: 'None', label: 'None' },
+                  { value: 'Normal', label: 'Normal' },
+                  { value: '>7', label: '>7' },
+                  { value: '>8', label: '>8' },
+                ]}
+                value={formState.a1cResult}
+                onChange={updateField('a1cResult')}
+                className={inputClassName}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="max-glu-serum">
+                Maximum Glucose Result
+              </label>
+              <Select
+                id="max-glu-serum"
+                options={[
+                  { value: '', label: 'Not set' },
+                  { value: 'None', label: 'None' },
+                  { value: 'Norm', label: 'Normal' },
+                  { value: '>200', label: '>200' },
+                  { value: '>300', label: '>300' },
+                ]}
+                value={formState.maxGluSerum}
+                onChange={updateField('maxGluSerum')}
+                className={inputClassName}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-txt-muted block pl-1" htmlFor="insulin-usage">
+                Insulin Usage
+              </label>
+              <Select
+                id="insulin-usage"
+                options={[
+                  { value: '', label: 'Not set' },
+                  { value: 'No', label: 'No' },
+                  { value: 'Steady', label: 'Steady' },
+                  { value: 'Up', label: 'Up' },
+                  { value: 'Down', label: 'Down' },
+                ]}
+                value={formState.insulinUsage}
+                onChange={updateField('insulinUsage')}
                 className={inputClassName}
               />
             </div>

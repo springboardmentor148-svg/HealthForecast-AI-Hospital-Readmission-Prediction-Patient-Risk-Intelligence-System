@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from decimal import InvalidOperation
+from re import fullmatch
 from math import ceil
 from typing import Any
 
@@ -72,6 +74,45 @@ def _required_int(value: Any, field_name: str) -> int:
     if parsed is None:
         raise APIError(f"{field_name} is required", 400)
     return parsed
+
+
+def _optional_nonnegative_int(value: Any, field_name: str) -> int | None:
+    parsed = _optional_int(value, field_name)
+    if parsed is not None and parsed < 0:
+        raise APIError(f"{field_name} must be greater than or equal to 0", 400)
+    return parsed
+
+
+def _optional_enum_value(value: Any, allowed: set[str], field_name: str) -> str | None:
+    if value is None or value == "":
+        return None
+    if not isinstance(value, str):
+        raise APIError(f"{field_name} must be a string", 400)
+    cleaned = value.strip()
+    if cleaned not in allowed:
+        raise APIError(f"Invalid {field_name}", 400)
+    return cleaned
+
+
+def _canonicalize_diag_3(value: Any) -> str | None:
+    if value is None or value == "":
+        return None
+    if not isinstance(value, str):
+        value = str(value)
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+
+    # The training data stores diagnosis codes as compact text labels like "250".
+    # Preserve non-numeric codes, but normalize numeric-looking values to that form.
+    if fullmatch(r"\d+(?:\.\d+)?", cleaned):
+        try:
+            normalized = Decimal(cleaned).normalize()
+        except InvalidOperation:
+            return cleaned
+        text = format(normalized, "f")
+        return text.rstrip("0").rstrip(".") if "." in text else text
+    return cleaned
 
 
 def _optional_decimal(value: Any, field_name: str) -> Decimal | None:
@@ -399,6 +440,39 @@ def _collect_patient_validation_errors(
         except APIError as exc:
             errors["lab_procedures_count"] = exc.message
 
+    for field_name in ("admission_source_id", "discharge_disposition_id", "number_inpatient", "number_emergency", "number_outpatient", "num_procedures", "num_medications"):
+        if field_name in payload:
+            try:
+                parsed_value = _optional_nonnegative_int(payload.get(field_name), field_name)
+                if parsed_value is not None and parsed_value < 0:
+                    raise APIError(f"{field_name} must be greater than or equal to 0", 400)
+            except APIError as exc:
+                errors[field_name] = exc.message
+
+    if "diag_3" in payload and payload.get("diag_3") not in (None, ""):
+        try:
+            _normalize_text(payload.get("diag_3"), "diag_3")
+        except APIError as exc:
+            errors["diag_3"] = exc.message
+
+    if "a1c_result" in payload or "A1Cresult" in payload:
+        try:
+            _optional_enum_value(payload.get("a1c_result", payload.get("A1Cresult")), {"None", "Normal", "Norm", ">7", ">8"}, "a1c_result")
+        except APIError as exc:
+            errors["a1c_result"] = exc.message
+
+    if "max_glu_serum" in payload:
+        try:
+            _optional_enum_value(payload.get("max_glu_serum"), {"None", "Norm", ">200", ">300"}, "max_glu_serum")
+        except APIError as exc:
+            errors["max_glu_serum"] = exc.message
+
+    if "insulin_usage" in payload or "insulin" in payload:
+        try:
+            _optional_enum_value(payload.get("insulin_usage", payload.get("insulin")), {"No", "Steady", "Up", "Down", "Normal"}, "insulin_usage")
+        except APIError as exc:
+            errors["insulin_usage"] = exc.message
+
     admission_date = None
     discharge_date = None
     if "admission_date" in payload:
@@ -445,6 +519,22 @@ def _resolve_assigned_doctor(assigned_doctor_id: Any) -> User | None:
     if doctor is None:
         raise APIError("assigned_doctor_id is invalid", 400)
     return doctor
+
+
+def _canonical_patient_feature_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "admission_source_id": payload.get("admission_source_id"),
+        "discharge_disposition_id": payload.get("discharge_disposition_id"),
+        "number_inpatient": payload.get("number_inpatient", payload.get("prior_inpatient")),
+        "number_emergency": payload.get("number_emergency", payload.get("prior_emergency")),
+        "number_outpatient": payload.get("number_outpatient"),
+        "num_procedures": payload.get("num_procedures"),
+        "num_medications": payload.get("num_medications", payload.get("medications_count")),
+        "diag_3": payload.get("diag_3", payload.get("additional_diagnosis", payload.get("diagnosis_3"))),
+        "a1c_result": payload.get("a1c_result", payload.get("A1Cresult")),
+        "max_glu_serum": payload.get("max_glu_serum"),
+        "insulin_usage": payload.get("insulin_usage", payload.get("insulin")),
+    }
 
 
 def serialize_patient(patient: Patient) -> dict[str, Any]:
@@ -514,6 +604,17 @@ def serialize_patient(patient: Patient) -> dict[str, Any]:
         "time_in_hospital": patient.time_in_hospital,
         "prior_diagnoses_count": patient.prior_diagnoses_count,
         "lab_procedures_count": patient.lab_procedures_count,
+        "admission_source_id": patient.admission_source_id,
+        "discharge_disposition_id": patient.discharge_disposition_id,
+        "number_inpatient": patient.number_inpatient,
+        "number_emergency": patient.number_emergency,
+        "number_outpatient": patient.number_outpatient,
+        "num_procedures": patient.num_procedures,
+        "num_medications": patient.num_medications,
+        "diag_3": _canonicalize_diag_3(patient.diag_3),
+        "a1c_result": patient.a1c_result,
+        "max_glu_serum": patient.max_glu_serum,
+        "insulin_usage": patient.insulin_usage,
         "medications": patient.medications or [],
         "follow_up_schedule": patient.follow_up_schedule,
         "discharge_plan": patient.discharge_plan,
@@ -576,6 +677,17 @@ def create_patient(payload: dict[str, Any], creator_doctor_id: int | None = None
         time_in_hospital=_required_int(payload.get("time_in_hospital", 0), "time_in_hospital"),
         prior_diagnoses_count=_required_int(payload.get("prior_diagnoses_count", 0), "prior_diagnoses_count"),
         lab_procedures_count=_required_int(payload.get("lab_procedures_count", 0), "lab_procedures_count"),
+        admission_source_id=_optional_nonnegative_int(payload.get("admission_source_id"), "admission_source_id"),
+        discharge_disposition_id=_optional_nonnegative_int(payload.get("discharge_disposition_id"), "discharge_disposition_id"),
+        number_inpatient=_optional_nonnegative_int(payload.get("number_inpatient", payload.get("prior_inpatient")), "number_inpatient"),
+        number_emergency=_optional_nonnegative_int(payload.get("number_emergency", payload.get("prior_emergency")), "number_emergency"),
+        number_outpatient=_optional_nonnegative_int(payload.get("number_outpatient"), "number_outpatient"),
+        num_procedures=_optional_nonnegative_int(payload.get("num_procedures"), "num_procedures"),
+        num_medications=_optional_nonnegative_int(payload.get("num_medications", payload.get("medications_count")), "num_medications"),
+        diag_3=_canonicalize_diag_3(payload.get("diag_3", payload.get("additional_diagnosis", payload.get("diagnosis_3")))),
+        a1c_result=_optional_enum_value(payload.get("a1c_result", payload.get("A1Cresult")), {"None", "Normal", "Norm", ">7", ">8"}, "a1c_result"),
+        max_glu_serum=_optional_enum_value(payload.get("max_glu_serum"), {"None", "Norm", ">200", ">300"}, "max_glu_serum"),
+        insulin_usage=_optional_enum_value(payload.get("insulin_usage", payload.get("insulin")), {"No", "Steady", "Up", "Down", "Normal"}, "insulin_usage"),
         medications=_parse_medications(payload.get("medications")),
         follow_up_schedule=_optional_text(payload.get("follow_up_schedule")),
         discharge_plan=_optional_text(payload.get("discharge_plan")),
@@ -670,6 +782,28 @@ def update_patient(patient: Patient, payload: dict[str, Any]) -> Patient:
         patient.prior_diagnoses_count = _required_int(payload.get("prior_diagnoses_count"), "prior_diagnoses_count")
     if "lab_procedures_count" in payload:
         patient.lab_procedures_count = _required_int(payload.get("lab_procedures_count"), "lab_procedures_count")
+    if "admission_source_id" in payload:
+        patient.admission_source_id = _optional_nonnegative_int(payload.get("admission_source_id"), "admission_source_id")
+    if "discharge_disposition_id" in payload:
+        patient.discharge_disposition_id = _optional_nonnegative_int(payload.get("discharge_disposition_id"), "discharge_disposition_id")
+    if "number_inpatient" in payload or "prior_inpatient" in payload:
+        patient.number_inpatient = _optional_nonnegative_int(payload.get("number_inpatient", payload.get("prior_inpatient")), "number_inpatient")
+    if "number_emergency" in payload or "prior_emergency" in payload:
+        patient.number_emergency = _optional_nonnegative_int(payload.get("number_emergency", payload.get("prior_emergency")), "number_emergency")
+    if "number_outpatient" in payload:
+        patient.number_outpatient = _optional_nonnegative_int(payload.get("number_outpatient"), "number_outpatient")
+    if "num_procedures" in payload:
+        patient.num_procedures = _optional_nonnegative_int(payload.get("num_procedures"), "num_procedures")
+    if "num_medications" in payload or "medications_count" in payload:
+        patient.num_medications = _optional_nonnegative_int(payload.get("num_medications", payload.get("medications_count")), "num_medications")
+    if "diag_3" in payload:
+        patient.diag_3 = _canonicalize_diag_3(payload.get("diag_3", payload.get("additional_diagnosis", payload.get("diagnosis_3"))))
+    if "a1c_result" in payload or "A1Cresult" in payload:
+        patient.a1c_result = _optional_enum_value(payload.get("a1c_result", payload.get("A1Cresult")), {"None", "Normal", "Norm", ">7", ">8"}, "a1c_result")
+    if "max_glu_serum" in payload:
+        patient.max_glu_serum = _optional_enum_value(payload.get("max_glu_serum"), {"None", "Norm", ">200", ">300"}, "max_glu_serum")
+    if "insulin_usage" in payload or "insulin" in payload:
+        patient.insulin_usage = _optional_enum_value(payload.get("insulin_usage", payload.get("insulin")), {"No", "Steady", "Up", "Down", "Normal"}, "insulin_usage")
     if "medications" in payload:
         patient.medications = _parse_medications(payload.get("medications"))
     if "follow_up_schedule" in payload:
@@ -742,4 +876,3 @@ def delete_patient(patient: Patient) -> None:
         target_id=patient_id,
         metadata={"patient_name": patient_name},
     )
-

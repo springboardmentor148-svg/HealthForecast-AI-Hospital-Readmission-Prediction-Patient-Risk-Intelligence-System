@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from decimal import Decimal
+from decimal import InvalidOperation
 from typing import Any
 
 import pandas as pd
@@ -31,13 +32,64 @@ class PatientCSVImporter:
         "time_in_hospital",
         "lab_procedures_count",
         "prior_diagnoses_count",
+        "admission_source_id",
+        "discharge_disposition_id",
         "medications",
+        "number_inpatient",
+        "number_emergency",
+        "number_outpatient",
+        "num_procedures",
+        "num_medications",
+        "diag_3",
+        "additional_diagnosis",
+        "diagnosis_3",
+        "a1c_result",
+        "A1Cresult",
+        "max_glu_serum",
+        "insulin_usage",
+        "insulin",
     }
 
     ALL_COLUMNS = REQUIRED_COLUMNS | OPTIONAL_COLUMNS
 
     def __init__(self, batch_size: int = 500):
         self.batch_size = batch_size
+
+    @staticmethod
+    def _canonicalize_diag_3(value: Any) -> str | None:
+        if value is None or value == "":
+            return None
+        cleaned = str(value).strip()
+        if not cleaned:
+            return None
+        if re.fullmatch(r"\d+(?:\.\d+)?", cleaned):
+            try:
+                normalized = Decimal(cleaned).normalize()
+            except InvalidOperation:
+                return cleaned
+            text = format(normalized, "f")
+            return text.rstrip("0").rstrip(".") if "." in text else text
+        return cleaned
+
+    @staticmethod
+    def _parse_nonnegative_int(value: Any, field_name: str, row_num: int, validation_errors: list[dict[str, Any]]) -> int | None | str:
+        if value is None or str(value).strip() == "":
+            return None
+        try:
+            parsed = int(float(str(value).strip()))
+        except ValueError:
+            validation_errors.append({
+                "row": row_num,
+                "reason": f"Invalid {field_name} '{value}'. Must be a non-negative integer.",
+            })
+            return "__invalid__"
+        if parsed < 0:
+            validation_errors.append({
+                "row": row_num,
+                "reason": f"Invalid {field_name} '{value}'. Must be a non-negative integer.",
+            })
+            return "__invalid__"
+        return parsed
 
     def validate_csv(self, file_stream) -> dict[str, Any]:
         """
@@ -232,6 +284,69 @@ class PatientCSVImporter:
             else:
                 prior_diag = 0
 
+            admission_source_id = self._parse_nonnegative_int(row_dict.get("admission_source_id"), "admission_source_id", row_num, validation_errors)
+            if admission_source_id == "__invalid__":
+                continue
+
+            discharge_disposition_id = self._parse_nonnegative_int(row_dict.get("discharge_disposition_id"), "discharge_disposition_id", row_num, validation_errors)
+            if discharge_disposition_id == "__invalid__":
+                continue
+
+            number_inpatient = self._parse_nonnegative_int(row_dict.get("number_inpatient"), "number_inpatient", row_num, validation_errors)
+            if number_inpatient is None:
+                number_inpatient = self._parse_nonnegative_int(row_dict.get("prior_inpatient"), "prior_inpatient", row_num, validation_errors)
+            if number_inpatient == "__invalid__":
+                continue
+
+            number_emergency = self._parse_nonnegative_int(row_dict.get("number_emergency"), "number_emergency", row_num, validation_errors)
+            if number_emergency is None:
+                number_emergency = self._parse_nonnegative_int(row_dict.get("prior_emergency"), "prior_emergency", row_num, validation_errors)
+            if number_emergency == "__invalid__":
+                continue
+
+            number_outpatient = self._parse_nonnegative_int(row_dict.get("number_outpatient"), "number_outpatient", row_num, validation_errors)
+            if number_outpatient == "__invalid__":
+                continue
+            num_procedures = self._parse_nonnegative_int(row_dict.get("num_procedures"), "num_procedures", row_num, validation_errors)
+            if num_procedures == "__invalid__":
+                continue
+
+            num_medications = self._parse_nonnegative_int(row_dict.get("num_medications", row_dict.get("medications_count")), "num_medications", row_num, validation_errors)
+            if num_medications == "__invalid__":
+                continue
+
+            diag_3 = self._canonicalize_diag_3(row_dict.get("diag_3", row_dict.get("additional_diagnosis", row_dict.get("diagnosis_3"))))
+
+            a1c_result = row_dict.get("a1c_result", row_dict.get("A1Cresult"))
+            if a1c_result is not None:
+                a1c_result = str(a1c_result).strip()
+                if a1c_result not in {"None", "Normal", "Norm", ">7", ">8"}:
+                    validation_errors.append({
+                        "row": row_num,
+                        "reason": f"Invalid a1c_result '{a1c_result}'. Must be None, Normal, Norm, >7, or >8.",
+                    })
+                    continue
+
+            max_glu_serum = row_dict.get("max_glu_serum")
+            if max_glu_serum is not None:
+                max_glu_serum = str(max_glu_serum).strip()
+                if max_glu_serum not in {"None", "Norm", ">200", ">300"}:
+                    validation_errors.append({
+                        "row": row_num,
+                        "reason": f"Invalid max_glu_serum '{max_glu_serum}'. Must be None, Norm, >200, or >300.",
+                    })
+                    continue
+
+            insulin_usage = row_dict.get("insulin_usage", row_dict.get("insulin"))
+            if insulin_usage is not None:
+                insulin_usage = str(insulin_usage).strip()
+                if insulin_usage not in {"No", "Steady", "Up", "Down", "Normal"}:
+                    validation_errors.append({
+                        "row": row_num,
+                        "reason": f"Invalid insulin_usage '{insulin_usage}'. Must be No, Steady, Up, Down, or Normal.",
+                    })
+                    continue
+
             # Medications parsing
             meds_raw = row_dict.get("medications")
             meds_list = []
@@ -259,6 +374,17 @@ class PatientCSVImporter:
                 "time_in_hospital": time_in_hosp,
                 "lab_procedures_count": lab_proc,
                 "prior_diagnoses_count": prior_diag,
+                "admission_source_id": admission_source_id,
+                "discharge_disposition_id": discharge_disposition_id,
+                "number_inpatient": number_inpatient,
+                "number_emergency": number_emergency,
+                "number_outpatient": number_outpatient,
+                "num_procedures": num_procedures,
+                "num_medications": num_medications,
+                "diag_3": diag_3,
+                "a1c_result": a1c_result,
+                "max_glu_serum": max_glu_serum,
+                "insulin_usage": insulin_usage,
                 "medications": meds_list,
                 "row_num": row_num,
             })
@@ -370,33 +496,99 @@ class PatientCSVImporter:
                 adm_type = AdmissionType.other
 
             # Parse age & numeric counters safely
-            age = None
-            try:
-                if row_dict.get("age_at_admission") is not None:
-                    age = int(float(str(row_dict.get("age_at_admission")).strip()))
-            except ValueError:
-                pass
+            def _reject_negative_or_parse(raw_value: Any, field_name: str):
+                if raw_value is None or str(raw_value).strip() == "":
+                    return None
+                try:
+                    parsed = int(float(str(raw_value).strip()))
+                except ValueError:
+                    validation_errors.append({
+                        "row": row_num,
+                        "reason": f"Invalid {field_name} '{raw_value}'. Must be a non-negative integer.",
+                    })
+                    return "__invalid__"
+                if parsed < 0:
+                    validation_errors.append({
+                        "row": row_num,
+                        "reason": f"Invalid {field_name} '{raw_value}'. Must be a non-negative integer.",
+                    })
+                    return "__invalid__"
+                return parsed
 
-            time_in_hosp = 0
-            try:
-                if row_dict.get("time_in_hospital") is not None:
-                    time_in_hosp = max(0, int(float(str(row_dict.get("time_in_hospital")).strip())))
-            except ValueError:
-                pass
+            age = _reject_negative_or_parse(row_dict.get("age_at_admission"), "age_at_admission")
+            if age == "__invalid__":
+                failed += 1
+                continue
 
-            lab_proc = 0
-            try:
-                if row_dict.get("lab_procedures_count") is not None:
-                    lab_proc = max(0, int(float(str(row_dict.get("lab_procedures_count")).strip())))
-            except ValueError:
-                pass
+            time_in_hosp = _reject_negative_or_parse(row_dict.get("time_in_hospital"), "time_in_hospital")
+            if time_in_hosp == "__invalid__":
+                failed += 1
+                continue
 
-            prior_diag = 0
-            try:
-                if row_dict.get("prior_diagnoses_count") is not None:
-                    prior_diag = max(0, int(float(str(row_dict.get("prior_diagnoses_count")).strip())))
-            except ValueError:
-                pass
+            lab_proc = _reject_negative_or_parse(row_dict.get("lab_procedures_count"), "lab_procedures_count")
+            if lab_proc == "__invalid__":
+                failed += 1
+                continue
+
+            prior_diag = _reject_negative_or_parse(row_dict.get("prior_diagnoses_count"), "prior_diagnoses_count")
+            if prior_diag == "__invalid__":
+                failed += 1
+                continue
+
+            admission_source_id = _reject_negative_or_parse(row_dict.get("admission_source_id"), "admission_source_id")
+            if admission_source_id == "__invalid__":
+                failed += 1
+                continue
+
+            discharge_disposition_id = _reject_negative_or_parse(row_dict.get("discharge_disposition_id"), "discharge_disposition_id")
+            if discharge_disposition_id == "__invalid__":
+                failed += 1
+                continue
+
+            number_inpatient = _reject_negative_or_parse(row_dict.get("number_inpatient", row_dict.get("prior_inpatient")), "number_inpatient")
+            if number_inpatient == "__invalid__":
+                failed += 1
+                continue
+
+            number_emergency = _reject_negative_or_parse(row_dict.get("number_emergency", row_dict.get("prior_emergency")), "number_emergency")
+            if number_emergency == "__invalid__":
+                failed += 1
+                continue
+
+            number_outpatient = _reject_negative_or_parse(row_dict.get("number_outpatient"), "number_outpatient")
+            if number_outpatient == "__invalid__":
+                failed += 1
+                continue
+
+            num_procedures = _reject_negative_or_parse(row_dict.get("num_procedures"), "num_procedures")
+            if num_procedures == "__invalid__":
+                failed += 1
+                continue
+
+            num_medications = _reject_negative_or_parse(row_dict.get("num_medications", row_dict.get("medications_count")), "num_medications")
+            if num_medications == "__invalid__":
+                failed += 1
+                continue
+
+            diag_3 = self._canonicalize_diag_3(row_dict.get("diag_3", row_dict.get("additional_diagnosis", row_dict.get("diagnosis_3"))))
+
+            a1c_result = row_dict.get("a1c_result", row_dict.get("A1Cresult"))
+            if a1c_result is not None:
+                a1c_result = str(a1c_result).strip()
+                if a1c_result == "":
+                    a1c_result = None
+
+            max_glu_serum = row_dict.get("max_glu_serum")
+            if max_glu_serum is not None:
+                max_glu_serum = str(max_glu_serum).strip()
+                if max_glu_serum == "":
+                    max_glu_serum = None
+
+            insulin_usage = row_dict.get("insulin_usage", row_dict.get("insulin"))
+            if insulin_usage is not None:
+                insulin_usage = str(insulin_usage).strip()
+                if insulin_usage == "":
+                    insulin_usage = None
 
             meds_raw = row_dict.get("medications")
             meds_list = []
@@ -424,6 +616,17 @@ class PatientCSVImporter:
                     time_in_hospital=time_in_hosp,
                     lab_procedures_count=lab_proc,
                     prior_diagnoses_count=prior_diag,
+                    admission_source_id=admission_source_id,
+                    discharge_disposition_id=discharge_disposition_id,
+                    number_inpatient=number_inpatient,
+                    number_emergency=number_emergency,
+                    number_outpatient=number_outpatient,
+                    num_procedures=num_procedures,
+                    num_medications=num_medications,
+                    diag_3=diag_3,
+                    a1c_result=a1c_result,
+                    max_glu_serum=max_glu_serum,
+                    insulin_usage=insulin_usage,
                     medications=meds_list,
                     risk_band=RiskBand.low,
                     readmission_probability=Decimal("0.0"),

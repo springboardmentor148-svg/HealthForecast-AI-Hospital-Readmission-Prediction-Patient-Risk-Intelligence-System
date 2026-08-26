@@ -102,16 +102,7 @@ def run_pending_predictions():
 
     for p in patients:
         try:
-            payload = {
-                "patient_id": p.id,
-                "prior_inpatient": 0,
-                "prior_emergency": 0,
-                "medications_count": len(p.medications) if p.medications else 0,
-                "time_in_hospital": p.time_in_hospital,
-                "diagnoses_count": p.prior_diagnoses_count,
-                "a1c_result": "None",
-                "insulin_usage": "No",
-            }
+            payload = {"patient_id": p.id}
             run_prediction(payload, created_by_id=created_by_id)
             successful += 1
         except Exception:
@@ -160,25 +151,25 @@ def run_all_predictions():
                 inputs = latest_pred.features_snapshot["inputs"]
                 payload = {
                     "patient_id": p.id,
-                    "prior_inpatient": inputs.get("prior_inpatient", 0),
-                    "prior_emergency": inputs.get("prior_emergency", 0),
-                    "medications_count": inputs.get("medications_count", len(p.medications) if p.medications else 0),
+                    "admission_source_id": inputs.get("admission_source_id", p.admission_source_id),
+                    "discharge_disposition_id": inputs.get("discharge_disposition_id", p.discharge_disposition_id),
+                    "number_inpatient": inputs.get("number_inpatient", p.number_inpatient),
+                    "number_emergency": inputs.get("number_emergency", p.number_emergency),
+                    "number_outpatient": inputs.get("number_outpatient", p.number_outpatient),
+                    "num_procedures": inputs.get("num_procedures", p.num_procedures),
+                    "num_medications": inputs.get("num_medications", p.num_medications),
+                    "medications_count": inputs.get("medications_count", p.num_medications),
+                    "diag_1": inputs.get("diag_1", p.primary_diagnosis),
+                    "diag_2": inputs.get("diag_2", p.secondary_diagnosis),
+                    "diag_3": inputs.get("diag_3", p.diag_3),
+                    "a1c_result": inputs.get("a1c_result", p.a1c_result),
+                    "max_glu_serum": inputs.get("max_glu_serum", p.max_glu_serum),
+                    "insulin_usage": inputs.get("insulin_usage", p.insulin_usage),
                     "time_in_hospital": inputs.get("time_in_hospital", p.time_in_hospital),
                     "diagnoses_count": inputs.get("diagnoses_count", p.prior_diagnoses_count),
-                    "a1c_result": inputs.get("a1c_result", "None"),
-                    "insulin_usage": inputs.get("insulin_usage", "No"),
                 }
             else:
-                payload = {
-                    "patient_id": p.id,
-                    "prior_inpatient": 0,
-                    "prior_emergency": 0,
-                    "medications_count": len(p.medications) if p.medications else 0,
-                    "time_in_hospital": p.time_in_hospital,
-                    "diagnoses_count": p.prior_diagnoses_count,
-                    "a1c_result": "None",
-                    "insulin_usage": "No",
-                }
+                payload = {"patient_id": p.id}
             
             run_prediction(payload, created_by_id=created_by_id)
             successful += 1

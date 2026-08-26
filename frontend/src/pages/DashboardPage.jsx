@@ -162,8 +162,8 @@ export default function DashboardPage() {
             />
             <StatCard
               icon={Activity}
-              title="ROC-AUC Score"
-              value={modelStatus ? modelStatus : formatPercent(currentModel.roc_auc)}
+              title="Accuracy"
+              value={modelStatus ? modelStatus : formatPercent(currentModel?.accuracy)}
               subtitle={modelStatus ? (modelSummary?.error ? 'Failed to fetch model metadata' : 'Model artifact not loaded at startup') : 'Discriminative performance of active model'}
               trend={{ value: modelStatus ? 'No model' : 'Live model', isPositive: !modelStatus }}
               tone="success"
@@ -229,7 +229,7 @@ export default function DashboardPage() {
                   <li>{formatCount(dashboardStats.high_risk_patients)} elevated readmission alerts are currently active.</li>
                   <li>
                     Active model: {modelStatus ? modelStatus : (currentModel?.version || 'No active model available')}
-                    {!modelStatus && currentModel ? ` — ROC-AUC ${formatPercent(currentModel.roc_auc)}` : ''}
+                    {!modelStatus && currentModel ? ` — Accuracy ${formatPercent(currentModel.accuracy)}` : ''}
                   </li>
                 </ul>
               </div>

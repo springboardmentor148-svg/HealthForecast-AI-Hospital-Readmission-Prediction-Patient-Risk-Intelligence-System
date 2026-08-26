@@ -43,8 +43,10 @@ def generate_treatment_forecast(patient_id: int) -> dict[str, Any]:
 
     time_h = float(inputs.get("time_in_hospital") or patient.time_in_hospital or 3)
     meds = float(
-        inputs.get("medications_count")
-        or (len(patient.medications) if patient.medications else 5)
+        inputs.get("num_medications")
+        or inputs.get("medications_count")
+        or patient.num_medications
+        or 5
     )
     diags = float(inputs.get("diagnoses_count") or patient.prior_diagnoses_count or 4)
 

@@ -139,7 +139,7 @@ export default function PatientImportModal({ isOpen, onClose, onImportSuccess })
             <div className="text-center">
               <h3 className="text-[15px] font-bold text-txt-primary">Import Patient Directory CSV</h3>
               <p className="text-[11px] font-semibold text-txt-muted mt-1">
-                Upload a CSV matching the HealthForecast Patient Import Template.
+                Upload a CSV matching the HealthForecast Patient Import Template. Optional columns now include prior encounters, procedures, diagnosis 3, A1C, glucose, and insulin fields.
               </p>
             </div>
 

@@ -17,13 +17,6 @@ def health():
 
 
 @bp.get("/summary")
-@jwt_required()
-@require_roles(
-    UserRole.doctor,
-    UserRole.hospital_administrator,
-    UserRole.healthcare_researcher,
-    UserRole.system_administrator,
-)
 def summary():
     return jsonify(build_model_summary())
 

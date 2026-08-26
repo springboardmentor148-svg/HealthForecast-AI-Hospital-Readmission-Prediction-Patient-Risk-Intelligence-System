@@ -32,24 +32,32 @@ export default function PredictPage() {
   }, [id]);
 
   // Form State Variables
-  const [priorInpatient, setPriorInpatient] = useState('1');
-  const [priorEmergency, setPriorEmergency] = useState('0');
-  const [medicationsCount, setMedicationsCount] = useState('3');
-  const [timeInHospital, setTimeInHospital] = useState('4');
-  const [diagnosesCount, setDiagnosesCount] = useState('5');
-  const [a1cResult, setA1cResult] = useState('None');
-  const [insulinUsage, setInsulinUsage] = useState('Steady');
+  const [numberInpatient, setNumberInpatient] = useState('');
+  const [numberEmergency, setNumberEmergency] = useState('');
+  const [numberOutpatient, setNumberOutpatient] = useState('');
+  const [numProcedures, setNumProcedures] = useState('');
+  const [diag3, setDiag3] = useState('');
+  const [medicationsCount, setMedicationsCount] = useState('');
+  const [timeInHospital, setTimeInHospital] = useState('');
+  const [diagnosesCount, setDiagnosesCount] = useState('');
+  const [a1cResult, setA1cResult] = useState('');
+  const [maxGluSerum, setMaxGluSerum] = useState('');
+  const [insulinUsage, setInsulinUsage] = useState('');
 
   // Sync form inputs with selected patient profile when available
   useEffect(() => {
     if (selectedPatient) {
-      setPriorInpatient(String(selectedPatient.priorDiagnosesCount > 5 ? 2 : 1));
-      setPriorEmergency(String(selectedPatient.riskBand === 'high' ? 1 : 0));
-      setMedicationsCount(String(selectedPatient.medications ? selectedPatient.medications.length : 3));
-      setTimeInHospital(String(selectedPatient.timeInHospital || 4));
-      setDiagnosesCount(String(selectedPatient.priorDiagnosesCount || 5));
-      setA1cResult(selectedPatient.riskBand === 'high' ? '>8' : 'None');
-      setInsulinUsage(selectedPatient.medications && selectedPatient.medications.includes('Insulin Glargine') ? 'Steady' : 'No');
+      setNumberInpatient(selectedPatient.numberInpatient ?? '');
+      setNumberEmergency(selectedPatient.numberEmergency ?? '');
+      setNumberOutpatient(selectedPatient.numberOutpatient ?? '');
+      setNumProcedures(selectedPatient.numProcedures ?? '');
+      setDiag3(selectedPatient.diag3 ?? '');
+      setMedicationsCount(selectedPatient.medications ? selectedPatient.medications.length : '');
+      setTimeInHospital(selectedPatient.timeInHospital ?? '');
+      setDiagnosesCount(selectedPatient.priorDiagnosesCount ?? '');
+      setA1cResult(selectedPatient.a1cResult ?? '');
+      setMaxGluSerum(selectedPatient.maxGluSerum ?? '');
+      setInsulinUsage(selectedPatient.insulinUsage ?? '');
     }
   }, [selectedPatient]);
 
@@ -79,12 +87,16 @@ export default function PredictPage() {
     try {
       const result = await runPrediction({
         patient_id: selectedPatient.id,
-        prior_inpatient: priorInpatient,
-        prior_emergency: priorEmergency,
+        number_inpatient: numberInpatient,
+        number_emergency: numberEmergency,
+        number_outpatient: numberOutpatient,
+        num_procedures: numProcedures,
+        diag_3: diag3,
         medications_count: medicationsCount,
         time_in_hospital: timeInHospital,
         diagnoses_count: diagnosesCount,
         a1c_result: a1cResult,
+        max_glu_serum: maxGluSerum,
         insulin_usage: insulinUsage,
       });
 
@@ -94,12 +106,16 @@ export default function PredictPage() {
         patientId: selectedPatient.id,
         patientIdentifier: result.patient?.patientIdentifier || selectedPatient.patientIdentifier,
         inputs: {
-          priorInpatient,
-          priorEmergency,
+          numberInpatient,
+          numberEmergency,
+          numberOutpatient,
+          numProcedures,
+          diag3,
           medicationsCount,
           timeInHospital,
           diagnosesCount,
           a1cResult,
+          maxGluSerum,
           insulinUsage,
         },
         analysis: result.analysis,
@@ -124,6 +140,7 @@ export default function PredictPage() {
 
   // Dropdown list options mapping
   const a1cOptions = [
+    { value: '', label: 'Not set' },
     { value: 'None', label: 'None' },
     { value: 'Normal', label: 'Normal' },
     { value: '>7', label: 'More than 7%' },
@@ -131,6 +148,7 @@ export default function PredictPage() {
   ];
 
   const insulinOptions = [
+    { value: '', label: 'Not set' },
     { value: 'No', label: 'No Usage' },
     { value: 'Steady', label: 'Steady Dose' },
     { value: 'Up', label: 'Dose Increased' },
@@ -200,26 +218,55 @@ export default function PredictPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold text-txt-muted" htmlFor="prior-inpatient">Number of Prior Inpatient Visits</label>
+            <label className="text-[12px] font-bold text-txt-muted" htmlFor="number-inpatient">Prior Inpatient Encounters</label>
             <Input
-              id="prior-inpatient"
+              id="number-inpatient"
               type="number"
               min={0}
-              value={priorInpatient}
-              onChange={(e) => setPriorInpatient(e.target.value)}
-              required
+              value={numberInpatient}
+              onChange={(e) => setNumberInpatient(e.target.value)}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold text-txt-muted" htmlFor="prior-emergency">Number of Prior Emergency Visits</label>
+            <label className="text-[12px] font-bold text-txt-muted" htmlFor="number-emergency">Prior Emergency Encounters</label>
             <Input
-              id="prior-emergency"
+              id="number-emergency"
               type="number"
               min={0}
-              value={priorEmergency}
-              onChange={(e) => setPriorEmergency(e.target.value)}
-              required
+              value={numberEmergency}
+              onChange={(e) => setNumberEmergency(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-bold text-txt-muted" htmlFor="number-outpatient">Prior Outpatient Encounters</label>
+            <Input
+              id="number-outpatient"
+              type="number"
+              min={0}
+              value={numberOutpatient}
+              onChange={(e) => setNumberOutpatient(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-bold text-txt-muted" htmlFor="num-procedures">Number of Procedures</label>
+            <Input
+              id="num-procedures"
+              type="number"
+              min={0}
+              value={numProcedures}
+              onChange={(e) => setNumProcedures(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-[12px] font-bold text-txt-muted" htmlFor="diag-3">Third Diagnosis</label>
+            <Input
+              id="diag-3"
+              value={diag3}
+              onChange={(e) => setDiag3(e.target.value)}
             />
           </div>
 
@@ -255,7 +302,6 @@ export default function PredictPage() {
               min={1}
               value={diagnosesCount}
               onChange={(e) => setDiagnosesCount(e.target.value)}
-              required
             />
           </div>
 
@@ -266,6 +312,22 @@ export default function PredictPage() {
               options={a1cOptions}
               value={a1cResult}
               onChange={(e) => setA1cResult(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-bold text-txt-muted" htmlFor="max-glu-serum">Maximum Glucose Result</label>
+            <Select
+              id="max-glu-serum"
+              options={[
+                { value: '', label: 'Not set' },
+                { value: 'None', label: 'None' },
+                { value: 'Norm', label: 'Normal' },
+                { value: '>200', label: '>200' },
+                { value: '>300', label: '>300' }
+              ]}
+              value={maxGluSerum}
+              onChange={(e) => setMaxGluSerum(e.target.value)}
             />
           </div>
 

@@ -12,4 +12,4 @@ echo "Database migrations applied successfully."
 
 # Start Flask application using Gunicorn
 echo "Launching Flask backend with Gunicorn..."
-exec gunicorn -w 4 -b 0.0.0.0:5000 "run:app"
+exec gunicorn -w 1 -b 0.0.0.0:5000 "run:app"

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAnalytics } from '../contexts/AnalyticsContext';
 import { ROLES } from '../config/rbac';
@@ -15,6 +15,7 @@ import {
   useToast,
 } from '../components';
 import { FileSpreadsheet, FileText } from 'lucide-react';
+import { listPatients } from '../api/patients';
 
 const formatCount = (value, suffix = '') => `${Number(value || 0).toLocaleString('en-US')}${suffix}`;
 
@@ -22,10 +23,143 @@ export default function AnalyticsPage() {
   const { currentRole } = useAuth();
   const { analyticsOverview, isAnalyticsLoading, analyticsError } = useAnalytics();
   const { showToast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
 
   const doctor = analyticsOverview?.doctor || {};
   const researcher = analyticsOverview?.researcher || {};
   const executive = analyticsOverview?.executive || {};
+
+  const handleExportResearcher = async () => {
+    setIsExporting(true);
+    try {
+      const patients = await listPatients();
+      const headers = [
+        'Anonymized Patient ID',
+        'Age at Admission',
+        'Gender',
+        'Admission Type',
+        'Primary Diagnosis',
+        'Secondary Diagnosis',
+        'Time in Hospital',
+        'Prior Diagnoses Count',
+        'Lab Procedures Count',
+        'Number Inpatient',
+        'Number Emergency',
+        'Number Outpatient',
+        'Num Procedures',
+        'Num Medications',
+        'Diag 3',
+        'A1C Result',
+        'Max Glu Serum',
+        'Insulin Usage',
+        'Risk Band',
+        'Readmission Probability'
+      ];
+      
+      const csvRows = [headers.join(',')];
+      
+      patients.forEach((patient, idx) => {
+        const row = [
+          `ANON-${String(idx + 1001).padStart(4, '0')}`,
+          patient.age ?? '',
+          patient.gender ?? '',
+          patient.admissionType ?? '',
+          patient.primaryDiagnosis ?? '',
+          patient.secondaryDiagnosis ?? '',
+          patient.timeInHospital ?? '',
+          patient.priorDiagnosesCount ?? '',
+          patient.labProceduresCount ?? '',
+          patient.numberInpatient ?? '',
+          patient.numberEmergency ?? '',
+          patient.numberOutpatient ?? '',
+          patient.numProcedures ?? '',
+          patient.numMedications ?? '',
+          patient.diag3 ?? '',
+          patient.a1cResult ?? '',
+          patient.maxGluSerum ?? '',
+          patient.insulinUsage ?? '',
+          patient.riskBand ?? '',
+          patient.readmissionProbability ?? ''
+        ];
+        const escaped = row.map(val => {
+          const s = String(val).replace(/"/g, '""');
+          return s.includes(',') || s.includes('\n') || s.includes('"') ? `"${s}"` : s;
+        });
+        csvRows.push(escaped.join(','));
+      });
+      
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'anonymized_research_dataset.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showToast({
+        message: 'Export Dispatched: Anonymized Research Dataset (.csv) download initiated.',
+        variant: 'success'
+      });
+    } catch (err) {
+      showToast({
+        message: err?.message || 'Failed to export research dataset.',
+        variant: 'error'
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportExecutive = () => {
+    try {
+      const stats = executive.stat_cards || {};
+      const benchmarks = executive.department_benchmarks || [];
+      
+      const csvRows = [];
+      csvRows.push('Executive Operational Report');
+      csvRows.push(`Exported At,${new Date().toLocaleString()}`);
+      csvRows.push('');
+      csvRows.push('Operational KPIs');
+      csvRows.push(`Total Monitored Patients,${stats.total_patients || 0}`);
+      csvRows.push(`Average Hospital Stay,${stats.average_stay ? stats.average_stay.toFixed(1) : '0.0'} days`);
+      csvRows.push(`Total High-Risk Flagged Patients,${stats.flagged_alerts || 0}`);
+      csvRows.push('');
+      csvRows.push('Departmental Performance Benchmarks');
+      csvRows.push('Department / Specialty,30-Day Readmit Rate,Mean Length of Stay,High-Risk Patients,Total Cohort Size');
+      
+      benchmarks.forEach((row) => {
+        csvRows.push([
+          row.dept || 'Other',
+          row.readmit || '0.0%',
+          row.stay || '0.0 days',
+          row.high_risk || 0,
+          row.total || 0
+        ].join(','));
+      });
+      
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'executive_operational_report.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showToast({
+        message: 'Export Dispatched: Executive Operational Report (.csv) download initiated.',
+        variant: 'success'
+      });
+    } catch (err) {
+      showToast({
+        message: err?.message || 'Failed to export operational report.',
+        variant: 'error'
+      });
+    }
+  };
 
   const doctorTrend = doctor.trend || [];
   const doctorRiskDist = doctor.risk_distribution || [];
@@ -170,12 +304,13 @@ export default function AnalyticsPage() {
             <p className="text-[14px] text-txt-muted mt-1">Research View — Population health statistics and cohort-level trends.</p>
           </div>
           <Button
-            onClick={() => showToast({ message: 'Export Dispatched: Anonymized Research Dataset (.csv) download initiated.', variant: 'success' })}
+            onClick={handleExportResearcher}
+            disabled={isExporting}
             variant="primary"
             className="flex items-center gap-1.5 font-bold self-start sm:self-auto"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>Export Research Dataset</span>
+            <span>{isExporting ? 'Exporting...' : 'Export Research Dataset'}</span>
           </Button>
         </div>
 
@@ -258,7 +393,7 @@ export default function AnalyticsPage() {
         </div>
 
         <Button
-          onClick={() => showToast({ message: 'Export Dispatched: Executive Operational Report (.pdf) download initiated.', variant: 'success' })}
+          onClick={handleExportExecutive}
           variant="primary"
           className="flex items-center gap-1.5 font-bold self-start sm:self-auto"
         >
