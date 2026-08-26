@@ -1,24 +1,37 @@
-from fastapi import FastAPI
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routers import auth
 
-app = FastAPI()
+app = FastAPI(title="HealthForecast AI")
 
-# Explicitly define origins (wildcard "*" fails when credentials are enabled)
-origins = [
+# Standardize allowed origins into an explicit list
+frontend_env = os.getenv("FRONTEND_URL", "")
+allowed_origins = [
     "https://healthforecast-ai-frontend.onrender.com",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
+if frontend_env and frontend_env.rstrip("/") not in allowed_origins:
+    allowed_origins.append(frontend_env.rstrip("/"))
+
+# CORSMiddleware MUST be added directly after app initialization
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Mount routes below middleware
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+
+@app.get("/")
+def read_root():
+    return {"status": "healthy", "message": "HealthForecast AI API"}
 
 # Ensure app.include_router calls stay BELOW add_middleware
 
