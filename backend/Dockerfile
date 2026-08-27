@@ -23,6 +23,7 @@ RUN pip install --no-cache-dir --default-timeout=300 --retries=10 -r /app/backen
 
 # Copy ML model artifacts to the exact relative path required (/app/models)
 COPY models /app/models
+COPY dataset /app/dataset
 
 # Copy the rest of the backend codebase
 COPY backend /app/backend
