@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #F0F4F8;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #E8ECF0;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #B0C4DE;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8AA0BB;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #0A6E5E 0%, #3B9A8E 50%, #87CEEB 100%);
+}
+/* EMERGENCY OVERRIDE */
+main.MuiBox-root {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+#root > div {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}

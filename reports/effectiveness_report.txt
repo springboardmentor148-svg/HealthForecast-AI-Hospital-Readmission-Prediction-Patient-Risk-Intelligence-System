@@ -1,0 +1,9 @@
+============================================================
+TREATMENT EFFECTIVENESS REPORT
+============================================================
+
+Total Patients: 97,109
+Overall Readmission Rate: 11.46%
+Best Medication: TOLAZAMIDE
+Medication Reduction: 3.8%
+Effective Medications: 7
